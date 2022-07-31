@@ -5,6 +5,8 @@ use crate::slim_inspect::SlimInspect;
 use crate::slim_map::SlimMap;
 use crate::slim_map_async::SlimMapAsync;
 use crate::slim_map_into::SlimMapInto;
+use crate::slim_try_flatten::SlimTryFlatten;
+use futures::TryFuture;
 use std::future::Future;
 
 pub trait SlimFutureExt: Future {
@@ -55,6 +57,16 @@ pub trait SlimFutureExt: Future {
         Self::Output: Into<U>,
     {
         assert_future::assert_future::<_, U>(SlimMapInto::new(self))
+    }
+
+    fn slim_try_flatten(self) -> SlimTryFlatten<Self>
+    where
+        Self: TryFuture + Sized,
+        Self::Ok: TryFuture<Error = Self::Error>,
+    {
+        assert_future::assert_future::<_, Result<<Self::Ok as TryFuture>::Ok, Self::Error>>(
+            SlimTryFlatten::new(self),
+        )
     }
 }
 

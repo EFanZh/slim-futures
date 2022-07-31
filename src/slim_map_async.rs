@@ -44,7 +44,7 @@ where
 
 impl<T, F> FusedFuture for SlimMapAsync<T, F>
 where
-    T: Future,
+    T: FusedFuture,
     F: FnMut1<T::Output>,
     F::Output: FusedFuture,
 {

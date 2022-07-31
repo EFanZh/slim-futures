@@ -9,6 +9,7 @@ mod slim_map;
 mod slim_map_async;
 mod slim_map_into;
 mod slim_ready;
+mod slim_try_flatten;
 
 pub mod zzz_you_shall_not_use {
     pub mod foo {
@@ -22,6 +23,7 @@ pub mod zzz_you_shall_not_use {
             pub use crate::slim_map_async::SlimMapAsync;
             pub use crate::slim_map_into::SlimMapInto;
             pub use crate::slim_ready::{slim_ready, SlimReady};
+            pub use crate::slim_try_flatten::SlimTryFlatten;
         }
     }
 }

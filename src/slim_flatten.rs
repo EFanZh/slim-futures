@@ -66,14 +66,13 @@ where
 
 impl<T> FusedFuture for SlimFlatten<T>
 where
-    T: Future,
+    T: FusedFuture,
     T::Output: FusedFuture,
 {
     fn is_terminated(&self) -> bool {
-        if let SlimFlattenInner::Second { fut } = &self.inner {
-            fut.is_terminated()
-        } else {
-            false
+        match &self.inner {
+            SlimFlattenInner::First { fut } => fut.is_terminated(),
+            SlimFlattenInner::Second { fut } => fut.is_terminated(),
         }
     }
 }
