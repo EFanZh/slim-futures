@@ -23,6 +23,7 @@ mod map;
 mod map_async;
 mod map_into;
 mod map_ok;
+mod map_ok_async;
 mod ready;
 mod select;
 mod try_flatten;
