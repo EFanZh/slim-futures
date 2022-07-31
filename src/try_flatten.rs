@@ -1,5 +1,5 @@
 use crate::try_future::TryFuture;
-use futures::future::FusedFuture;
+use futures_core::FusedFuture;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -55,7 +55,7 @@ where
         loop {
             match inner.as_mut().project() {
                 TryFlattenInnerProject::First { fut } => {
-                    let fut = futures::ready!(fut.poll(cx)?);
+                    let fut = futures_core::ready!(fut.poll(cx)?);
 
                     inner.set(TryFlattenInner::Second { fut });
                 }

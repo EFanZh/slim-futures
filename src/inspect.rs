@@ -1,6 +1,6 @@
 use crate::fn_mut_1::FnMut1;
 use crate::map::Map;
-use futures::future::FusedFuture;
+use futures_core::FusedFuture;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
