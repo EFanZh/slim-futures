@@ -4,7 +4,7 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 pin_project_lite::pin_project! {
-    pub struct SlimSelect<Fut1, Fut2> {
+    pub struct Select<Fut1, Fut2> {
         #[pin]
         fut_1: Fut1,
         #[pin]
@@ -12,13 +12,13 @@ pin_project_lite::pin_project! {
     }
 }
 
-impl<Fut1, Fut2> SlimSelect<Fut1, Fut2> {
+impl<Fut1, Fut2> Select<Fut1, Fut2> {
     pub(crate) fn new(fut_1: Fut1, fut_2: Fut2) -> Self {
         Self { fut_1, fut_2 }
     }
 }
 
-impl<Fut1, Fut2> Future for SlimSelect<Fut1, Fut2>
+impl<Fut1, Fut2> Future for Select<Fut1, Fut2>
 where
     Fut1: Future,
     Fut2: Future<Output = Fut1::Output>,
@@ -35,7 +35,7 @@ where
     }
 }
 
-impl<Fut1, Fut2> FusedFuture for SlimSelect<Fut1, Fut2>
+impl<Fut1, Fut2> FusedFuture for Select<Fut1, Fut2>
 where
     Fut1: FusedFuture,
     Fut2: FusedFuture<Output = Fut1::Output>,

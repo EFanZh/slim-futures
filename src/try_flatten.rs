@@ -17,8 +17,8 @@ where
 }
 
 pin_project_lite::pin_project! {
-    #[project = SlimTryFlattenInnerProject]
-    enum SlimTryFlattenInner<Fut>
+    #[project = TryFlattenInnerProject]
+    enum TryFlattenInner<Fut>
     where
         Fut: TryFuture,
     {
@@ -34,27 +34,27 @@ pin_project_lite::pin_project! {
 }
 
 pin_project_lite::pin_project! {
-    pub struct SlimTryFlatten<Fut>
+    pub struct TryFlatten<Fut>
     where
         Fut: TryFuture,
     {
         #[pin]
-        inner: SlimTryFlattenInner<Fut>,
+        inner: TryFlattenInner<Fut>,
     }
 }
 
-impl<Fut> SlimTryFlatten<Fut>
+impl<Fut> TryFlatten<Fut>
 where
     Fut: TryFuture,
 {
     pub(crate) fn new(fut: Fut) -> Self {
         Self {
-            inner: SlimTryFlattenInner::First { fut },
+            inner: TryFlattenInner::First { fut },
         }
     }
 }
 
-impl<Fut> Future for SlimTryFlatten<Fut>
+impl<Fut> Future for TryFlatten<Fut>
 where
     Fut: TryFuture,
     Fut::Ok: TryFuture<Error = Fut::Error>,
@@ -66,26 +66,26 @@ where
 
         loop {
             match inner.as_mut().project() {
-                SlimTryFlattenInnerProject::First { fut } => {
+                TryFlattenInnerProject::First { fut } => {
                     let fut = futures::ready!(fut.poll(cx)?);
 
-                    inner.set(SlimTryFlattenInner::Second { fut });
+                    inner.set(TryFlattenInner::Second { fut });
                 }
-                SlimTryFlattenInnerProject::Second { fut } => return fut.poll(cx),
+                TryFlattenInnerProject::Second { fut } => return fut.poll(cx),
             }
         }
     }
 }
 
-impl<Fut> FusedFuture for SlimTryFlatten<Fut>
+impl<Fut> FusedFuture for TryFlatten<Fut>
 where
     Fut: TryFuture + FusedFuture,
     Fut::Ok: TryFuture<Error = Fut::Error> + FusedFuture,
 {
     fn is_terminated(&self) -> bool {
         match &self.inner {
-            SlimTryFlattenInner::First { fut } => fut.is_terminated(),
-            SlimTryFlattenInner::Second { fut } => fut.is_terminated(),
+            TryFlattenInner::First { fut } => fut.is_terminated(),
+            TryFlattenInner::Second { fut } => fut.is_terminated(),
         }
     }
 }

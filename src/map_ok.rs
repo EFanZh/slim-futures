@@ -1,5 +1,5 @@
 use crate::fn_mut_1::FnMut1;
-use crate::slim_map::SlimMap;
+use crate::map::Map;
 use futures::future::FusedFuture;
 use std::future::Future;
 use std::pin::Pin;
@@ -21,21 +21,21 @@ where
 }
 
 pin_project_lite::pin_project! {
-    pub struct SlimMapOk<T, F> {
+    pub struct MapOk<T, F> {
         #[pin]
-        inner: SlimMap<T, MapOkFn<F>>,
+        inner: Map<T, MapOkFn<F>>,
     }
 }
 
-impl<T, F> SlimMapOk<T, F> {
+impl<T, F> MapOk<T, F> {
     pub(crate) fn new(fut: T, f: F) -> Self {
         Self {
-            inner: SlimMap::new(fut, MapOkFn { inner: f }),
+            inner: Map::new(fut, MapOkFn { inner: f }),
         }
     }
 }
 
-impl<Fut, F, T, E> Future for SlimMapOk<Fut, F>
+impl<Fut, F, T, E> Future for MapOk<Fut, F>
 where
     Fut: Future<Output = Result<T, E>>,
     F: FnMut1<T>,
@@ -47,7 +47,7 @@ where
     }
 }
 
-impl<T, F, E> FusedFuture for SlimMapOk<T, F>
+impl<T, F, E> FusedFuture for MapOk<T, F>
 where
     T: FusedFuture<Output = Result<T, E>>,
     F: FnMut1<T>,

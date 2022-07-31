@@ -4,8 +4,8 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 pin_project_lite::pin_project! {
-    #[project = SlimFlattenInnerProject]
-    enum SlimFlattenInner<Fut>
+    #[project = FlattenInnerProject]
+    enum FlattenInner<Fut>
     where
         Fut: Future,
     {
@@ -21,27 +21,27 @@ pin_project_lite::pin_project! {
 }
 
 pin_project_lite::pin_project! {
-    pub struct SlimFlatten<Fut>
+    pub struct Flatten<Fut>
     where
         Fut: Future,
     {
         #[pin]
-        inner: SlimFlattenInner<Fut>,
+        inner: FlattenInner<Fut>,
     }
 }
 
-impl<Fut> SlimFlatten<Fut>
+impl<Fut> Flatten<Fut>
 where
     Fut: Future,
 {
     pub(crate) fn new(fut: Fut) -> Self {
         Self {
-            inner: SlimFlattenInner::First { fut },
+            inner: FlattenInner::First { fut },
         }
     }
 }
 
-impl<Fut> Future for SlimFlatten<Fut>
+impl<Fut> Future for Flatten<Fut>
 where
     Fut: Future,
     Fut::Output: Future,
@@ -53,26 +53,26 @@ where
 
         loop {
             match inner.as_mut().project() {
-                SlimFlattenInnerProject::First { fut } => {
+                FlattenInnerProject::First { fut } => {
                     let fut = futures::ready!(fut.poll(cx));
 
-                    inner.set(SlimFlattenInner::Second { fut });
+                    inner.set(FlattenInner::Second { fut });
                 }
-                SlimFlattenInnerProject::Second { fut } => return fut.poll(cx),
+                FlattenInnerProject::Second { fut } => return fut.poll(cx),
             }
         }
     }
 }
 
-impl<Fut> FusedFuture for SlimFlatten<Fut>
+impl<Fut> FusedFuture for Flatten<Fut>
 where
     Fut: FusedFuture,
     Fut::Output: FusedFuture,
 {
     fn is_terminated(&self) -> bool {
         match &self.inner {
-            SlimFlattenInner::First { fut } => fut.is_terminated(),
-            SlimFlattenInner::Second { fut } => fut.is_terminated(),
+            FlattenInner::First { fut } => fut.is_terminated(),
+            FlattenInner::Second { fut } => fut.is_terminated(),
         }
     }
 }

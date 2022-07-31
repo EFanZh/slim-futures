@@ -1,5 +1,5 @@
 use crate::fn_mut_1::FnMut1;
-use crate::slim_map::SlimMap;
+use crate::map::Map;
 use futures::future::FusedFuture;
 use std::future::Future;
 use std::pin::Pin;
@@ -23,21 +23,21 @@ where
 }
 
 pin_project_lite::pin_project! {
-    pub struct SlimInspect<Fut, F> {
+    pub struct Inspect<Fut, F> {
         #[pin]
-        inner: SlimMap<Fut, InspectFn<F>>,
+        inner: Map<Fut, InspectFn<F>>,
     }
 }
 
-impl<Fut, F> SlimInspect<Fut, F> {
+impl<Fut, F> Inspect<Fut, F> {
     pub(crate) fn new(fut: Fut, f: F) -> Self {
         Self {
-            inner: SlimMap::new(fut, InspectFn { inner: f }),
+            inner: Map::new(fut, InspectFn { inner: f }),
         }
     }
 }
 
-impl<Fut, F> Future for SlimInspect<Fut, F>
+impl<Fut, F> Future for Inspect<Fut, F>
 where
     Fut: Future,
     F: FnMut(&Fut::Output),
@@ -49,7 +49,7 @@ where
     }
 }
 
-impl<Fut, F> FusedFuture for SlimInspect<Fut, F>
+impl<Fut, F> FusedFuture for Inspect<Fut, F>
 where
     Fut: FusedFuture,
     F: FnMut(&Fut::Output),

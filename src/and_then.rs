@@ -1,5 +1,5 @@
 use crate::fn_mut_1::FnMut1;
-use crate::slim_map::SlimMap;
+use crate::map::Map;
 use futures::future::FusedFuture;
 use std::future::Future;
 use std::pin::Pin;
@@ -21,21 +21,21 @@ where
 }
 
 pin_project_lite::pin_project! {
-    pub struct SlimAndThen<Fut, F> {
+    pub struct AndThen<Fut, F> {
         #[pin]
-        inner: SlimMap<Fut, AndThenFn<F>>,
+        inner: Map<Fut, AndThenFn<F>>,
     }
 }
 
-impl<Fut, F> SlimAndThen<Fut, F> {
+impl<Fut, F> AndThen<Fut, F> {
     pub(crate) fn new(fut: Fut, f: F) -> Self {
         Self {
-            inner: SlimMap::new(fut, AndThenFn { inner: f }),
+            inner: Map::new(fut, AndThenFn { inner: f }),
         }
     }
 }
 
-impl<Fut, F, U, E, V> Future for SlimAndThen<Fut, F>
+impl<Fut, F, U, E, V> Future for AndThen<Fut, F>
 where
     Fut: Future<Output = Result<U, E>>,
     F: FnMut1<U, Output = Result<V, E>>,
@@ -47,7 +47,7 @@ where
     }
 }
 
-impl<Fut, F, U, E, V> FusedFuture for SlimAndThen<Fut, F>
+impl<Fut, F, U, E, V> FusedFuture for AndThen<Fut, F>
 where
     Fut: FusedFuture<Output = Result<U, E>>,
     F: FnMut1<U, Output = Result<V, E>>,

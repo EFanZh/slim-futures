@@ -3,11 +3,11 @@ use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-pub struct SlimReady<T> {
+pub struct Ready<T> {
     value: T,
 }
 
-impl<T> Future for SlimReady<T>
+impl<T> Future for Ready<T>
 where
     T: Copy,
 {
@@ -18,9 +18,9 @@ where
     }
 }
 
-pub fn slim_ready<T>(value: T) -> SlimReady<T>
+pub fn ready<T>(value: T) -> Ready<T>
 where
     T: Copy,
 {
-    assert_future::assert_future::<_, T>(SlimReady { value })
+    assert_future::assert_future::<_, T>(Ready { value })
 }

@@ -4,12 +4,12 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 pin_project_lite::pin_project! {
-    pub struct SlimLazy<F> {
+    pub struct Lazy<F> {
         f: F,
     }
 }
 
-impl<F, T> Future for SlimLazy<F>
+impl<F, T> Future for Lazy<F>
 where
     F: FnMut(&mut Context) -> T,
 {
@@ -20,9 +20,9 @@ where
     }
 }
 
-pub fn slim_lazy<F, T>(f: F) -> SlimLazy<F>
+pub fn lazy<F, T>(f: F) -> Lazy<F>
 where
     F: FnMut(&mut Context) -> T,
 {
-    assert_future::assert_future::<_, T>(SlimLazy { f })
+    assert_future::assert_future::<_, T>(Lazy { f })
 }
