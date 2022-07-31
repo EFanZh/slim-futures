@@ -7,6 +7,7 @@ use crate::slim_map_async::SlimMapAsync;
 use crate::slim_map_into::SlimMapInto;
 use crate::slim_map_ok::SlimMapOk;
 use crate::slim_try_flatten::SlimTryFlatten;
+use crate::zzz_you_shall_not_use::foo::bar::SlimSelect;
 use std::future::Future;
 
 pub trait SlimFutureExt: Future {
@@ -65,6 +66,14 @@ pub trait SlimFutureExt: Future {
         F: FnMut(T) -> U,
     {
         assert_future::assert_future::<_, Result<U, E>>(SlimMapOk::new(self, f))
+    }
+
+    fn slim_select<Fut>(self, fut: Fut) -> SlimSelect<Self, Fut>
+    where
+        Self: Sized,
+        Fut: Future<Output = Self::Output>,
+    {
+        assert_future::assert_future::<_, Self::Output>(SlimSelect::new(self, fut))
     }
 
     fn slim_try_flatten<T, E, U>(self) -> SlimTryFlatten<Self>

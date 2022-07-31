@@ -28,10 +28,7 @@ pin_project_lite::pin_project! {
 }
 
 impl<T, F> SlimMapOk<T, F> {
-    pub(crate) fn new(fut: T, f: F) -> Self
-    where
-        Self: Future,
-    {
+    pub(crate) fn new(fut: T, f: F) -> Self {
         Self {
             inner: SlimMap::new(fut, MapOkFn { inner: f }),
         }
