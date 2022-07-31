@@ -35,22 +35,22 @@ impl<Fut, F> AndThen<Fut, F> {
     }
 }
 
-impl<Fut, F, U, E, V> Future for AndThen<Fut, F>
+impl<Fut, F, T, E, U> Future for AndThen<Fut, F>
 where
-    Fut: Future<Output = Result<U, E>>,
-    F: FnMut1<U, Output = Result<V, E>>,
+    Fut: Future<Output = Result<T, E>>,
+    F: FnMut1<T, Output = Result<U, E>>,
 {
-    type Output = Result<V, E>;
+    type Output = Result<U, E>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         self.project().inner.poll(cx)
     }
 }
 
-impl<Fut, F, U, E, V> FusedFuture for AndThen<Fut, F>
+impl<Fut, F, T, E, U> FusedFuture for AndThen<Fut, F>
 where
-    Fut: FusedFuture<Output = Result<U, E>>,
-    F: FnMut1<U, Output = Result<V, E>>,
+    Fut: FusedFuture<Output = Result<T, E>>,
+    F: FnMut1<T, Output = Result<U, E>>,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

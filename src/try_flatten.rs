@@ -42,10 +42,10 @@ where
     }
 }
 
-impl<Fut, T, E, U> Future for TryFlatten<Fut>
+impl<Fut, Fut2, E, U> Future for TryFlatten<Fut>
 where
-    Fut: Future<Output = Result<T, E>>,
-    T: Future<Output = Result<U, E>>,
+    Fut: Future<Output = Result<Fut2, E>>,
+    Fut2: Future<Output = Result<U, E>>,
 {
     type Output = Result<U, E>;
 
@@ -65,10 +65,10 @@ where
     }
 }
 
-impl<Fut, T, E, U> FusedFuture for TryFlatten<Fut>
+impl<Fut, Fut2, E, U> FusedFuture for TryFlatten<Fut>
 where
-    Fut: FusedFuture<Output = Result<T, E>>,
-    T: FusedFuture<Output = Result<U, E>>,
+    Fut: FusedFuture<Output = Result<Fut2, E>>,
+    Fut2: FusedFuture<Output = Result<U, E>>,
 {
     fn is_terminated(&self) -> bool {
         match &self.inner {

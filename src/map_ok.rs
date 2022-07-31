@@ -21,14 +21,14 @@ where
 }
 
 pin_project_lite::pin_project! {
-    pub struct MapOk<T, F> {
+    pub struct MapOk<Fut, F> {
         #[pin]
-        inner: Map<T, MapOkFn<F>>,
+        inner: Map<Fut, MapOkFn<F>>,
     }
 }
 
-impl<T, F> MapOk<T, F> {
-    pub(crate) fn new(fut: T, f: F) -> Self {
+impl<Fut, F> MapOk<Fut, F> {
+    pub(crate) fn new(fut: Fut, f: F) -> Self {
         Self {
             inner: Map::new(fut, MapOkFn { inner: f }),
         }

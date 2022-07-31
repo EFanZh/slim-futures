@@ -7,6 +7,7 @@ use crate::map::Map;
 use crate::map_async::MapAsync;
 use crate::map_into::MapInto;
 use crate::map_ok::MapOk;
+use crate::map_ok_async::MapOkAsync;
 use crate::select::Select;
 use crate::try_flatten::TryFlatten;
 use std::future::Future;
@@ -20,13 +21,13 @@ pub trait FutureExt: Future {
         assert_future::assert_future::<_, Result<U, E>>(AndThen::new(self, f))
     }
 
-    fn slim_and_then_async<F, T, E, U, V>(self, f: F) -> AndThenAsync<Self, F>
+    fn slim_and_then_async<F, T, E, Fut2, U>(self, f: F) -> AndThenAsync<Self, F>
     where
         Self: Future<Output = Result<T, E>> + Sized,
-        F: FnMut(T) -> U,
-        U: Future<Output = Result<V, E>>,
+        F: FnMut(T) -> Fut2,
+        Fut2: Future<Output = Result<U, E>>,
     {
-        assert_future::assert_future::<_, Result<V, E>>(AndThenAsync::new(self, f))
+        assert_future::assert_future::<_, Result<U, E>>(AndThenAsync::new(self, f))
     }
 
     fn slim_flatten(self) -> Flatten<Self>
@@ -53,13 +54,13 @@ pub trait FutureExt: Future {
         assert_future::assert_future::<_, U>(Map::new(self, f))
     }
 
-    fn slim_map_async<F, U>(self, f: F) -> MapAsync<Self, F>
+    fn slim_map_async<F, Fut2>(self, f: F) -> MapAsync<Self, F>
     where
         Self: Sized,
-        F: FnMut(Self::Output) -> U,
-        U: Future,
+        F: FnMut(Self::Output) -> Fut2,
+        Fut2: Future,
     {
-        assert_future::assert_future::<_, U::Output>(MapAsync::new(self, f))
+        assert_future::assert_future::<_, Fut2::Output>(MapAsync::new(self, f))
     }
 
     fn slim_map_into<U>(self) -> MapInto<Self, U>
@@ -78,6 +79,15 @@ pub trait FutureExt: Future {
         assert_future::assert_future::<_, Result<U, E>>(MapOk::new(self, f))
     }
 
+    fn slim_map_ok_async<F, T, E, Fut2>(self, f: F) -> MapOkAsync<Self, F>
+    where
+        Self: Future<Output = Result<T, E>> + Sized,
+        F: FnMut(T) -> Fut2,
+        Fut2: Future,
+    {
+        assert_future::assert_future::<_, Result<Fut2::Output, E>>(MapOkAsync::new(self, f))
+    }
+
     fn slim_select<Fut>(self, fut: Fut) -> Select<Self, Fut>
     where
         Self: Sized,
@@ -86,13 +96,13 @@ pub trait FutureExt: Future {
         assert_future::assert_future::<_, Self::Output>(Select::new(self, fut))
     }
 
-    fn slim_try_flatten<T, E, U>(self) -> TryFlatten<Self>
+    fn slim_try_flatten<Fut2, E, U>(self) -> TryFlatten<Self>
     where
-        Self: Future<Output = Result<T, E>> + Sized,
-        T: Future<Output = Result<U, E>> + Sized,
+        Self: Future<Output = Result<Fut2, E>> + Sized,
+        Fut2: Future<Output = Result<U, E>> + Sized,
     {
         assert_future::assert_future::<_, Result<U, E>>(TryFlatten::new(self))
     }
 }
 
-impl<T> FutureExt for T where T: Future + ?Sized {}
+impl<Fut> FutureExt for Fut where Fut: Future + ?Sized {}
