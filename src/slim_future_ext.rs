@@ -1,5 +1,6 @@
 use crate::assert_future;
 use crate::async_slim_map::AsyncSlimMap;
+use crate::slim_and_then::SlimAndThen;
 use crate::slim_flatten::SlimFlatten;
 use crate::slim_inspect::SlimInspect;
 use crate::slim_map::SlimMap;
@@ -14,6 +15,14 @@ pub trait SlimFutureExt: Future {
         U: Future,
     {
         assert_future::assert_future::<_, U::Output>(AsyncSlimMap::new(self, f))
+    }
+
+    fn slim_and_then<F, T, E, U>(self, f: F) -> SlimAndThen<Self, F>
+    where
+        Self: Future<Output = Result<T, E>> + Sized,
+        F: FnMut(T) -> Result<U, E>,
+    {
+        assert_future::assert_future::<_, Result<U, E>>(SlimAndThen::new(self, f))
     }
 
     fn slim_flatten(self) -> SlimFlatten<Self>

@@ -1,5 +1,5 @@
 use crate::fn_mut_1::FnMut1;
-use crate::soon_to_be_pub::foo::bar::SlimMap;
+use crate::slim_map::SlimMap;
 use futures::future::FusedFuture;
 use std::future::Future;
 use std::marker::PhantomData;
