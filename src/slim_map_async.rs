@@ -7,7 +7,7 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 pin_project_lite::pin_project! {
-    pub struct AsyncSlimMap<T, F>
+    pub struct SlimMapAsync<T, F>
     where
         T: Future,
         F: FnMut1<T::Output>,
@@ -17,7 +17,7 @@ pin_project_lite::pin_project! {
     }
 }
 
-impl<T, F> AsyncSlimMap<T, F>
+impl<T, F> SlimMapAsync<T, F>
 where
     T: Future,
     F: FnMut1<T::Output>,
@@ -29,7 +29,7 @@ where
     }
 }
 
-impl<T, F> Future for AsyncSlimMap<T, F>
+impl<T, F> Future for SlimMapAsync<T, F>
 where
     T: Future,
     F: FnMut1<T::Output>,
@@ -42,7 +42,7 @@ where
     }
 }
 
-impl<T, F> FusedFuture for AsyncSlimMap<T, F>
+impl<T, F> FusedFuture for SlimMapAsync<T, F>
 where
     T: Future,
     F: FnMut1<T::Output>,
