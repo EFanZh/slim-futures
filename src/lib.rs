@@ -12,6 +12,7 @@ pub use crate::select::Select;
 pub use crate::try_flatten::TryFlatten;
 
 mod and_then;
+mod and_then_async;
 mod assert_future;
 mod flatten;
 mod fn_mut_1;
@@ -25,3 +26,5 @@ mod map_ok;
 mod ready;
 mod select;
 mod try_flatten;
+mod try_fn_mut_1;
+mod try_future;

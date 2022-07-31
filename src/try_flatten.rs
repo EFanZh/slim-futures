@@ -1,20 +1,8 @@
+use crate::try_future::TryFuture;
 use futures::future::FusedFuture;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
-
-pub trait TryFuture: Future<Output = Result<Self::Ok, Self::Error>> {
-    type Ok;
-    type Error;
-}
-
-impl<Fut, T, E> TryFuture for Fut
-where
-    Fut: Future<Output = Result<T, E>>,
-{
-    type Ok = T;
-    type Error = E;
-}
 
 pin_project_lite::pin_project! {
     #[project = TryFlattenInnerProject]
@@ -43,9 +31,9 @@ pin_project_lite::pin_project! {
     }
 }
 
-impl<Fut> TryFlatten<Fut>
+impl<Fut, T, E> TryFlatten<Fut>
 where
-    Fut: TryFuture,
+    Fut: Future<Output = Result<T, E>>,
 {
     pub(crate) fn new(fut: Fut) -> Self {
         Self {
@@ -54,12 +42,12 @@ where
     }
 }
 
-impl<Fut> Future for TryFlatten<Fut>
+impl<Fut, T, E, U> Future for TryFlatten<Fut>
 where
-    Fut: TryFuture,
-    Fut::Ok: TryFuture<Error = Fut::Error>,
+    Fut: Future<Output = Result<T, E>>,
+    T: Future<Output = Result<U, E>>,
 {
-    type Output = Result<<Fut::Ok as TryFuture>::Ok, Fut::Error>;
+    type Output = Result<U, E>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         let mut inner = self.project().inner;
@@ -77,10 +65,10 @@ where
     }
 }
 
-impl<Fut> FusedFuture for TryFlatten<Fut>
+impl<Fut, T, E, U> FusedFuture for TryFlatten<Fut>
 where
-    Fut: TryFuture + FusedFuture,
-    Fut::Ok: TryFuture<Error = Fut::Error> + FusedFuture,
+    Fut: FusedFuture<Output = Result<T, E>>,
+    T: FusedFuture<Output = Result<U, E>>,
 {
     fn is_terminated(&self) -> bool {
         match &self.inner {

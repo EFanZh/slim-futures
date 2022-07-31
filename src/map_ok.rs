@@ -47,9 +47,9 @@ where
     }
 }
 
-impl<T, F, E> FusedFuture for MapOk<T, F>
+impl<Fut, F, T, E> FusedFuture for MapOk<Fut, F>
 where
-    T: FusedFuture<Output = Result<T, E>>,
+    Fut: FusedFuture<Output = Result<T, E>>,
     F: FnMut1<T>,
 {
     fn is_terminated(&self) -> bool {

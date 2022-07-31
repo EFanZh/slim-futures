@@ -1,4 +1,5 @@
 use crate::and_then::AndThen;
+use crate::and_then_async::AndThenAsync;
 use crate::assert_future;
 use crate::flatten::Flatten;
 use crate::inspect::Inspect;
@@ -17,6 +18,15 @@ pub trait FutureExt: Future {
         F: FnMut(T) -> Result<U, E>,
     {
         assert_future::assert_future::<_, Result<U, E>>(AndThen::new(self, f))
+    }
+
+    fn slim_and_then_async<F, T, E, U, V>(self, f: F) -> AndThenAsync<Self, F>
+    where
+        Self: Future<Output = Result<T, E>> + Sized,
+        F: FnMut(T) -> U,
+        U: Future<Output = Result<V, E>>,
+    {
+        assert_future::assert_future::<_, Result<V, E>>(AndThenAsync::new(self, f))
     }
 
     fn slim_flatten(self) -> Flatten<Self>
