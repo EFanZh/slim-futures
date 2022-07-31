@@ -6,8 +6,8 @@ use crate::slim_map::SlimMap;
 use crate::slim_map_async::SlimMapAsync;
 use crate::slim_map_into::SlimMapInto;
 use crate::slim_map_ok::SlimMapOk;
+use crate::slim_select::SlimSelect;
 use crate::slim_try_flatten::SlimTryFlatten;
-use crate::zzz_you_shall_not_use::foo::bar::SlimSelect;
 use std::future::Future;
 
 pub trait SlimFutureExt: Future {
