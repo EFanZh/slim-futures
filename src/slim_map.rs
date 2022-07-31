@@ -5,23 +5,23 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 pin_project_lite::pin_project! {
-    pub struct SlimMap<T, F> {
+    pub struct SlimMap<Fut, F> {
         #[pin]
-        fut: T,
+        fut: Fut,
         f: F,
     }
 }
 
-impl<T, F> SlimMap<T, F> {
-    pub(crate) fn new(fut: T, f: F) -> Self {
+impl<Fut, F> SlimMap<Fut, F> {
+    pub(crate) fn new(fut: Fut, f: F) -> Self {
         Self { fut, f }
     }
 }
 
-impl<T, F> Future for SlimMap<T, F>
+impl<Fut, F> Future for SlimMap<Fut, F>
 where
-    T: Future,
-    F: FnMut1<T::Output>,
+    Fut: Future,
+    F: FnMut1<Fut::Output>,
 {
     type Output = F::Output;
 
@@ -32,10 +32,10 @@ where
     }
 }
 
-impl<T, F> FusedFuture for SlimMap<T, F>
+impl<Fut, F> FusedFuture for SlimMap<Fut, F>
 where
-    T: FusedFuture,
-    F: FnMut1<T::Output>,
+    Fut: FusedFuture,
+    F: FnMut1<Fut::Output>,
 {
     fn is_terminated(&self) -> bool {
         self.fut.is_terminated()

@@ -9,20 +9,20 @@ pin_project_lite::pin_project! {
     }
 }
 
-impl<F, R> Future for SlimLazy<F>
+impl<F, T> Future for SlimLazy<F>
 where
-    F: FnMut(&mut Context) -> R,
+    F: FnMut(&mut Context) -> T,
 {
-    type Output = R;
+    type Output = T;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         Poll::Ready((self.project().f)(cx))
     }
 }
 
-pub fn slim_lazy<F, R>(f: F) -> SlimLazy<F>
+pub fn slim_lazy<F, T>(f: F) -> SlimLazy<F>
 where
-    F: FnMut(&mut Context) -> R,
+    F: FnMut(&mut Context) -> T,
 {
-    assert_future::assert_future::<_, R>(SlimLazy { f })
+    assert_future::assert_future::<_, T>(SlimLazy { f })
 }

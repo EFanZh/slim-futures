@@ -7,32 +7,32 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 pin_project_lite::pin_project! {
-    pub struct SlimMapAsync<T, F>
+    pub struct SlimMapAsync<Fut, F>
     where
-        T: Future,
-        F: FnMut1<T::Output>,
+        Fut: Future,
+        F: FnMut1<Fut::Output>,
     {
         #[pin]
-        inner: SlimFlatten<SlimMap<T, F>>
+        inner: SlimFlatten<SlimMap<Fut, F>>
     }
 }
 
-impl<T, F> SlimMapAsync<T, F>
+impl<Fut, F> SlimMapAsync<Fut, F>
 where
-    T: Future,
-    F: FnMut1<T::Output>,
+    Fut: Future,
+    F: FnMut1<Fut::Output>,
 {
-    pub(crate) fn new(fut: T, f: F) -> Self {
+    pub(crate) fn new(fut: Fut, f: F) -> Self {
         Self {
             inner: SlimFlatten::new(SlimMap::new(fut, f)),
         }
     }
 }
 
-impl<T, F> Future for SlimMapAsync<T, F>
+impl<Fut, F> Future for SlimMapAsync<Fut, F>
 where
-    T: Future,
-    F: FnMut1<T::Output>,
+    Fut: Future,
+    F: FnMut1<Fut::Output>,
     F::Output: Future,
 {
     type Output = <F::Output as Future>::Output;
@@ -42,10 +42,10 @@ where
     }
 }
 
-impl<T, F> FusedFuture for SlimMapAsync<T, F>
+impl<Fut, F> FusedFuture for SlimMapAsync<Fut, F>
 where
-    T: FusedFuture,
-    F: FnMut1<T::Output>,
+    Fut: FusedFuture,
+    F: FnMut1<Fut::Output>,
     F::Output: FusedFuture,
 {
     fn is_terminated(&self) -> bool {

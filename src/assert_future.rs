@@ -1,8 +1,8 @@
 use std::future::Future;
 
-pub fn assert_future<T, R>(value: T) -> T
+pub fn assert_future<Fut, T>(fut: Fut) -> Fut
 where
-    T: Future<Output = R>,
+    Fut: Future<Output = T>,
 {
-    value
+    fut
 }

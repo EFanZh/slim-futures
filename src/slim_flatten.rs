@@ -5,48 +5,48 @@ use std::task::{Context, Poll};
 
 pin_project_lite::pin_project! {
     #[project = SlimFlattenInnerProject]
-    enum SlimFlattenInner<T>
+    enum SlimFlattenInner<Fut>
     where
-        T: Future,
+        Fut: Future,
     {
         First {
             #[pin]
-            fut: T,
+            fut: Fut,
         },
         Second {
             #[pin]
-            fut: T::Output,
+            fut: Fut::Output,
         },
     }
 }
 
 pin_project_lite::pin_project! {
-    pub struct SlimFlatten<T>
+    pub struct SlimFlatten<Fut>
     where
-        T: Future,
+        Fut: Future,
     {
         #[pin]
-        inner: SlimFlattenInner<T>,
+        inner: SlimFlattenInner<Fut>,
     }
 }
 
-impl<T> SlimFlatten<T>
+impl<Fut> SlimFlatten<Fut>
 where
-    T: Future,
+    Fut: Future,
 {
-    pub(crate) fn new(fut: T) -> Self {
+    pub(crate) fn new(fut: Fut) -> Self {
         Self {
             inner: SlimFlattenInner::First { fut },
         }
     }
 }
 
-impl<T> Future for SlimFlatten<T>
+impl<Fut> Future for SlimFlatten<Fut>
 where
-    T: Future,
-    T::Output: Future,
+    Fut: Future,
+    Fut::Output: Future,
 {
-    type Output = <T::Output as Future>::Output;
+    type Output = <Fut::Output as Future>::Output;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         let mut inner = self.project().inner;
@@ -64,10 +64,10 @@ where
     }
 }
 
-impl<T> FusedFuture for SlimFlatten<T>
+impl<Fut> FusedFuture for SlimFlatten<Fut>
 where
-    T: FusedFuture,
-    T::Output: FusedFuture,
+    Fut: FusedFuture,
+    Fut::Output: FusedFuture,
 {
     fn is_terminated(&self) -> bool {
         match &self.inner {

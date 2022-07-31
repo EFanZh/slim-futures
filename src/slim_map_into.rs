@@ -22,20 +22,20 @@ where
 }
 
 pin_project_lite::pin_project! {
-    pub struct SlimMapInto<T, U>
+    pub struct SlimMapInto<Fut, U>
     where
-        T: Future,
+        Fut: Future,
     {
         #[pin]
-        inner: SlimMap<T, MapIntoFn<T::Output, U>>,
+        inner: SlimMap<Fut, MapIntoFn<Fut::Output, U>>,
     }
 }
 
-impl<T, U> SlimMapInto<T, U>
+impl<Fut, U> SlimMapInto<Fut, U>
 where
-    T: Future,
+    Fut: Future,
 {
-    pub(crate) fn new(fut: T) -> Self {
+    pub(crate) fn new(fut: Fut) -> Self {
         Self {
             inner: SlimMap::new(
                 fut,
@@ -47,10 +47,10 @@ where
     }
 }
 
-impl<T, U> Future for SlimMapInto<T, U>
+impl<Fut, U> Future for SlimMapInto<Fut, U>
 where
-    T: Future,
-    T::Output: Into<U>,
+    Fut: Future,
+    Fut::Output: Into<U>,
 {
     type Output = U;
 
@@ -59,10 +59,10 @@ where
     }
 }
 
-impl<T, U> FusedFuture for SlimMapInto<T, U>
+impl<Fut, U> FusedFuture for SlimMapInto<Fut, U>
 where
-    T: FusedFuture,
-    T::Output: Into<U>,
+    Fut: FusedFuture,
+    Fut::Output: Into<U>,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

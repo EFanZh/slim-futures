@@ -5,8 +5,8 @@ use crate::slim_inspect::SlimInspect;
 use crate::slim_map::SlimMap;
 use crate::slim_map_async::SlimMapAsync;
 use crate::slim_map_into::SlimMapInto;
+use crate::slim_map_ok::SlimMapOk;
 use crate::slim_try_flatten::SlimTryFlatten;
-use futures::TryFuture;
 use std::future::Future;
 
 pub trait SlimFutureExt: Future {
@@ -59,14 +59,20 @@ pub trait SlimFutureExt: Future {
         assert_future::assert_future::<_, U>(SlimMapInto::new(self))
     }
 
-    fn slim_try_flatten(self) -> SlimTryFlatten<Self>
+    fn slim_map_ok<F, T, E, U>(self, f: F) -> SlimMapOk<Self, F>
     where
-        Self: TryFuture + Sized,
-        Self::Ok: TryFuture<Error = Self::Error>,
+        Self: Future<Output = Result<T, E>> + Sized,
+        F: FnMut(T) -> U,
     {
-        assert_future::assert_future::<_, Result<<Self::Ok as TryFuture>::Ok, Self::Error>>(
-            SlimTryFlatten::new(self),
-        )
+        assert_future::assert_future::<_, Result<U, E>>(SlimMapOk::new(self, f))
+    }
+
+    fn slim_try_flatten<T, E, U>(self) -> SlimTryFlatten<Self>
+    where
+        Self: Future<Output = Result<T, E>> + Sized,
+        T: Future<Output = Result<U, E>> + Sized,
+    {
+        assert_future::assert_future::<_, Result<U, E>>(SlimTryFlatten::new(self))
     }
 }
 

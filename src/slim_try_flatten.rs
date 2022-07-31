@@ -1,53 +1,65 @@
 use futures::future::FusedFuture;
-use futures::TryFuture;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
+pub trait TryFuture: Future<Output = Result<Self::Ok, Self::Error>> {
+    type Ok;
+    type Error;
+}
+
+impl<Fut, T, E> TryFuture for Fut
+where
+    Fut: Future<Output = Result<T, E>>,
+{
+    type Ok = T;
+    type Error = E;
+}
+
 pin_project_lite::pin_project! {
     #[project = SlimTryFlattenInnerProject]
-    enum SlimTryFlattenInner<T>
+    enum SlimTryFlattenInner<Fut>
     where
-        T: TryFuture,
+        Fut: TryFuture,
     {
         First {
             #[pin]
-            fut: T,
+            fut: Fut,
         },
         Second {
             #[pin]
-            fut: T::Ok,
+            fut: Fut::Ok,
         },
     }
 }
 
 pin_project_lite::pin_project! {
-    pub struct SlimTryFlatten<T>
+    pub struct SlimTryFlatten<Fut>
     where
-        T: TryFuture,
+        Fut: TryFuture,
     {
         #[pin]
-        inner: SlimTryFlattenInner<T>,
+        inner: SlimTryFlattenInner<Fut>,
     }
 }
 
-impl<T> SlimTryFlatten<T>
+impl<Fut> SlimTryFlatten<Fut>
 where
-    T: TryFuture,
+    Fut: TryFuture,
 {
-    pub(crate) fn new(fut: T) -> Self {
+    pub(crate) fn new(fut: Fut) -> Self {
         Self {
             inner: SlimTryFlattenInner::First { fut },
         }
     }
 }
 
-impl<T> Future for SlimTryFlatten<T>
+impl<Fut> Future for SlimTryFlatten<Fut>
 where
-    T: TryFuture,
-    T::Ok: TryFuture<Error = T::Error>,
+    Fut: TryFuture,
+    Fut::Ok: TryFuture<Error = Fut::Error>,
 {
-    type Output = Result<<T::Ok as TryFuture>::Ok, T::Error>;
+    type Output = Result<<Fut::Ok as TryFuture>::Ok, Fut::Error>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         let mut inner = self.project().inner;
@@ -55,20 +67,20 @@ where
         loop {
             match inner.as_mut().project() {
                 SlimTryFlattenInnerProject::First { fut } => {
-                    let fut = futures::ready!(fut.try_poll(cx)?);
+                    let fut = futures::ready!(fut.poll(cx)?);
 
                     inner.set(SlimTryFlattenInner::Second { fut });
                 }
-                SlimTryFlattenInnerProject::Second { fut } => return fut.try_poll(cx),
+                SlimTryFlattenInnerProject::Second { fut } => return fut.poll(cx),
             }
         }
     }
 }
 
-impl<T> FusedFuture for SlimTryFlatten<T>
+impl<Fut> FusedFuture for SlimTryFlatten<Fut>
 where
-    T: TryFuture + FusedFuture,
-    T::Ok: TryFuture<Error = T::Error> + FusedFuture,
+    Fut: TryFuture + FusedFuture,
+    Fut::Ok: TryFuture<Error = Fut::Error> + FusedFuture,
 {
     fn is_terminated(&self) -> bool {
         match &self.inner {

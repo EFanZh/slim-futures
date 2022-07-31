@@ -23,36 +23,36 @@ where
 }
 
 pin_project_lite::pin_project! {
-    pub struct SlimInspect<T, F> {
+    pub struct SlimInspect<Fut, F> {
         #[pin]
-        inner: SlimMap<T, InspectFn<F>>,
+        inner: SlimMap<Fut, InspectFn<F>>,
     }
 }
 
-impl<T, F> SlimInspect<T, F> {
-    pub(crate) fn new(fut: T, f: F) -> Self {
+impl<Fut, F> SlimInspect<Fut, F> {
+    pub(crate) fn new(fut: Fut, f: F) -> Self {
         Self {
             inner: SlimMap::new(fut, InspectFn { inner: f }),
         }
     }
 }
 
-impl<T, F> Future for SlimInspect<T, F>
+impl<Fut, F> Future for SlimInspect<Fut, F>
 where
-    T: Future,
-    F: FnMut(&T::Output),
+    Fut: Future,
+    F: FnMut(&Fut::Output),
 {
-    type Output = T::Output;
+    type Output = Fut::Output;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         self.project().inner.poll(cx)
     }
 }
 
-impl<T, F> FusedFuture for SlimInspect<T, F>
+impl<Fut, F> FusedFuture for SlimInspect<Fut, F>
 where
-    T: FusedFuture,
-    F: FnMut(&T::Output),
+    Fut: FusedFuture,
+    F: FnMut(&Fut::Output),
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()
