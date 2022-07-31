@@ -1,19 +1,39 @@
+use crate::fn_mut_1::FnMut1;
+use crate::slim_map::SlimMap;
 use futures::future::FusedFuture;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
+struct InspectFn<F> {
+    inner: F,
+}
+
+impl<T, F> FnMut1<T> for InspectFn<F>
+where
+    F: for<'a> FnMut1<&'a T, Output = ()>,
+{
+    type Output = T;
+
+    fn call_mut(&mut self, arg: T) -> Self::Output {
+        self.inner.call_mut(&arg);
+
+        arg
+    }
+}
+
 pin_project_lite::pin_project! {
     pub struct SlimInspect<T, F> {
         #[pin]
-        fut: T,
-        f: F,
+        inner: SlimMap<T, InspectFn<F>>,
     }
 }
 
 impl<T, F> SlimInspect<T, F> {
     pub(crate) fn new(fut: T, f: F) -> Self {
-        Self { fut, f }
+        Self {
+            inner: SlimMap::new(fut, InspectFn { inner: f }),
+        }
     }
 }
 
@@ -25,13 +45,7 @@ where
     type Output = T::Output;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
-        let this = self.project();
-
-        this.fut.poll(cx).map(|value| {
-            (this.f)(&value);
-
-            value
-        })
+        self.project().inner.poll(cx)
     }
 }
 
@@ -41,6 +55,6 @@ where
     F: FnMut(&T::Output),
 {
     fn is_terminated(&self) -> bool {
-        self.fut.is_terminated()
+        self.inner.is_terminated()
     }
 }

@@ -1,22 +1,48 @@
+use crate::fn_mut_1::FnMut1;
+use crate::soon_to_be_pub::foo::bar::SlimMap;
 use futures::future::FusedFuture;
 use std::future::Future;
 use std::marker::PhantomData;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-pin_project_lite::pin_project! {
-    pub struct SlimMapInto<T, U> {
-        #[pin]
-        fut: T,
-        _phantom: PhantomData<fn(T) -> U>,
+struct MapIntoFn<T, U> {
+    _phantom: PhantomData<fn(T) -> U>,
+}
+
+impl<T, U> FnMut1<T> for MapIntoFn<T, U>
+where
+    T: Into<U>,
+{
+    type Output = U;
+
+    fn call_mut(&mut self, arg: T) -> Self::Output {
+        arg.into()
     }
 }
 
-impl<T, U> SlimMapInto<T, U> {
+pin_project_lite::pin_project! {
+    pub struct SlimMapInto<T, U>
+    where
+        T: Future,
+    {
+        #[pin]
+        inner: SlimMap<T, MapIntoFn<T::Output, U>>,
+    }
+}
+
+impl<T, U> SlimMapInto<T, U>
+where
+    T: Future,
+{
     pub(crate) fn new(fut: T) -> Self {
         Self {
-            fut,
-            _phantom: PhantomData,
+            inner: SlimMap::new(
+                fut,
+                MapIntoFn {
+                    _phantom: PhantomData,
+                },
+            ),
         }
     }
 }
@@ -29,7 +55,7 @@ where
     type Output = U;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
-        self.project().fut.poll(cx).map(T::Output::into)
+        self.project().inner.poll(cx)
     }
 }
 
@@ -39,6 +65,6 @@ where
     T::Output: Into<U>,
 {
     fn is_terminated(&self) -> bool {
-        self.fut.is_terminated()
+        self.inner.is_terminated()
     }
 }
