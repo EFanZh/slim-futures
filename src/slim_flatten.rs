@@ -1,3 +1,4 @@
+use futures::future::FusedFuture;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -59,6 +60,20 @@ where
                 }
                 SlimFlattenInnerProject::Second { fut } => return fut.poll(cx),
             }
+        }
+    }
+}
+
+impl<T> FusedFuture for SlimFlatten<T>
+where
+    T: Future,
+    T::Output: FusedFuture,
+{
+    fn is_terminated(&self) -> bool {
+        if let SlimFlattenInner::Second { fut } = &self.inner {
+            fut.is_terminated()
+        } else {
+            false
         }
     }
 }

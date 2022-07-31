@@ -1,4 +1,4 @@
-use crate::fn_mut_1::FnMut1;
+use futures::future::FusedFuture;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -17,16 +17,26 @@ impl<T, F> SlimMap<T, F> {
     }
 }
 
-impl<T, F> Future for SlimMap<T, F>
+impl<T, F, R> Future for SlimMap<T, F>
 where
     T: Future,
-    F: FnMut1<T::Output>,
+    F: FnMut(T::Output) -> R,
 {
-    type Output = F::Output;
+    type Output = R;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         let this = self.project();
 
-        this.fut.poll(cx).map(this.f.as_fn_mut())
+        this.fut.poll(cx).map(this.f)
+    }
+}
+
+impl<T, F, R> FusedFuture for SlimMap<T, F>
+where
+    T: FusedFuture,
+    F: FnMut(T::Output) -> R,
+{
+    fn is_terminated(&self) -> bool {
+        self.fut.is_terminated()
     }
 }

@@ -1,25 +1,26 @@
 use crate::fn_mut_1::FnMut1;
 use crate::slim_flatten::SlimFlatten;
 use crate::slim_map::SlimMap;
+use futures::future::FusedFuture;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
 pin_project_lite::pin_project! {
-    pub struct SlimMapAsync<T, F>
+    pub struct AsyncSlimMap<T, F>
     where
         T: Future,
         F: FnMut1<T::Output>,
     {
         #[pin]
-        inner: SlimFlatten<SlimMap<T, F>>
+        inner: SlimFlatten<SlimMap<T, F::Raw>>
     }
 }
 
-impl<T, F> SlimMapAsync<T, F>
+impl<T, F, R> AsyncSlimMap<T, F>
 where
     T: Future,
-    F: FnMut1<T::Output>,
+    F: FnMut(T::Output) -> R,
 {
     pub(crate) fn new(fut: T, f: F) -> Self {
         Self {
@@ -28,7 +29,7 @@ where
     }
 }
 
-impl<T, F, U> Future for SlimMapAsync<T, F>
+impl<T, F, U> Future for AsyncSlimMap<T, F>
 where
     T: Future,
     F: FnMut(T::Output) -> U,
@@ -38,5 +39,16 @@ where
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         self.project().inner.poll(cx)
+    }
+}
+
+impl<T, F, U> FusedFuture for AsyncSlimMap<T, F>
+where
+    T: Future,
+    F: FnMut(T::Output) -> U,
+    U: FusedFuture,
+{
+    fn is_terminated(&self) -> bool {
+        self.inner.is_terminated()
     }
 }
