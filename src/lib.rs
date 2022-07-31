@@ -7,6 +7,7 @@ pub use crate::map::Map;
 pub use crate::map_async::MapAsync;
 pub use crate::map_into::MapInto;
 pub use crate::map_ok::MapOk;
+pub use crate::map_ok_async::MapOkAsync;
 pub use crate::ready::{ready, Ready};
 pub use crate::select::Select;
 pub use crate::try_flatten::TryFlatten;
