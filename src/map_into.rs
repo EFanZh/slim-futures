@@ -22,16 +22,16 @@ where
 }
 
 pin_project_lite::pin_project! {
-    pub struct MapInto<Fut, U>
+    pub struct MapInto<Fut, T>
     where
         Fut: Future,
     {
         #[pin]
-        inner: Map<Fut, MapIntoFn<Fut::Output, U>>,
+        inner: Map<Fut, MapIntoFn<Fut::Output, T>>,
     }
 }
 
-impl<Fut, U> MapInto<Fut, U>
+impl<Fut, T> MapInto<Fut, T>
 where
     Fut: Future,
 {
@@ -47,22 +47,22 @@ where
     }
 }
 
-impl<Fut, U> Future for MapInto<Fut, U>
+impl<Fut, T> Future for MapInto<Fut, T>
 where
     Fut: Future,
-    Fut::Output: Into<U>,
+    Fut::Output: Into<T>,
 {
-    type Output = U;
+    type Output = T;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         self.project().inner.poll(cx)
     }
 }
 
-impl<Fut, U> FusedFuture for MapInto<Fut, U>
+impl<Fut, T> FusedFuture for MapInto<Fut, T>
 where
     Fut: FusedFuture,
-    Fut::Output: Into<U>,
+    Fut::Output: Into<T>,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

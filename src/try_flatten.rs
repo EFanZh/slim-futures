@@ -31,9 +31,9 @@ pin_project_lite::pin_project! {
     }
 }
 
-impl<Fut, T, E> TryFlatten<Fut>
+impl<Fut, Fut2, E> TryFlatten<Fut>
 where
-    Fut: Future<Output = Result<T, E>>,
+    Fut: Future<Output = Result<Fut2, E>>,
 {
     pub(crate) fn new(fut: Fut) -> Self {
         Self {
@@ -42,12 +42,12 @@ where
     }
 }
 
-impl<Fut, Fut2, E, U> Future for TryFlatten<Fut>
+impl<Fut, Fut2, E, T> Future for TryFlatten<Fut>
 where
     Fut: Future<Output = Result<Fut2, E>>,
-    Fut2: Future<Output = Result<U, E>>,
+    Fut2: Future<Output = Result<T, E>>,
 {
-    type Output = Result<U, E>;
+    type Output = Result<T, E>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         let mut inner = self.project().inner;
@@ -65,10 +65,10 @@ where
     }
 }
 
-impl<Fut, Fut2, E, U> FusedFuture for TryFlatten<Fut>
+impl<Fut, Fut2, E, T> FusedFuture for TryFlatten<Fut>
 where
     Fut: FusedFuture<Output = Result<Fut2, E>>,
-    Fut2: FusedFuture<Output = Result<U, E>>,
+    Fut2: FusedFuture<Output = Result<T, E>>,
 {
     fn is_terminated(&self) -> bool {
         match &self.inner {

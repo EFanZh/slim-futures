@@ -36,7 +36,7 @@ where
     F: FnMut1<T>,
     F::Output: Future<Output = Result<U, E>>,
 {
-    type Output = <F::Output as Future>::Output;
+    type Output = Result<U, E>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         self.project().inner.poll(cx)

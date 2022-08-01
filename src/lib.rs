@@ -1,4 +1,5 @@
 pub use crate::and_then::AndThen;
+pub use crate::and_then_async::AndThenAsync;
 pub use crate::flatten::Flatten;
 pub use crate::future_ext::FutureExt as SlimFutureExt;
 pub use crate::inspect::Inspect;
@@ -14,9 +15,7 @@ pub use crate::try_flatten::TryFlatten;
 
 mod and_then;
 mod and_then_async;
-mod assert_future;
 mod flatten;
-mod fn_mut_1;
 mod future_ext;
 mod inspect;
 mod lazy;
@@ -28,5 +27,10 @@ mod map_ok_async;
 mod ready;
 mod select;
 mod try_flatten;
+
+// Utilities.
+
+mod assert_future;
+mod fn_mut_1;
 mod try_fn_mut_1;
 mod try_future;
