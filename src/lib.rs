@@ -32,5 +32,7 @@ mod try_flatten;
 
 mod assert_future;
 mod fn_mut_1;
+#[cfg(test)]
+mod test_utilities;
 mod try_fn_mut_1;
 mod try_future;

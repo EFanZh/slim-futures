@@ -29,6 +29,19 @@ where
     }
 }
 
+impl<Fut, F> Clone for MapAsync<Fut, F>
+where
+    Fut: Future + Clone,
+    F: FnMut1<Fut::Output> + Clone,
+    F::Output: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+        }
+    }
+}
+
 impl<Fut, F> Future for MapAsync<Fut, F>
 where
     Fut: Future,

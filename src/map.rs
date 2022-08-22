@@ -18,6 +18,19 @@ impl<Fut, F> Map<Fut, F> {
     }
 }
 
+impl<Fut, F> Clone for Map<Fut, F>
+where
+    Fut: Clone,
+    F: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            fut: self.fut.clone(),
+            f: self.f.clone(),
+        }
+    }
+}
+
 impl<Fut, F> Future for Map<Fut, F>
 where
     Fut: Future,
