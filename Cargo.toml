@@ -1,6 +1,11 @@
 [package]
+categories = ["asynchronous"]
+description = "Asynchronous tools that intends for smaller binary size."
 edition = "2021"
+keywords = ["async", "future"]
+license = "MIT"
 name = "slim-futures"
+repository = "https://github.com/EFanZh/slim-futures"
 version = "0.1.0"
 
 [dependencies]
