@@ -1,4 +1,4 @@
-use crate::assert_future;
+use crate::support;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -22,5 +22,5 @@ pub fn ready<T>(value: T) -> Ready<T>
 where
     T: Copy,
 {
-    assert_future::assert_future::<_, T>(Ready { value })
+    support::assert_future::<_, T>(Ready { value })
 }

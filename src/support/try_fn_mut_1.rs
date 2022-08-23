@@ -1,4 +1,4 @@
-use crate::fn_mut_1::FnMut1;
+use crate::support::fn_mut_1::FnMut1;
 
 pub trait TryFnMut1<T>: FnMut1<T, Output = Result<Self::Ok, Self::Error>> {
     type Ok;

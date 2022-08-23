@@ -96,8 +96,8 @@ where
 #[cfg(test)]
 mod tests {
     use super::Flatten;
+    use crate::future::future_ext::FutureExt;
     use crate::test_utilities::Defer;
-    use crate::SlimFutureExt;
     use futures_core::FusedFuture;
     use futures_util::future;
     use std::task::Poll;

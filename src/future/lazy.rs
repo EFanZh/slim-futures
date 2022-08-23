@@ -1,4 +1,4 @@
-use crate::assert_future;
+use crate::support;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -24,5 +24,5 @@ pub fn lazy<F, T>(f: F) -> Lazy<F>
 where
     F: FnMut(&mut Context) -> T,
 {
-    assert_future::assert_future::<_, T>(Lazy { f })
+    support::assert_future::<_, T>(Lazy { f })
 }

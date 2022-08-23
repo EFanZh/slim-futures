@@ -1,5 +1,5 @@
-use crate::fn_mut_1::FnMut1;
-use crate::map::Map;
+use crate::future::map::Map;
+use crate::support::FnMut1;
 use futures_core::FusedFuture;
 use std::future::Future;
 use std::marker::PhantomData;
@@ -37,12 +37,7 @@ where
 {
     pub(crate) fn new(fut: Fut) -> Self {
         Self {
-            inner: Map::new(
-                fut,
-                MapIntoFn {
-                    _phantom: PhantomData,
-                },
-            ),
+            inner: Map::new(fut, MapIntoFn { _phantom: PhantomData }),
         }
     }
 }

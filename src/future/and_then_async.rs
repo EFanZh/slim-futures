@@ -1,7 +1,6 @@
-use crate::fn_mut_1::FnMut1;
-use crate::map_ok::MapOk;
-use crate::try_flatten::TryFlatten;
-use crate::try_future::TryFuture;
+use crate::future::map_ok::MapOk;
+use crate::future::try_flatten::TryFlatten;
+use crate::support::{FnMut1, TryFuture};
 use futures_core::FusedFuture;
 use std::future::Future;
 use std::pin::Pin;

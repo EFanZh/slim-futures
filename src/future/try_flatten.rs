@@ -1,4 +1,4 @@
-use crate::try_future::TryFuture;
+use crate::support::TryFuture;
 use futures_core::FusedFuture;
 use std::future::Future;
 use std::pin::Pin;

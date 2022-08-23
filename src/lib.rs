@@ -1,38 +1,66 @@
-pub use crate::and_then::AndThen;
-pub use crate::and_then_async::AndThenAsync;
-pub use crate::flatten::Flatten;
-pub use crate::future_ext::FutureExt as SlimFutureExt;
-pub use crate::inspect::Inspect;
-pub use crate::lazy::{lazy, Lazy};
-pub use crate::map::Map;
-pub use crate::map_async::MapAsync;
-pub use crate::map_into::MapInto;
-pub use crate::map_ok::MapOk;
-pub use crate::map_ok_async::MapOkAsync;
-pub use crate::ready::{ready, Ready};
-pub use crate::select::Select;
-pub use crate::try_flatten::TryFlatten;
+#![warn(
+    explicit_outlives_requirements,
+    macro_use_extern_crate,
+    meta_variable_misuse,
+    missing_abi,
+    // missing_docs, // TODO: Uncomment this.
+    noop_method_call,
+    pointer_structural_match,
+    single_use_lifetimes,
+    trivial_casts,
+    trivial_numeric_casts,
+    unsafe_code,
+    unsafe_op_in_unsafe_fn,
+    unused_crate_dependencies,
+    unused_extern_crates,
+    unused_import_braces,
+    unused_lifetimes,
+    unused_qualifications,
+    variant_size_differences,
+    clippy::cargo_common_metadata,
+    clippy::clone_on_ref_ptr,
+    clippy::cognitive_complexity,
+    clippy::create_dir,
+    clippy::dbg_macro,
+    clippy::debug_assert_with_mut_call,
+    clippy::empty_line_after_outer_attr,
+    clippy::fallible_impl_from,
+    clippy::filetype_is_file,
+    clippy::float_cmp_const,
+    clippy::get_unwrap,
+    clippy::if_then_some_else_none,
+    clippy::imprecise_flops,
+    clippy::let_underscore_must_use,
+    clippy::lossy_float_literal,
+    clippy::multiple_inherent_impl,
+    clippy::mutex_integer,
+    clippy::nonstandard_macro_braces,
+    clippy::panic_in_result_fn,
+    clippy::path_buf_push_overwrite,
+    clippy::pedantic,
+    clippy::print_stderr,
+    clippy::print_stdout,
+    clippy::rc_buffer,
+    clippy::rc_mutex,
+    clippy::rest_pat_in_fully_bound_structs,
+    clippy::string_lit_as_bytes,
+    clippy::string_to_string,
+    clippy::suboptimal_flops,
+    clippy::suspicious_operation_groupings,
+    clippy::todo,
+    clippy::trivial_regex,
+    clippy::unimplemented,
+    clippy::unnecessary_self_imports,
+    clippy::unneeded_field_pattern,
+    clippy::use_debug,
+    clippy::use_self,
+    clippy::useless_let_if_seq,
+    clippy::useless_transmute,
+    clippy::verbose_file_reads,
+    clippy::wildcard_dependencies
+)]
 
-mod and_then;
-mod and_then_async;
-mod flatten;
-mod future_ext;
-mod inspect;
-mod lazy;
-mod map;
-mod map_async;
-mod map_into;
-mod map_ok;
-mod map_ok_async;
-mod ready;
-mod select;
-mod try_flatten;
-
-// Utilities.
-
-mod assert_future;
-mod fn_mut_1;
+pub mod future;
+mod support;
 #[cfg(test)]
 mod test_utilities;
-mod try_fn_mut_1;
-mod try_future;

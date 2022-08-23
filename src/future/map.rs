@@ -1,4 +1,4 @@
-use crate::fn_mut_1::FnMut1;
+use crate::support::FnMut1;
 use futures_core::FusedFuture;
 use std::future::Future;
 use std::pin::Pin;

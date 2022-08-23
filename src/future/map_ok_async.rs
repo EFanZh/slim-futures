@@ -1,7 +1,6 @@
-use crate::and_then_async::AndThenAsync;
-use crate::fn_mut_1::FnMut1;
-use crate::map::Map;
-use crate::try_future::TryFuture;
+use crate::future::and_then_async::AndThenAsync;
+use crate::future::map::Map;
+use crate::support::{FnMut1, TryFuture};
 use futures_core::FusedFuture;
 use std::future::Future;
 use std::marker::PhantomData;
@@ -33,12 +32,7 @@ where
     type Output = Map<F::Output, OkFn<<F::Output as Future>::Output, E>>;
 
     fn call_mut(&mut self, arg: T) -> Self::Output {
-        Map::new(
-            self.inner.call_mut(arg),
-            OkFn {
-                _phantom: PhantomData,
-            },
-        )
+        Map::new(self.inner.call_mut(arg), OkFn { _phantom: PhantomData })
     }
 }
 

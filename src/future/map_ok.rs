@@ -1,56 +1,56 @@
-use crate::fn_mut_1::FnMut1;
-use crate::map::Map;
+use crate::future::map::Map;
+use crate::support::FnMut1;
 use futures_core::FusedFuture;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-struct AndThenFn<F> {
+struct MapOkFn<F> {
     inner: F,
 }
 
-impl<T, E, F, U> FnMut1<Result<T, E>> for AndThenFn<F>
+impl<T, E, F> FnMut1<Result<T, E>> for MapOkFn<F>
 where
-    F: FnMut1<T, Output = Result<U, E>>,
+    F: FnMut1<T>,
 {
-    type Output = Result<U, E>;
+    type Output = Result<F::Output, E>;
 
     fn call_mut(&mut self, arg: Result<T, E>) -> Self::Output {
-        arg.and_then(|value| self.inner.call_mut(value))
+        arg.map(|value| self.inner.call_mut(value))
     }
 }
 
 pin_project_lite::pin_project! {
-    pub struct AndThen<Fut, F> {
+    pub struct MapOk<Fut, F> {
         #[pin]
-        inner: Map<Fut, AndThenFn<F>>,
+        inner: Map<Fut, MapOkFn<F>>,
     }
 }
 
-impl<Fut, F> AndThen<Fut, F> {
+impl<Fut, F> MapOk<Fut, F> {
     pub(crate) fn new(fut: Fut, f: F) -> Self {
         Self {
-            inner: Map::new(fut, AndThenFn { inner: f }),
+            inner: Map::new(fut, MapOkFn { inner: f }),
         }
     }
 }
 
-impl<Fut, F, T, E, U> Future for AndThen<Fut, F>
+impl<Fut, F, T, E> Future for MapOk<Fut, F>
 where
     Fut: Future<Output = Result<T, E>>,
-    F: FnMut1<T, Output = Result<U, E>>,
+    F: FnMut1<T>,
 {
-    type Output = Result<U, E>;
+    type Output = Result<F::Output, E>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         self.project().inner.poll(cx)
     }
 }
 
-impl<Fut, F, T, E, U> FusedFuture for AndThen<Fut, F>
+impl<Fut, F, T, E> FusedFuture for MapOk<Fut, F>
 where
     Fut: FusedFuture<Output = Result<T, E>>,
-    F: FnMut1<T, Output = Result<U, E>>,
+    F: FnMut1<T>,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()
