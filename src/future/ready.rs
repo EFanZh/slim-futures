@@ -7,6 +7,8 @@ pub struct Ready<T> {
     value: T,
 }
 
+impl<T> Unpin for Ready<T> {}
+
 impl<T> Future for Ready<T>
 where
     T: Copy,

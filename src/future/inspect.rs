@@ -58,3 +58,35 @@ where
         self.inner.is_terminated()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::future;
+    use crate::future::future_ext::FutureExt;
+    use futures_core::FusedFuture;
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    #[tokio::test]
+    async fn test_inspect() {
+        let state = AtomicUsize::new(2);
+
+        let future = future::ready(3).slim_inspect(|&value| {
+            state.fetch_add(value, Ordering::Relaxed);
+        });
+
+        assert_eq!(state.load(Ordering::Relaxed), 2);
+        assert_eq!(future.await, 3);
+        assert_eq!(state.load(Ordering::Relaxed), 5);
+    }
+
+    #[tokio::test]
+    async fn test_inspect_fused_future() {
+        let mut future = futures_util::future::ready(()).slim_inspect(|_| {});
+
+        assert!(!future.is_terminated());
+
+        (&mut future).await;
+
+        assert!(future.is_terminated());
+    }
+}

@@ -3,11 +3,11 @@ use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-pin_project_lite::pin_project! {
-    pub struct Lazy<F> {
-        f: F,
-    }
+pub struct Lazy<F> {
+    f: F,
 }
+
+impl<F> Unpin for Lazy<F> {}
 
 impl<F, T> Future for Lazy<F>
 where
@@ -15,8 +15,8 @@ where
 {
     type Output = T;
 
-    fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
-        Poll::Ready((self.project().f)(cx))
+    fn poll(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
+        Poll::Ready((self.f)(cx))
     }
 }
 
