@@ -1,0 +1,61 @@
+name: CI
+on: push
+jobs:
+    rustfmt:
+        runs-on: ${{ matrix.os }}
+        steps:
+          - uses: actions/checkout@v2
+          - uses: actions-rs/toolchain@v1
+            with:
+                components: rustfmt
+          - run: cargo fmt --all -- --check
+        strategy:
+            matrix:
+                os:
+                  - macOS-latest
+                  - ubuntu-latest
+                  - windows-latest
+    clippy:
+        runs-on: ${{ matrix.os }}
+        steps:
+          - uses: actions/checkout@v2
+          - uses: actions-rs/toolchain@v1
+            with:
+                components: clippy
+          - run: cargo clippy --workspace --all-targets --all-features -- -D warnings
+        strategy:
+            matrix:
+                os:
+                  - macOS-latest
+                  - ubuntu-latest
+                  - windows-latest
+    tests:
+        runs-on: ${{ matrix.os }}
+        steps:
+          - uses: actions/checkout@v2
+          - uses: actions-rs/toolchain@v1
+          - run: cargo test --workspace
+        strategy:
+            matrix:
+                os:
+                  - macOS-latest
+                  - ubuntu-latest
+                  - windows-latest
+    coverage:
+        runs-on: ubuntu-latest
+        steps:
+          - uses: actions/checkout@v2
+          - uses: actions-rs/toolchain@v1
+            with:
+                components: llvm-tools-preview
+          - uses: actions-rs/install@v0.1
+            with:
+                crate: cargo-llvm-cov
+          - run: cargo llvm-cov --lcov --workspace --output-path lcov.info
+          - uses: codecov/codecov-action@v1
+            with:
+                file: lcov.info
+          - uses: coverallsapp/github-action@master
+            with:
+                github-token: ${{ secrets.GITHUB_TOKEN }}
+                path-to-lcov: lcov.info
