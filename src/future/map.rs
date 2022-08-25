@@ -18,6 +18,7 @@ impl<Fut, F> Map<Fut, F> {
     }
 }
 
+// Manual implement `Clone` to avoid inlining.
 impl<Fut, F> Clone for Map<Fut, F>
 where
     Fut: Clone,
@@ -52,5 +53,35 @@ where
 {
     fn is_terminated(&self) -> bool {
         self.fut.is_terminated()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::future::future_ext::FutureExt;
+    use crate::future::ready;
+    use futures_core::FusedFuture;
+
+    #[tokio::test]
+    async fn test_map() {
+        assert_eq!(ready(2).slim_map(|value| value + 3).await, 5);
+    }
+
+    #[tokio::test]
+    async fn test_map_clone() {
+        let future = ready(2).slim_map(|value| value + 3);
+        let future_2 = future.clone();
+
+        assert_eq!(future.await, 5);
+        assert_eq!(future_2.await, 5);
+    }
+
+    #[tokio::test]
+    async fn test_map_fused_future() {
+        let mut future = futures_util::future::ready(2).slim_map(|value| value + 3);
+
+        assert!(!future.is_terminated());
+        assert_eq!((&mut future).await, 5);
+        assert!(future.is_terminated());
     }
 }
