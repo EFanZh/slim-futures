@@ -59,17 +59,17 @@ where
 #[cfg(test)]
 mod tests {
     use crate::future::future_ext::FutureExt;
-    use crate::future::ready;
     use futures_core::FusedFuture;
+    use futures_util::future;
 
     #[tokio::test]
     async fn test_map() {
-        assert_eq!(ready(2).slim_map(|value| value + 3).await, 5);
+        assert_eq!(future::ready(2).slim_map(|value| value + 3).await, 5);
     }
 
     #[tokio::test]
     async fn test_map_clone() {
-        let future = ready(2).slim_map(|value| value + 3);
+        let future = future::ready(2).slim_map(|value| value + 3);
         let future_2 = future.clone();
 
         assert_eq!(future.await, 5);

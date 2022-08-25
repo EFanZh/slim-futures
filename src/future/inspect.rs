@@ -63,9 +63,9 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::future;
     use crate::future::future_ext::FutureExt;
     use futures_core::FusedFuture;
+    use futures_util::future;
     use std::sync::atomic::{AtomicUsize, Ordering};
 
     #[tokio::test]
