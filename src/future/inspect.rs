@@ -5,6 +5,7 @@ use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
+#[derive(Clone)]
 struct InspectFn<F> {
     inner: F,
 }
@@ -23,6 +24,7 @@ where
 }
 
 pin_project_lite::pin_project! {
+    #[derive(Clone)]
     pub struct Inspect<Fut, F> {
         #[pin]
         inner: Map<Fut, InspectFn<F>>,
@@ -77,6 +79,23 @@ mod tests {
         assert_eq!(state.load(Ordering::Relaxed), 2);
         assert_eq!(future.await, 3);
         assert_eq!(state.load(Ordering::Relaxed), 5);
+    }
+
+    #[tokio::test]
+    async fn test_inspect_clone() {
+        let state = AtomicUsize::new(2);
+
+        let future = future::ready(3).slim_inspect(|&value| {
+            state.fetch_add(value, Ordering::Relaxed);
+        });
+
+        let future_2 = future.clone();
+
+        assert_eq!(state.load(Ordering::Relaxed), 2);
+        assert_eq!(future.await, 3);
+        assert_eq!(state.load(Ordering::Relaxed), 5);
+        assert_eq!(future_2.await, 3);
+        assert_eq!(state.load(Ordering::Relaxed), 8);
     }
 
     #[tokio::test]

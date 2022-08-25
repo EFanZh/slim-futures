@@ -3,6 +3,7 @@ use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
+#[derive(Clone)]
 pub struct Ready<T> {
     value: T,
 }
