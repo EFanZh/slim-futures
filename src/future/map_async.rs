@@ -65,3 +65,35 @@ where
         self.inner.is_terminated()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::future::future_ext::FutureExt;
+    use futures_core::FusedFuture;
+    use futures_util::future;
+
+    #[tokio::test]
+    async fn test_map_async() {
+        let future = future::ready(7).slim_map_async(|value| future::lazy(move |_| value + 2));
+
+        assert_eq!(future.await, 9);
+    }
+
+    #[tokio::test]
+    async fn test_map_async_clone() {
+        let future = future::ready(7).slim_map_async(|value| crate::future::lazy(move |_| value + 2));
+        let future_2 = future.clone();
+
+        assert_eq!(future.await, 9);
+        assert_eq!(future_2.await, 9);
+    }
+
+    #[tokio::test]
+    async fn test_map_async_fused_future() {
+        let mut future = future::ready(7).slim_map_async(|value| future::lazy(move |_| value + 2));
+
+        assert!(!future.is_terminated());
+        assert_eq!((&mut future).await, 9);
+        assert!(future.is_terminated());
+    }
+}
