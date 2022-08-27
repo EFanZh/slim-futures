@@ -5,6 +5,7 @@ use crate::future::inspect::Inspect;
 use crate::future::into_try_future::IntoTryFuture;
 use crate::future::map::Map;
 use crate::future::map_async::MapAsync;
+use crate::future::map_err::MapErr;
 use crate::future::map_into::MapInto;
 use crate::future::map_ok::MapOk;
 use crate::future::map_ok_async::MapOkAsync;
@@ -77,6 +78,14 @@ pub trait FutureExt: Future {
         Fut2: Future,
     {
         support::assert_future::<_, Fut2::Output>(MapAsync::new(self, f))
+    }
+
+    fn slim_map_err<F, T, E, U>(self, f: F) -> MapErr<Self, F>
+    where
+        Self: Future<Output = Result<T, E>> + Sized,
+        F: FnMut(E) -> U,
+    {
+        support::assert_future::<_, Result<T, U>>(MapErr::new(self, f))
     }
 
     fn slim_map_into<T>(self) -> MapInto<Self, T>
