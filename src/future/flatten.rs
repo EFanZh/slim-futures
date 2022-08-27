@@ -132,8 +132,7 @@ mod tests {
     use crate::future::future_ext::FutureExt;
     use crate::test_utilities::Defer;
     use futures_core::FusedFuture;
-    use futures_util::StreamExt;
-    use futures_util::{future, stream};
+    use futures_util::{future, stream, StreamExt};
     use std::task::Poll;
 
     #[tokio::test]

@@ -105,7 +105,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_map_into_fused_future() {
-        let mut future = futures_util::future::ready(7_u32).slim_map_into::<Option<_>>();
+        let mut future = future::ready(7_u32).slim_map_into::<Option<_>>();
 
         assert!(!future.is_terminated());
         assert_eq!((&mut future).await, Some(7));

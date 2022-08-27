@@ -78,7 +78,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_map_fused_future() {
-        let mut future = futures_util::future::ready(2).slim_map(|value| value + 3);
+        let mut future = future::ready(2).slim_map(|value| value + 3);
 
         assert!(!future.is_terminated());
         assert_eq!((&mut future).await, 5);

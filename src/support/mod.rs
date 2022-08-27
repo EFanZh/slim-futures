@@ -1,9 +1,8 @@
 pub use self::fn_mut_1::FnMut1;
 pub use self::try_fn_mut_1::TryFnMut1;
 pub use self::try_future::TryFuture;
-pub use futures_core::FusedStream as FusedAsyncIterator;
 use futures_core::Future;
-pub use futures_core::Stream as AsyncIterator;
+pub use futures_core::{FusedStream as FusedAsyncIterator, Stream as AsyncIterator};
 pub use std::convert::Infallible as Never;
 
 mod fn_mut_1;

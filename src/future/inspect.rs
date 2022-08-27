@@ -100,7 +100,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_inspect_fused_future() {
-        let mut future = futures_util::future::ready(()).slim_inspect(|_| {});
+        let mut future = future::ready(()).slim_inspect(|_| {});
 
         assert!(!future.is_terminated());
 
