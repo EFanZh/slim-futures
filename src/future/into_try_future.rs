@@ -1,0 +1,128 @@
+use crate::future::map::Map;
+use crate::support::FnMut1;
+use futures_core::FusedFuture;
+use std::future::Future;
+use std::marker::PhantomData;
+use std::pin::Pin;
+use std::task::{Context, Poll};
+
+struct IntoTryFutureFn<T, E> {
+    _phantom: PhantomData<fn(T) -> Result<T, E>>,
+}
+
+impl<T, E> Clone for IntoTryFutureFn<T, E> {
+    fn clone(&self) -> Self {
+        Self { _phantom: PhantomData }
+    }
+}
+
+impl<T, E> FnMut1<T> for IntoTryFutureFn<T, E> {
+    type Output = Result<T, E>;
+
+    fn call_mut(&mut self, arg: T) -> Self::Output {
+        Ok(arg)
+    }
+}
+
+pin_project_lite::pin_project! {
+    pub struct IntoTryFuture<Fut, E>
+    where
+        Fut: Future,
+    {
+        #[pin]
+        inner: Map<Fut, IntoTryFutureFn<Fut::Output, E>>,
+    }
+}
+
+impl<Fut, E> IntoTryFuture<Fut, E>
+where
+    Fut: Future,
+{
+    pub(crate) fn new(fut: Fut) -> Self {
+        Self {
+            inner: Map::new(fut, IntoTryFutureFn { _phantom: PhantomData }),
+        }
+    }
+}
+
+impl<Fut, E> Clone for IntoTryFuture<Fut, E>
+where
+    Fut: Clone + Future,
+{
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+        }
+    }
+}
+
+impl<Fut, E> Future for IntoTryFuture<Fut, E>
+where
+    Fut: Future,
+{
+    type Output = Result<Fut::Output, E>;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
+        self.project().inner.poll(cx)
+    }
+}
+
+impl<Fut, E> FusedFuture for IntoTryFuture<Fut, E>
+where
+    Fut: FusedFuture,
+{
+    fn is_terminated(&self) -> bool {
+        self.inner.is_terminated()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::IntoTryFuture;
+    use crate::future::future_ext::FutureExt;
+    use crate::support::Never;
+    use futures_core::FusedFuture;
+    use futures_util::future;
+
+    #[tokio::test]
+    async fn test_into_try_future() {
+        let future: IntoTryFuture<_, String> = future::ready(7).slim_into_try_future::<String>();
+        let result: Result<u32, String> = future.await;
+
+        assert_eq!(result, Ok(7));
+    }
+
+    #[tokio::test]
+    async fn test_never_error() {
+        let future: IntoTryFuture<_, Never> = future::ready(7).slim_never_error();
+        let result: Result<u32, Never> = future.await;
+
+        assert_eq!(result, Ok(7));
+    }
+
+    #[tokio::test]
+    async fn test_unit_error() {
+        let future: IntoTryFuture<_, ()> = future::ready(7).slim_unit_error();
+        let result: Result<u32, ()> = future.await;
+
+        assert_eq!(result, Ok(7));
+    }
+
+    #[tokio::test]
+    async fn test_into_try_future_clone() {
+        let future: IntoTryFuture<_, String> = future::ready(7).slim_into_try_future::<String>();
+        let future_2 = future.clone();
+
+        assert_eq!(future.await, Ok(7));
+        assert_eq!(future_2.await, Ok(7));
+    }
+
+    #[tokio::test]
+    async fn test_into_try_future_fused_future() {
+        let mut future: IntoTryFuture<_, String> = future::ready(7).slim_into_try_future::<String>();
+
+        assert!(!future.is_terminated());
+        assert_eq!((&mut future).await, Ok(7));
+        assert!(future.is_terminated());
+    }
+}

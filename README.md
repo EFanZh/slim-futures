@@ -11,9 +11,12 @@ Async combinators that focus on small binary sizes.
 | `SlimFutureExt::slim_flatten`            | [`FutureExt::flatten`]        |
 | `SlimFutureExt::slim_flatten_async_iter` | [`FutureExt::flatten_stream`] |
 | `SlimFutureExt::slim_inspect`            | [`FutureExt::inspect`]        |
+| `SlimFutureExt::slim_into_try_future`    |                               |
 | `SlimFutureExt::slim_map`                | [`FutureExt::map`]            |
 | `SlimFutureExt::slim_map_async`          | [`FutureExt::then`]           |
 | `SlimFutureExt::slim_map_into`           | [`FutureExt::map_into`]       |
+| `SlimFutureExt::slim_never_error`        | [`FutureExt::never_error`]    |
+| `SlimFutureExt::slim_unit_error`         | [`FutureExt::unit_error`]     |
 
 [`futures`]: https://docs.rs/futures/latest/futures/
 [`FutureExt::flatten`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.flatten
@@ -21,4 +24,6 @@ Async combinators that focus on small binary sizes.
 [`FutureExt::inspect`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.inspect
 [`FutureExt::map`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.map
 [`FutureExt::map_into`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.map_into
+[`FutureExt::never_error`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.never_error
 [`FutureExt::then`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.then
+[`FutureExt::unit_error`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.unit_error

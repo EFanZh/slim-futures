@@ -137,7 +137,7 @@ mod tests {
     use std::task::Poll;
 
     #[tokio::test]
-    async fn test_flatten_future() {
+    async fn test_flatten() {
         let original = future::ready(future::ready(7));
         let wrapped = original.clone().slim_flatten();
 

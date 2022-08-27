@@ -1,8 +1,11 @@
+#![allow(clippy::module_name_repetitions)] // False positive, for `IntoTryFuture`,
+
 pub use self::and_then::AndThen;
 pub use self::and_then_async::AndThenAsync;
 pub use self::flatten::Flatten;
 pub use self::future_ext::FutureExt as SlimFutureExt;
 pub use self::inspect::Inspect;
+pub use self::into_try_future::IntoTryFuture;
 pub use self::lazy::{lazy, Lazy};
 pub use self::map::Map;
 pub use self::map_async::MapAsync;
@@ -18,6 +21,7 @@ mod and_then_async;
 mod flatten;
 mod future_ext;
 mod inspect;
+mod into_try_future;
 mod lazy;
 mod map;
 mod map_async;

@@ -4,6 +4,7 @@ pub use self::try_future::TryFuture;
 pub use futures_core::FusedStream as FusedAsyncIterator;
 use futures_core::Future;
 pub use futures_core::Stream as AsyncIterator;
+pub use std::convert::Infallible as Never;
 
 mod fn_mut_1;
 mod try_fn_mut_1;

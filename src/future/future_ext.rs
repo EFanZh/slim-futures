@@ -2,6 +2,7 @@ use crate::future::and_then::AndThen;
 use crate::future::and_then_async::AndThenAsync;
 use crate::future::flatten::Flatten;
 use crate::future::inspect::Inspect;
+use crate::future::into_try_future::IntoTryFuture;
 use crate::future::map::Map;
 use crate::future::map_async::MapAsync;
 use crate::future::map_into::MapInto;
@@ -9,7 +10,7 @@ use crate::future::map_ok::MapOk;
 use crate::future::map_ok_async::MapOkAsync;
 use crate::future::select::Select;
 use crate::future::try_flatten::TryFlatten;
-use crate::support::{self, AsyncIterator};
+use crate::support::{self, AsyncIterator, Never};
 use std::future::Future;
 
 pub trait FutureExt: Future {
@@ -54,6 +55,13 @@ pub trait FutureExt: Future {
         support::assert_future::<_, Self::Output>(Inspect::new(self, f))
     }
 
+    fn slim_into_try_future<E>(self) -> IntoTryFuture<Self, E>
+    where
+        Self: Sized,
+    {
+        support::assert_future::<_, Result<Self::Output, E>>(IntoTryFuture::new(self))
+    }
+
     fn slim_map<F, T>(self, f: F) -> Map<Self, F>
     where
         Self: Sized,
@@ -96,6 +104,13 @@ pub trait FutureExt: Future {
         support::assert_future::<_, Result<Fut2::Output, E>>(MapOkAsync::new(self, f))
     }
 
+    fn slim_never_error(self) -> IntoTryFuture<Self, Never>
+    where
+        Self: Sized,
+    {
+        support::assert_future::<_, Result<Self::Output, Never>>(self.slim_into_try_future())
+    }
+
     fn slim_select<Fut>(self, fut: Fut) -> Select<Self, Fut>
     where
         Self: Sized,
@@ -110,6 +125,13 @@ pub trait FutureExt: Future {
         Fut2: Future<Output = Result<T, E>> + Sized,
     {
         support::assert_future::<_, Result<T, E>>(TryFlatten::new(self))
+    }
+
+    fn slim_unit_error(self) -> IntoTryFuture<Self, ()>
+    where
+        Self: Sized,
+    {
+        support::assert_future::<_, Result<Self::Output, ()>>(self.slim_into_try_future())
     }
 }
 
