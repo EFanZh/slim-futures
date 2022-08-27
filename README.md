@@ -8,6 +8,7 @@ Async combinators that focus on small binary sizes.
 
 | slim-futures                             | [`futures`]                   |
 | ---------------------------------------- | ----------------------------- |
+| `SlimFutureExt::slim_and_then`           |                               |
 | `SlimFutureExt::slim_flatten`            | [`FutureExt::flatten`]        |
 | `SlimFutureExt::slim_flatten_async_iter` | [`FutureExt::flatten_stream`] |
 | `SlimFutureExt::slim_inspect`            | [`FutureExt::inspect`]        |

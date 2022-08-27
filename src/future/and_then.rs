@@ -5,6 +5,7 @@ use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
+#[derive(Clone)]
 struct AndThenFn<F> {
     inner: F,
 }
@@ -21,6 +22,7 @@ where
 }
 
 pin_project_lite::pin_project! {
+    #[derive(Clone)]
     pub struct AndThen<Fut, F> {
         #[pin]
         inner: Map<Fut, AndThenFn<F>>,
@@ -54,5 +56,61 @@ where
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::future::future_ext::FutureExt;
+    use futures_core::FusedFuture;
+    use futures_util::future;
+
+    #[tokio::test]
+    async fn test_and_then() {
+        assert_eq!(
+            future::ready(Ok::<u32, u32>(2))
+                .slim_and_then(|value| Ok(value + 3))
+                .await,
+            Ok(5)
+        );
+
+        assert_eq!(
+            future::ready(Ok::<u32, u32>(2))
+                .slim_and_then(|value| Err::<u32, u32>(value + 3))
+                .await,
+            Err(5)
+        );
+
+        assert_eq!(
+            future::ready(Err::<u32, u32>(2))
+                .slim_and_then(|value| Ok(value + 3))
+                .await,
+            Err(2)
+        );
+
+        assert_eq!(
+            future::ready(Err::<u32, u32>(2))
+                .slim_and_then(|value| Err::<u32, u32>(value + 3))
+                .await,
+            Err(2)
+        );
+    }
+
+    #[tokio::test]
+    async fn test_and_then_clone() {
+        let future = future::ready(Ok::<u32, u32>(2)).slim_and_then(|value| Ok(value + 3));
+        let future_2 = future.clone();
+
+        assert_eq!(future.await, Ok(5));
+        assert_eq!(future_2.await, Ok(5));
+    }
+
+    #[tokio::test]
+    async fn test_and_then_fused_future() {
+        let mut future = future::ready(Ok::<u32, u32>(2)).slim_and_then(|value| Ok(value + 3));
+
+        assert!(!future.is_terminated());
+        assert_eq!((&mut future).await, Ok(5));
+        assert!(future.is_terminated());
     }
 }
