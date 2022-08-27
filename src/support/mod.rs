@@ -6,6 +6,7 @@ pub use futures_core::{FusedStream as FusedAsyncIterator, Stream as AsyncIterato
 pub use std::convert::Infallible as Never;
 
 mod fn_mut_1;
+pub mod fns;
 mod try_fn_mut_1;
 mod try_future;
 
