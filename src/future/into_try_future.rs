@@ -81,8 +81,10 @@ mod tests {
     use super::IntoTryFuture;
     use crate::future::future_ext::FutureExt;
     use crate::support::Never;
+    use crate::test_utilities;
     use futures_core::FusedFuture;
-    use futures_util::future;
+    use futures_util::{future, FutureExt as _};
+    use std::mem;
 
     #[tokio::test]
     async fn test_into_try_future() {
@@ -124,5 +126,14 @@ mod tests {
         assert!(!future.is_terminated());
         assert_eq!((&mut future).await, Ok(7));
         assert!(future.is_terminated());
+    }
+
+    #[test]
+    fn test_into_try_future_is_slim() {
+        let make_future = test_utilities::full_bytes_future;
+        let future = make_future().slim_unit_error();
+        let other = make_future().unit_error();
+
+        assert!(mem::size_of_val(&future) < mem::size_of_val(&other));
     }
 }

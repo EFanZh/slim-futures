@@ -130,9 +130,10 @@ where
 #[cfg(test)]
 mod tests {
     use crate::future::future_ext::FutureExt;
-    use crate::test_utilities::Defer;
+    use crate::test_utilities::{self, Defer};
     use futures_core::FusedFuture;
-    use futures_util::{future, stream, StreamExt};
+    use futures_util::{future, stream, FutureExt as _, StreamExt};
+    use std::mem;
     use std::task::Poll;
 
     #[tokio::test]
@@ -191,5 +192,14 @@ mod tests {
 
         assert_eq!(wrapped.next().await, Some(7));
         assert_eq!(wrapped.next().await, None);
+    }
+
+    #[test]
+    fn test_flatten_is_slim() {
+        let make_future = || crate::future::lazy(|_| test_utilities::almost_full_bytes_future());
+        let future = make_future().slim_flatten();
+        let other = make_future().flatten();
+
+        assert!(mem::size_of_val(&future) < mem::size_of_val(&other));
     }
 }

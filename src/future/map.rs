@@ -59,8 +59,10 @@ where
 #[cfg(test)]
 mod tests {
     use crate::future::future_ext::FutureExt;
+    use crate::test_utilities;
     use futures_core::FusedFuture;
-    use futures_util::future;
+    use futures_util::{future, FutureExt as _};
+    use std::mem;
 
     #[tokio::test]
     async fn test_map() {
@@ -83,5 +85,14 @@ mod tests {
         assert!(!future.is_terminated());
         assert_eq!((&mut future).await, 5);
         assert!(future.is_terminated());
+    }
+
+    #[test]
+    fn test_map_is_slim() {
+        let make_future = test_utilities::full_bytes_future;
+        let future = make_future().slim_map(drop);
+        let other = make_future().map(drop);
+
+        assert!(mem::size_of_val(&future) < mem::size_of_val(&other));
     }
 }

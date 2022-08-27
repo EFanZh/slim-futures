@@ -1,5 +1,6 @@
 use futures_core::FusedFuture;
 use std::future::Future;
+use std::num::NonZeroUsize;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
@@ -40,4 +41,12 @@ impl FusedFuture for Defer {
     fn is_terminated(&self) -> bool {
         self.count.is_none()
     }
+}
+
+pub fn full_bytes_future() -> impl Future {
+    crate::future::ready(0_usize)
+}
+
+pub fn almost_full_bytes_future() -> impl Future {
+    crate::future::ready(NonZeroUsize::new(1).unwrap())
 }

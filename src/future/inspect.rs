@@ -64,8 +64,10 @@ where
 #[cfg(test)]
 mod tests {
     use crate::future::future_ext::FutureExt;
+    use crate::test_utilities;
     use futures_core::FusedFuture;
-    use futures_util::future;
+    use futures_util::{future, FutureExt as _};
+    use std::mem;
     use std::sync::atomic::{AtomicUsize, Ordering};
 
     #[tokio::test]
@@ -107,5 +109,14 @@ mod tests {
         (&mut future).await;
 
         assert!(future.is_terminated());
+    }
+
+    #[test]
+    fn test_inspect_is_slim() {
+        let make_future = test_utilities::full_bytes_future;
+        let future = make_future().slim_inspect(|_| {});
+        let other = make_future().map(|_| {});
+
+        assert!(mem::size_of_val(&future) < mem::size_of_val(&other));
     }
 }
