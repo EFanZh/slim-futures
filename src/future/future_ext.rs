@@ -9,7 +9,7 @@ use crate::future::map_ok::MapOk;
 use crate::future::map_ok_async::MapOkAsync;
 use crate::future::select::Select;
 use crate::future::try_flatten::TryFlatten;
-use crate::support;
+use crate::support::{self, AsyncIterator};
 use std::future::Future;
 
 pub trait FutureExt: Future {
@@ -36,6 +36,14 @@ pub trait FutureExt: Future {
         Self::Output: Future,
     {
         support::assert_future::<_, <Self::Output as Future>::Output>(Flatten::new(self))
+    }
+
+    fn slim_flatten_async_iter(self) -> Flatten<Self>
+    where
+        Self: Sized,
+        Self::Output: AsyncIterator,
+    {
+        support::assert_async_iter::<_, <Self::Output as AsyncIterator>::Item>(Flatten::new(self))
     }
 
     fn slim_inspect<F>(self, f: F) -> Inspect<Self, F>

@@ -6,16 +6,18 @@
 
 Async combinators that focus on small binary sizes.
 
-| slim-futures                    | [`futures`]             |
-| ------------------------------- | ----------------------- |
-| `SlimFutureExt::slim_flatten`   | [`FutureExt::flatten`]  |
-| `SlimFutureExt::slim_inspect`   | [`FutureExt::inspect`]  |
-| `SlimFutureExt::slim_map`       | [`FutureExt::map`]      |
-| `SlimFutureExt::slim_map_async` | [`FutureExt::then`]     |
-| `SlimFutureExt::slim_map_into`  | [`FutureExt::map_into`] |
+| slim-futures                             | [`futures`]                   |
+| ---------------------------------------- | ----------------------------- |
+| `SlimFutureExt::slim_flatten`            | [`FutureExt::flatten`]        |
+| `SlimFutureExt::slim_flatten_async_iter` | [`FutureExt::flatten_stream`] |
+| `SlimFutureExt::slim_inspect`            | [`FutureExt::inspect`]        |
+| `SlimFutureExt::slim_map`                | [`FutureExt::map`]            |
+| `SlimFutureExt::slim_map_async`          | [`FutureExt::then`]           |
+| `SlimFutureExt::slim_map_into`           | [`FutureExt::map_into`]       |
 
 [`futures`]: https://docs.rs/futures/latest/futures/
 [`FutureExt::flatten`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.flatten
+[`FutureExt::flatten_stream`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.flatten_stream
 [`FutureExt::inspect`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.inspect
 [`FutureExt::map`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.map
 [`FutureExt::map_into`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.map_into
