@@ -29,6 +29,19 @@ where
     }
 }
 
+impl<Fut, F, T, E> Clone for AndThenAsync<Fut, F>
+where
+    Fut: Clone + Future<Output = Result<T, E>>,
+    F: Clone + FnMut1<T>,
+    F::Output: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+        }
+    }
+}
+
 impl<Fut, F, T, E, U> Future for AndThenAsync<Fut, F>
 where
     Fut: Future<Output = Result<T, E>>,
@@ -50,5 +63,61 @@ where
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::future::future_ext::FutureExt;
+    use futures_core::FusedFuture;
+    use futures_util::future;
+
+    #[tokio::test]
+    async fn test_and_then_async() {
+        assert_eq!(
+            future::ready(Ok::<u32, u32>(2))
+                .slim_and_then_async(|value| future::ready(Ok(value + 3)))
+                .await,
+            Ok(5)
+        );
+
+        assert_eq!(
+            future::ready(Ok::<u32, u32>(2))
+                .slim_and_then_async(|value| future::ready(Err::<u32, u32>(value + 3)))
+                .await,
+            Err(5)
+        );
+
+        assert_eq!(
+            future::ready(Err::<u32, u32>(2))
+                .slim_and_then_async(|value| future::ready(Ok(value + 3)))
+                .await,
+            Err(2)
+        );
+
+        assert_eq!(
+            future::ready(Err::<u32, u32>(2))
+                .slim_and_then_async(|value| future::ready(Err::<u32, u32>(value + 3)))
+                .await,
+            Err(2)
+        );
+    }
+
+    #[tokio::test]
+    async fn test_and_then_async_clone() {
+        let future = future::ready(Ok::<u32, u32>(2)).slim_and_then_async(|value| future::ready(Ok(value + 3)));
+        let future_2 = future.clone();
+
+        assert_eq!(future.await, Ok(5));
+        assert_eq!(future_2.await, Ok(5));
+    }
+
+    #[tokio::test]
+    async fn test_and_then_async_fused_future() {
+        let mut future = future::ready(Ok::<u32, u32>(2)).slim_and_then_async(|value| future::ready(Ok(value + 3)));
+
+        assert!(!future.is_terminated());
+        assert_eq!((&mut future).await, Ok(5));
+        assert!(future.is_terminated());
     }
 }

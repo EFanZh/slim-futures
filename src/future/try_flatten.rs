@@ -42,6 +42,21 @@ where
     }
 }
 
+impl<Fut, Fut2, E> Clone for TryFlatten<Fut>
+where
+    Fut: Clone + Future<Output = Result<Fut2, E>>,
+    Fut2: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            inner: match &self.inner {
+                TryFlattenInner::First { fut } => TryFlattenInner::First { fut: fut.clone() },
+                TryFlattenInner::Second { fut } => TryFlattenInner::Second { fut: fut.clone() },
+            },
+        }
+    }
+}
+
 impl<Fut, Fut2, E, T> Future for TryFlatten<Fut>
 where
     Fut: Future<Output = Result<Fut2, E>>,

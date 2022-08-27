@@ -5,6 +5,7 @@ use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
+#[derive(Clone)]
 struct MapOkFn<F> {
     inner: F,
 }
@@ -21,6 +22,7 @@ where
 }
 
 pin_project_lite::pin_project! {
+    #[derive(Clone)]
     pub struct MapOk<Fut, F> {
         #[pin]
         inner: Map<Fut, MapOkFn<F>>,
