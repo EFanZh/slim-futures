@@ -1,5 +1,6 @@
 use crate::future::and_then::AndThen;
 use crate::future::and_then_async::AndThenAsync;
+use crate::future::err_into::ErrInto;
 use crate::future::flatten::Flatten;
 use crate::future::inspect::Inspect;
 use crate::future::into_try_future::IntoTryFuture;
@@ -11,7 +12,7 @@ use crate::future::map_ok::MapOk;
 use crate::future::map_ok_async::MapOkAsync;
 use crate::future::select::Select;
 use crate::future::try_flatten::TryFlatten;
-use crate::support::{self, AsyncIterator, Never};
+use crate::support::{self, AsyncIterator, Never, TryFuture};
 use std::future::Future;
 
 pub trait FutureExt: Future {
@@ -30,6 +31,14 @@ pub trait FutureExt: Future {
         Fut2: Future<Output = Result<U, E>>,
     {
         support::assert_future::<_, Result<U, E>>(AndThenAsync::new(self, f))
+    }
+
+    fn slim_err_into<U>(self) -> ErrInto<Self, U>
+    where
+        Self: TryFuture + Sized,
+        Self::Error: Into<U>,
+    {
+        support::assert_future::<_, Result<Self::Ok, U>>(ErrInto::new(self))
     }
 
     fn slim_flatten(self) -> Flatten<Self>

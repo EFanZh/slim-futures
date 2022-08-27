@@ -2,6 +2,7 @@
 
 pub use self::and_then::AndThen;
 pub use self::and_then_async::AndThenAsync;
+pub use self::err_into::ErrInto;
 pub use self::flatten::Flatten;
 pub use self::future_ext::FutureExt as SlimFutureExt;
 pub use self::inspect::Inspect;
@@ -19,6 +20,7 @@ pub use self::try_flatten::TryFlatten;
 
 mod and_then;
 mod and_then_async;
+mod err_into;
 mod flatten;
 mod future_ext;
 mod inspect;
