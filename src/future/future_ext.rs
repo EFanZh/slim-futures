@@ -4,6 +4,7 @@ use crate::future::err_into::ErrInto;
 use crate::future::flatten::Flatten;
 use crate::future::inspect::Inspect;
 use crate::future::inspect_err::InspectErr;
+use crate::future::inspect_ok::InspectOk;
 use crate::future::into_try_future::IntoTryFuture;
 use crate::future::map::Map;
 use crate::future::map_async::MapAsync;
@@ -72,6 +73,14 @@ pub trait FutureExt: Future {
         F: FnMut(&E),
     {
         support::assert_future::<_, Self::Output>(InspectErr::new(self, f))
+    }
+
+    fn slim_inspect_ok<F, T, E>(self, f: F) -> InspectOk<Self, F>
+    where
+        Self: Future<Output = Result<T, E>> + Sized,
+        F: FnMut(&T),
+    {
+        support::assert_future::<_, Self::Output>(InspectOk::new(self, f))
     }
 
     fn slim_into_try_future<E>(self) -> IntoTryFuture<Self, E>
