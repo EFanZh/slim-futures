@@ -1,28 +1,9 @@
 use crate::future::map::Map;
-use crate::support::FnMut1;
+use crate::support::fns::OkFn;
 use futures_core::FusedFuture;
 use std::future::Future;
-use std::marker::PhantomData;
 use std::pin::Pin;
 use std::task::{Context, Poll};
-
-struct IntoTryFutureFn<T, E> {
-    _phantom: PhantomData<fn(T) -> Result<T, E>>,
-}
-
-impl<T, E> Clone for IntoTryFutureFn<T, E> {
-    fn clone(&self) -> Self {
-        Self { _phantom: PhantomData }
-    }
-}
-
-impl<T, E> FnMut1<T> for IntoTryFutureFn<T, E> {
-    type Output = Result<T, E>;
-
-    fn call_mut(&mut self, arg: T) -> Self::Output {
-        Ok(arg)
-    }
-}
 
 pin_project_lite::pin_project! {
     pub struct IntoTryFuture<Fut, E>
@@ -30,7 +11,7 @@ pin_project_lite::pin_project! {
         Fut: Future,
     {
         #[pin]
-        inner: Map<Fut, IntoTryFutureFn<Fut::Output, E>>,
+        inner: Map<Fut, OkFn<Fut::Output, E>>,
     }
 }
 
@@ -40,7 +21,7 @@ where
 {
     pub(crate) fn new(fut: Fut) -> Self {
         Self {
-            inner: Map::new(fut, IntoTryFutureFn { _phantom: PhantomData }),
+            inner: Map::new(fut, OkFn::default()),
         }
     }
 }

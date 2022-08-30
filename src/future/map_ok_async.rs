@@ -1,23 +1,12 @@
 use crate::future::and_then_async::AndThenAsync;
 use crate::future::map::Map;
+use crate::support::fns::OkFn;
 use crate::support::{FnMut1, TryFuture};
 use futures_core::FusedFuture;
 use std::future::Future;
 use std::marker::PhantomData;
 use std::pin::Pin;
 use std::task::{Context, Poll};
-
-struct OkFn<T, E> {
-    _phantom: PhantomData<fn() -> Result<T, E>>,
-}
-
-impl<T, E> FnMut1<T> for OkFn<T, E> {
-    type Output = Result<T, E>;
-
-    fn call_mut(&mut self, arg: T) -> Self::Output {
-        Ok(arg)
-    }
-}
 
 struct MapOkAsyncFn<F, E> {
     inner: F,
@@ -32,7 +21,7 @@ where
     type Output = Map<F::Output, OkFn<<F::Output as Future>::Output, E>>;
 
     fn call_mut(&mut self, arg: T) -> Self::Output {
-        Map::new(self.inner.call_mut(arg), OkFn { _phantom: PhantomData })
+        Map::new(self.inner.call_mut(arg), OkFn::default())
     }
 }
 
