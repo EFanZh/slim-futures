@@ -67,15 +67,16 @@ where
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         let mut inner = self.project().inner;
 
-        loop {
-            match inner.as_mut().project() {
-                TryFlattenInnerProject::First { fut } => {
-                    let fut = futures_core::ready!(fut.poll(cx)?);
+        if let TryFlattenInnerProject::First { fut } = inner.as_mut().project() {
+            let fut = futures_core::ready!(fut.poll(cx))?;
 
-                    inner.set(TryFlattenInner::Second { fut });
-                }
-                TryFlattenInnerProject::Second { fut } => return fut.poll(cx),
-            }
+            inner.set(TryFlattenInner::Second { fut });
+        }
+
+        if let TryFlattenInnerProject::Second { fut } = inner.project() {
+            fut.poll(cx)
+        } else {
+            unreachable!() // TODO: Is `unreachable_unchecked()` necessary for compiler to optimize away this branch?
         }
     }
 }
