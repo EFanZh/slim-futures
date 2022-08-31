@@ -1,25 +1,9 @@
-use crate::support::TryFuture;
+use crate::support::{TryFuture, TwoPhases};
 use futures_core::FusedFuture;
 use std::future::Future;
+use std::ops::ControlFlow;
 use std::pin::Pin;
 use std::task::{Context, Poll};
-
-pin_project_lite::pin_project! {
-    #[project = TryFlattenInnerProject]
-    enum TryFlattenInner<Fut>
-    where
-        Fut: TryFuture,
-    {
-        First {
-            #[pin]
-            fut: Fut,
-        },
-        Second {
-            #[pin]
-            fut: Fut::Ok,
-        },
-    }
-}
 
 pin_project_lite::pin_project! {
     pub struct TryFlatten<Fut>
@@ -27,7 +11,7 @@ pin_project_lite::pin_project! {
         Fut: TryFuture,
     {
         #[pin]
-        inner: TryFlattenInner<Fut>,
+        inner: TwoPhases<Fut, Fut::Ok>,
     }
 }
 
@@ -37,7 +21,7 @@ where
 {
     pub(crate) fn new(fut: Fut) -> Self {
         Self {
-            inner: TryFlattenInner::First { fut },
+            inner: TwoPhases::First { state: fut },
         }
     }
 }
@@ -49,10 +33,7 @@ where
 {
     fn clone(&self) -> Self {
         Self {
-            inner: match &self.inner {
-                TryFlattenInner::First { fut } => TryFlattenInner::First { fut: fut.clone() },
-                TryFlattenInner::Second { fut } => TryFlattenInner::Second { fut: fut.clone() },
-            },
+            inner: self.inner.clone(),
         }
     }
 }
@@ -65,19 +46,15 @@ where
     type Output = Result<T, E>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
-        let mut inner = self.project().inner;
-
-        if let TryFlattenInnerProject::First { fut } = inner.as_mut().project() {
-            let fut = futures_core::ready!(fut.poll(cx))?;
-
-            inner.set(TryFlattenInner::Second { fut });
-        }
-
-        if let TryFlattenInnerProject::Second { fut } = inner.project() {
-            fut.poll(cx)
-        } else {
-            unreachable!() // TODO: Is `unreachable_unchecked()` necessary for compiler to optimize away this branch?
-        }
+        self.project().inner.poll_with(
+            cx,
+            |fut, cx| match fut.poll(cx) {
+                Poll::Pending => ControlFlow::Break(Poll::Pending),
+                Poll::Ready(Ok(fut)) => ControlFlow::Continue(fut),
+                Poll::Ready(Err(error)) => ControlFlow::Break(Poll::Ready(Err(error))),
+            },
+            Fut2::poll,
+        )
     }
 }
 
@@ -87,9 +64,6 @@ where
     Fut2: FusedFuture<Output = Result<T, E>>,
 {
     fn is_terminated(&self) -> bool {
-        match &self.inner {
-            TryFlattenInner::First { fut } => fut.is_terminated(),
-            TryFlattenInner::Second { fut } => fut.is_terminated(),
-        }
+        self.inner.is_future_terminated()
     }
 }

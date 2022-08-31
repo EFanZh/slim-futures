@@ -1,25 +1,9 @@
-use crate::support::{AsyncIterator, FusedAsyncIterator};
+use crate::support::{AsyncIterator, FusedAsyncIterator, TwoPhases};
 use futures_core::FusedFuture;
 use std::future::Future;
+use std::ops::ControlFlow;
 use std::pin::Pin;
 use std::task::{Context, Poll};
-
-pin_project_lite::pin_project! {
-    #[project = FlattenInnerProject]
-    enum FlattenInner<Fut>
-    where
-        Fut: Future,
-    {
-        First {
-            #[pin]
-            fut: Fut,
-        },
-        Second {
-            #[pin]
-            fut: Fut::Output,
-        },
-    }
-}
 
 pin_project_lite::pin_project! {
     pub struct Flatten<Fut>
@@ -27,7 +11,7 @@ pin_project_lite::pin_project! {
         Fut: Future,
     {
         #[pin]
-        inner: FlattenInner<Fut>,
+        inner: TwoPhases<Fut, Fut::Output>,
     }
 }
 
@@ -37,7 +21,7 @@ where
 {
     pub(crate) fn new(fut: Fut) -> Self {
         Self {
-            inner: FlattenInner::First { fut },
+            inner: TwoPhases::First { state: fut },
         }
     }
 
@@ -46,19 +30,14 @@ where
         cx: &mut Context,
         f: impl FnOnce(Pin<&mut Fut::Output>, &mut Context) -> Poll<T>,
     ) -> Poll<T> {
-        let mut inner = self.project().inner;
-
-        if let FlattenInnerProject::First { fut } = inner.as_mut().project() {
-            let fut = futures_core::ready!(fut.poll(cx));
-
-            inner.set(FlattenInner::Second { fut });
-        }
-
-        if let FlattenInnerProject::Second { fut } = inner.project() {
-            f(fut, cx)
-        } else {
-            unreachable!() // TODO: Is `unreachable_unchecked()` necessary for compiler to optimize away this branch?
-        }
+        self.project().inner.poll_with(
+            cx,
+            |fut, cx| match fut.poll(cx) {
+                Poll::Ready(fut) => ControlFlow::Continue(fut),
+                Poll::Pending => ControlFlow::Break(Poll::Pending),
+            },
+            f,
+        )
     }
 }
 
@@ -69,10 +48,7 @@ where
 {
     fn clone(&self) -> Self {
         Self {
-            inner: match &self.inner {
-                FlattenInner::First { fut } => FlattenInner::First { fut: fut.clone() },
-                FlattenInner::Second { fut } => FlattenInner::Second { fut: fut.clone() },
-            },
+            inner: self.inner.clone(),
         }
     }
 }
@@ -95,10 +71,7 @@ where
     Fut::Output: FusedFuture,
 {
     fn is_terminated(&self) -> bool {
-        match &self.inner {
-            FlattenInner::First { fut } => fut.is_terminated(),
-            FlattenInner::Second { fut } => fut.is_terminated(),
-        }
+        self.inner.is_future_terminated()
     }
 }
 
@@ -120,10 +93,7 @@ where
     Fut::Output: FusedAsyncIterator,
 {
     fn is_terminated(&self) -> bool {
-        match &self.inner {
-            FlattenInner::First { fut } => fut.is_terminated(),
-            FlattenInner::Second { fut } => fut.is_terminated(),
-        }
+        self.inner.is_async_iter_terminated()
     }
 }
 

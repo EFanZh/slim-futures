@@ -1,6 +1,7 @@
 pub use self::fn_mut_1::FnMut1;
 pub use self::try_fn_mut_1::TryFnMut1;
 pub use self::try_future::TryFuture;
+pub use self::two_phases::TwoPhases;
 use futures_core::Future;
 pub use futures_core::{FusedStream as FusedAsyncIterator, Stream as AsyncIterator};
 pub use std::convert::Infallible as Never;
@@ -9,6 +10,7 @@ mod fn_mut_1;
 pub mod fns;
 mod try_fn_mut_1;
 mod try_future;
+mod two_phases;
 
 pub fn assert_future<Fut, T>(fut: Fut) -> Fut
 where
