@@ -35,6 +35,7 @@ mod lazy;
 mod map;
 mod map_async;
 mod map_err;
+mod map_err_async;
 mod map_into;
 mod map_ok;
 mod map_ok_async;

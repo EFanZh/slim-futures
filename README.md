@@ -20,6 +20,7 @@ Async combinators that focus on small binary sizes.
 | `SlimFutureExt::slim_map`                | [`FutureExt::map`]            |
 | `SlimFutureExt::slim_map_async`          | [`FutureExt::then`]           |
 | `SlimFutureExt::slim_map_err`            | [`TryFutureExt::map_err`]     |
+| `SlimFutureExt::slim_map_err_async`      |                               |
 | `SlimFutureExt::slim_map_into`           | [`FutureExt::map_into`]       |
 | `SlimFutureExt::slim_never_error`        | [`FutureExt::never_error`]    |
 | `SlimFutureExt::slim_or_else_async`      | [`TryFutureExt::or_else`]     |
