@@ -39,6 +39,7 @@ mod map_err_async;
 mod map_into;
 mod map_ok;
 mod map_ok_async;
+mod or_else;
 mod or_else_async;
 mod ready;
 mod select;
