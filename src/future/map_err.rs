@@ -71,6 +71,7 @@ mod tests {
             future::ready(Ok::<u32, u32>(2)).slim_map_err(|value| value + 3).await,
             Ok(2)
         );
+
         assert_eq!(
             future::ready(Err::<u32, u32>(2)).slim_map_err(|value| value + 3).await,
             Err(5)

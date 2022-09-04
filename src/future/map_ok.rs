@@ -58,3 +58,41 @@ where
         self.inner.is_terminated()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::future::future_ext::FutureExt;
+    use futures_core::FusedFuture;
+    use futures_util::future;
+
+    #[tokio::test]
+    async fn test_map_ok() {
+        assert_eq!(
+            future::ready(Ok::<u32, u32>(2)).slim_map_ok(|value| value + 3).await,
+            Ok(5)
+        );
+
+        assert_eq!(
+            future::ready(Err::<u32, u32>(2)).slim_map_ok(|value| value + 3).await,
+            Err(2)
+        );
+    }
+
+    #[tokio::test]
+    async fn test_map_ok_clone() {
+        let future = future::ready(Ok::<u32, u32>(2)).slim_map_ok(|value| value + 3);
+        let future_2 = future.clone();
+
+        assert_eq!(future.await, Ok(5));
+        assert_eq!(future_2.await, Ok(5));
+    }
+
+    #[tokio::test]
+    async fn test_map_ok_fused_future() {
+        let mut future = future::ready(Ok::<u32, u32>(2)).slim_map_ok(|value| value + 3);
+
+        assert!(!future.is_terminated());
+        assert_eq!((&mut future).await, Ok(5));
+        assert!(future.is_terminated());
+    }
+}
