@@ -15,10 +15,7 @@ pin_project_lite::pin_project! {
 impl<Fut, F> Map<Fut, F> {
     pub(crate) fn new(fut: Fut, f: F) -> Self {
         Self {
-            inner: PinnedAndNotPinned {
-                pinned: fut,
-                not_pinned: f,
-            },
+            inner: PinnedAndNotPinned::new(fut, f),
         }
     }
 }
