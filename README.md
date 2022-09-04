@@ -6,31 +6,32 @@
 
 Async combinators that focus on small binary sizes.
 
-| slim-futures                             | [`futures`]                      |
-| ---------------------------------------- | -------------------------------- |
-| `SlimFutureExt::slim_and_then`           |                                  |
-| `SlimFutureExt::slim_and_then_async`     | [`TryFutureExt::and_then`]       |
-| `SlimFutureExt::slim_err_into`           | [`TryFutureExt::err_into`]       |
-| `SlimFutureExt::slim_flatten`            | [`FutureExt::flatten`]           |
-| `SlimFutureExt::slim_flatten_async_iter` | [`FutureExt::flatten_stream`]    |
-| `SlimFutureExt::slim_inspect`            | [`FutureExt::inspect`]           |
-| `SlimFutureExt::slim_inspect_err`        | [`TryFutureExt::inspect_err`]    |
-| `SlimFutureExt::slim_inspect_ok`         | [`TryFutureExt::inspect_ok`]     |
-| `SlimFutureExt::slim_into_try_future`    |                                  |
-| `SlimFutureExt::slim_map`                | [`FutureExt::map`]               |
-| `SlimFutureExt::slim_map_async`          | [`FutureExt::then`]              |
-| `SlimFutureExt::slim_map_err`            | [`TryFutureExt::map_err`]        |
-| `SlimFutureExt::slim_map_err_async`      |                                  |
-| `SlimFutureExt::slim_map_into`           | [`FutureExt::map_into`]          |
-| `SlimFutureExt::slim_map_ok`             | [`TryFutureExt::map_ok`]         |
-| `SlimFutureExt::slim_never_error`        | [`FutureExt::never_error`]       |
-| `SlimFutureExt::slim_ok_into`            | [`TryFutureExt::ok_into`]        |
-| `SlimFutureExt::slim_or_else`            |                                  |
-| `SlimFutureExt::slim_or_else_async`      | [`TryFutureExt::or_else`]        |
-| `SlimFutureExt::slim_try_flatten`        | [`TryFutureExt::try_flatten`]    |
-| `SlimFutureExt::slim_try_flatten_err`    |                                  |
-| `SlimFutureExt::slim_unit_error`         | [`FutureExt::unit_error`]        |
-| `SlimFutureExt::slim_unwrap_or_else`     | [`TryFutureExt::unwrap_or_else`] |
+| slim-futures                               | [`futures`]                      |
+| ------------------------------------------ | -------------------------------- |
+| `SlimFutureExt::slim_and_then`             |                                  |
+| `SlimFutureExt::slim_and_then_async`       | [`TryFutureExt::and_then`]       |
+| `SlimFutureExt::slim_err_into`             | [`TryFutureExt::err_into`]       |
+| `SlimFutureExt::slim_flatten`              | [`FutureExt::flatten`]           |
+| `SlimFutureExt::slim_flatten_async_iter`   | [`FutureExt::flatten_stream`]    |
+| `SlimFutureExt::slim_inspect`              | [`FutureExt::inspect`]           |
+| `SlimFutureExt::slim_inspect_err`          | [`TryFutureExt::inspect_err`]    |
+| `SlimFutureExt::slim_inspect_ok`           | [`TryFutureExt::inspect_ok`]     |
+| `SlimFutureExt::slim_into_try_future`      |                                  |
+| `SlimFutureExt::slim_map`                  | [`FutureExt::map`]               |
+| `SlimFutureExt::slim_map_async`            | [`FutureExt::then`]              |
+| `SlimFutureExt::slim_map_err`              | [`TryFutureExt::map_err`]        |
+| `SlimFutureExt::slim_map_err_async`        |                                  |
+| `SlimFutureExt::slim_map_into`             | [`FutureExt::map_into`]          |
+| `SlimFutureExt::slim_map_ok`               | [`TryFutureExt::map_ok`]         |
+| `SlimFutureExt::slim_never_error`          | [`FutureExt::never_error`]       |
+| `SlimFutureExt::slim_ok_into`              | [`TryFutureExt::ok_into`]        |
+| `SlimFutureExt::slim_or_else`              |                                  |
+| `SlimFutureExt::slim_or_else_async`        | [`TryFutureExt::or_else`]        |
+| `SlimFutureExt::slim_try_flatten`          | [`TryFutureExt::try_flatten`]    |
+| `SlimFutureExt::slim_try_flatten_err`      |                                  |
+| `SlimFutureExt::slim_unit_error`           | [`FutureExt::unit_error`]        |
+| `SlimFutureExt::slim_unwrap_or_else`       | [`TryFutureExt::unwrap_or_else`] |
+| `SlimFutureExt::slim_unwrap_or_else_async` |                                  |
 
 [`futures`]: https://docs.rs/futures/latest/futures/
 [`FutureExt::flatten`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.flatten

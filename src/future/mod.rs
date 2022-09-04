@@ -23,6 +23,7 @@ pub use self::select::Select;
 pub use self::try_flatten::TryFlatten;
 pub use self::try_flatten_err::TryFlattenErr;
 pub use self::unwrap_or_else::UnwrapOrElse;
+pub use self::unwrap_or_else_async::UnwrapOrElseAsync;
 
 mod and_then;
 mod and_then_async;
@@ -49,3 +50,4 @@ mod select;
 mod try_flatten;
 mod try_flatten_err;
 mod unwrap_or_else;
+mod unwrap_or_else_async;

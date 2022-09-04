@@ -1,4 +1,5 @@
 pub use self::fn_mut_1::FnMut1;
+pub use self::pinned_and_not_pinned::PinnedAndNotPinned;
 pub use self::try_fn_mut_1::TryFnMut1;
 pub use self::try_future::TryFuture;
 pub use self::two_phases::TwoPhases;
@@ -8,6 +9,7 @@ pub use std::convert::Infallible as Never;
 
 mod fn_mut_1;
 pub mod fns;
+mod pinned_and_not_pinned;
 mod try_fn_mut_1;
 mod try_future;
 mod two_phases;
