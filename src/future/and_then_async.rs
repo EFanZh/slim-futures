@@ -72,6 +72,7 @@ mod tests {
     use futures_core::FusedFuture;
     use futures_util::future::{self, Ready, TryFutureExt};
     use std::mem;
+    use std::num::NonZeroU32;
 
     fn ok_plus_3(value: u32) -> Ready<Result<u32, u32>> {
         future::ok(value + 3)
@@ -109,12 +110,15 @@ mod tests {
 
     #[tokio::test]
     async fn test_and_then_async_is_slim() {
-        let make_base_future = || crate::future::ok::<u32, u32>(2);
+        let make_base_future = || crate::future::ok::<_, u32>(NonZeroU32::new(2).unwrap()).slim_map_ok(drop);
+        let base_future = make_base_future();
         let future_1 = make_base_future().slim_and_then_async(crate::future::ok);
         let future_2 = make_base_future().and_then(crate::future::ok);
 
+        assert_eq!(mem::size_of_val(&base_future), mem::size_of_val(&future_1));
         assert!(mem::size_of_val(&future_1) < mem::size_of_val(&future_2));
-        assert_eq!(future_1.await, Ok(2));
-        assert_eq!(future_2.await, Ok(2));
+        assert_eq!(base_future.await, Ok(()));
+        assert_eq!(future_1.await, Ok(()));
+        assert_eq!(future_2.await, Ok(()));
     }
 }
