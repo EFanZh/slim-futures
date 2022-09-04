@@ -1,33 +1,24 @@
-use crate::support::FnMut1;
+use crate::support::{FnMut1, PinnedAndNotPinned};
 use futures_core::FusedFuture;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
 pin_project_lite::pin_project! {
+    #[derive(Clone)]
     pub struct Map<Fut, F> {
         #[pin]
-        fut: Fut,
-        f: F,
+        inner: PinnedAndNotPinned<Fut, F>
     }
 }
 
 impl<Fut, F> Map<Fut, F> {
     pub(crate) fn new(fut: Fut, f: F) -> Self {
-        Self { fut, f }
-    }
-}
-
-// Manual implement `Clone` to avoid inlining.
-impl<Fut, F> Clone for Map<Fut, F>
-where
-    Fut: Clone,
-    F: Clone,
-{
-    fn clone(&self) -> Self {
         Self {
-            fut: self.fut.clone(),
-            f: self.f.clone(),
+            inner: PinnedAndNotPinned {
+                pinned: fut,
+                not_pinned: f,
+            },
         }
     }
 }
@@ -40,9 +31,9 @@ where
     type Output = F::Output;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
-        let this = self.project();
+        let inner = self.project().inner.project();
 
-        this.fut.poll(cx).map(|value| this.f.call_mut(value))
+        inner.pinned.poll(cx).map(|value| inner.not_pinned.call_mut(value))
     }
 }
 
@@ -52,7 +43,7 @@ where
     F: FnMut1<Fut::Output>,
 {
     fn is_terminated(&self) -> bool {
-        self.fut.is_terminated()
+        self.inner.pinned.is_terminated()
     }
 }
 
