@@ -47,19 +47,22 @@ where
 #[cfg(test)]
 mod tests {
     use crate::future::future_ext::FutureExt;
-    use crate::test_utilities;
     use futures_core::FusedFuture;
     use futures_util::{future, FutureExt as _};
     use std::mem;
 
+    fn plus_3(value: u32) -> u32 {
+        value + 3
+    }
+
     #[tokio::test]
     async fn test_map() {
-        assert_eq!(future::ready(2).slim_map(|value| value + 3).await, 5);
+        assert_eq!(future::ready(2).slim_map(plus_3).await, 5);
     }
 
     #[tokio::test]
     async fn test_map_clone() {
-        let future = future::ready(2).slim_map(|value| value + 3);
+        let future = future::ready(2).slim_map(plus_3);
         let future_2 = future.clone();
 
         assert_eq!(future.await, 5);
@@ -68,19 +71,24 @@ mod tests {
 
     #[tokio::test]
     async fn test_map_fused_future() {
-        let mut future = future::ready(2).slim_map(|value| value + 3);
+        let mut future = future::ready(2).slim_map(plus_3);
 
         assert!(!future.is_terminated());
         assert_eq!((&mut future).await, 5);
         assert!(future.is_terminated());
     }
 
-    #[test]
-    fn test_map_is_slim() {
-        let make_future = || test_utilities::full_bytes_future(2);
-        let future = make_future().slim_map(drop);
-        let other = make_future().map(drop);
+    #[tokio::test]
+    async fn test_map_is_slim() {
+        let make_base_future = || crate::future::ready(2);
+        let base_future = make_base_future();
+        let future_1 = make_base_future().slim_map(plus_3);
+        let future_2 = make_base_future().map(plus_3);
 
-        assert!(mem::size_of_val(&future) < mem::size_of_val(&other));
+        assert_eq!(mem::size_of_val(&base_future), mem::size_of_val(&future_1));
+        assert!(mem::size_of_val(&future_1) < mem::size_of_val(&future_2));
+        assert_eq!(base_future.await, 2);
+        assert_eq!(future_1.await, 5);
+        assert_eq!(future_2.await, 5);
     }
 }
