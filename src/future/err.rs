@@ -52,9 +52,31 @@ where
 #[cfg(test)]
 mod tests {
     use crate::future;
+    use std::mem;
 
     #[tokio::test]
     async fn test_err() {
         assert_eq!(future::err::<u32, u32>(7).await, Err(7));
+    }
+
+    #[tokio::test]
+    async fn test_err_clone() {
+        let future = future::err::<u32, u32>(7);
+        let future_2 = future.clone();
+
+        assert_eq!(future.await, Err(7));
+        assert_eq!(future_2.await, Err(7));
+    }
+
+    #[tokio::test]
+    async fn test_err_is_slim() {
+        let value: u32 = 2;
+        let future_1 = future::err::<u32, _>(value);
+        let future_2 = futures_util::future::err::<u32, _>(value);
+
+        assert_eq!(mem::size_of_val(&value), mem::size_of_val(&future_1));
+        assert!(mem::size_of_val(&future_1) < mem::size_of_val(&future_2));
+        assert_eq!(future_1.await, Err(value));
+        assert_eq!(future_2.await, Err(value));
     }
 }
