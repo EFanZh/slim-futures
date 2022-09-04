@@ -80,21 +80,21 @@ mod tests {
             future::ready(Ok::<_, u32>(future::ready(Ok::<u32, _>(2))))
                 .slim_try_flatten()
                 .await,
-            Ok(2)
+            Ok(2),
         );
 
         assert_eq!(
             future::ready(Ok::<_, u32>(future::ready(Err::<u32, _>(2))))
                 .slim_try_flatten()
                 .await,
-            Err(2)
+            Err(2),
         );
 
         assert_eq!(
             future::ready(Err::<Ready<Result<u32, _>>, u32>(2))
                 .slim_try_flatten()
                 .await,
-            Err(2)
+            Err(2),
         );
     }
 

@@ -28,6 +28,7 @@ Async combinators that focus on small binary sizes.
 | `SlimFutureExt::slim_or_else`            |                               |
 | `SlimFutureExt::slim_or_else_async`      | [`TryFutureExt::or_else`]     |
 | `SlimFutureExt::slim_try_flatten`        | [`TryFutureExt::try_flatten`] |
+| `SlimFutureExt::slim_try_flatten_err`    |                               |
 | `SlimFutureExt::slim_unit_error`         | [`FutureExt::unit_error`]     |
 
 [`futures`]: https://docs.rs/futures/latest/futures/
