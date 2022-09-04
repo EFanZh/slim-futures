@@ -19,6 +19,7 @@ use crate::future::or_else_async::OrElseAsync;
 use crate::future::select::Select;
 use crate::future::try_flatten::TryFlatten;
 use crate::future::try_flatten_err::TryFlattenErr;
+use crate::future::unwrap_or_else::UnwrapOrElse;
 use crate::support::{self, AsyncIterator, Never, TryFuture};
 use std::future::Future;
 
@@ -215,6 +216,14 @@ pub trait FutureExt: Future {
         Self: Sized,
     {
         support::assert_future::<_, Result<Self::Output, ()>>(self.slim_into_try_future())
+    }
+
+    fn slim_unwrap_or_else<F, T, E>(self, f: F) -> UnwrapOrElse<Self, F>
+    where
+        Self: Future<Output = Result<T, E>> + Sized,
+        F: FnMut(E) -> T,
+    {
+        support::assert_future::<_, T>(UnwrapOrElse::new(self, f))
     }
 }
 
