@@ -67,3 +67,52 @@ where
         self.inner.is_future_terminated()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::future::future_ext::FutureExt;
+    use futures_core::FusedFuture;
+    use futures_util::future::{self, Ready};
+
+    #[tokio::test]
+    async fn test_try_flatten() {
+        assert_eq!(
+            future::ready(Ok::<_, u32>(future::ready(Ok::<u32, _>(2))))
+                .slim_try_flatten()
+                .await,
+            Ok(2)
+        );
+
+        assert_eq!(
+            future::ready(Ok::<_, u32>(future::ready(Err::<u32, _>(2))))
+                .slim_try_flatten()
+                .await,
+            Err(2)
+        );
+
+        assert_eq!(
+            future::ready(Err::<Ready<Result<u32, _>>, u32>(2))
+                .slim_try_flatten()
+                .await,
+            Err(2)
+        );
+    }
+
+    #[tokio::test]
+    async fn test_try_flatten_clone() {
+        let future = future::ready(Ok::<_, u32>(future::ready(Ok::<u32, _>(2)))).slim_try_flatten();
+        let future_2 = future.clone();
+
+        assert_eq!(future.await, Ok(2));
+        assert_eq!(future_2.await, Ok(2));
+    }
+
+    #[tokio::test]
+    async fn test_try_flatten_fused_future() {
+        let mut future = future::ready(Ok::<_, u32>(future::ready(Ok::<u32, _>(2)))).slim_try_flatten();
+
+        assert!(!future.is_terminated());
+        assert_eq!((&mut future).await, Ok(2));
+        assert!(future.is_terminated());
+    }
+}
