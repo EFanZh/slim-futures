@@ -79,8 +79,8 @@ mod tests {
                 .unwrap();
         };
 
-        let future_1 = future::ready(Ok::<usize, usize>(2)).slim_inspect_err(f);
-        let future_2 = future::ready(Err::<usize, usize>(3)).slim_inspect_err(f);
+        let future_1 = future::ok::<usize, usize>(2).slim_inspect_err(f);
+        let future_2 = future::err::<usize, usize>(3).slim_inspect_err(f);
 
         assert_eq!(state.load(Ordering::Relaxed), 1);
         assert_eq!(future_1.await, Ok(2));
@@ -93,7 +93,7 @@ mod tests {
     async fn test_inspect_err_clone() {
         let state = AtomicUsize::new(2);
 
-        let future = future::ready(Err::<usize, usize>(3)).slim_inspect_err(|&value| {
+        let future = future::err::<usize, usize>(3).slim_inspect_err(|&value| {
             state.fetch_add(value, Ordering::Relaxed);
         });
 

@@ -77,14 +77,14 @@ mod tests {
     #[tokio::test]
     async fn test_try_flatten() {
         assert_eq!(
-            future::ready(Ok::<_, u32>(future::ready(Ok::<u32, _>(2))))
+            future::ready(Ok::<_, u32>(future::ok::<u32, _>(2)))
                 .slim_try_flatten()
                 .await,
             Ok(2),
         );
 
         assert_eq!(
-            future::ready(Ok::<_, u32>(future::ready(Err::<u32, _>(2))))
+            future::ready(Ok::<_, u32>(future::err::<u32, _>(2)))
                 .slim_try_flatten()
                 .await,
             Err(2),
@@ -100,7 +100,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_try_flatten_clone() {
-        let future = future::ready(Ok::<_, u32>(future::ready(Ok::<u32, _>(2)))).slim_try_flatten();
+        let future = future::ready(Ok::<_, u32>(future::ok::<u32, _>(2))).slim_try_flatten();
         let future_2 = future.clone();
 
         assert_eq!(future.await, Ok(2));
@@ -109,7 +109,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_try_flatten_fused_future() {
-        let mut future = future::ready(Ok::<_, u32>(future::ready(Ok::<u32, _>(2)))).slim_try_flatten();
+        let mut future = future::ready(Ok::<_, u32>(future::ok::<u32, _>(2))).slim_try_flatten();
 
         assert!(!future.is_terminated());
         assert_eq!((&mut future).await, Ok(2));

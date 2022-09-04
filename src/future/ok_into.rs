@@ -68,20 +68,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_ok_into() {
-        assert_eq!(
-            future::ready(Ok::<u32, u32>(7)).slim_ok_into::<Option<_>>().await,
-            Ok(Some(7)),
-        );
+        assert_eq!(future::ok::<u32, u32>(7).slim_ok_into::<Option<_>>().await, Ok(Some(7)),);
 
-        assert_eq!(
-            future::ready(Err::<u32, u32>(7)).slim_ok_into::<Option<_>>().await,
-            Err(7),
-        );
+        assert_eq!(future::err::<u32, u32>(7).slim_ok_into::<Option<_>>().await, Err(7),);
     }
 
     #[tokio::test]
     async fn test_ok_into_clone() {
-        let future = future::ready(Ok::<u32, u32>(7)).slim_ok_into::<Option<_>>();
+        let future = future::ok::<u32, u32>(7).slim_ok_into::<Option<_>>();
         let future_2 = future.clone();
 
         assert_eq!(future.await, Ok(Some(7)));
@@ -90,7 +84,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_ok_into_fused_future() {
-        let mut future = future::ready(Ok::<u32, u32>(7)).slim_ok_into::<Option<_>>();
+        let mut future = future::ok::<u32, u32>(7).slim_ok_into::<Option<_>>();
 
         assert!(!future.is_terminated());
         assert_eq!((&mut future).await, Ok(Some(7)));

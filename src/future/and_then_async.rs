@@ -83,10 +83,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_and_then_async() {
-        assert_eq!(future::ready(Ok(2)).slim_and_then_async(ok_plus_3).await, Ok(5));
-        assert_eq!(future::ready(Ok(2)).slim_and_then_async(err_plus_3).await, Err(5));
-        assert_eq!(future::ready(Err(2)).slim_and_then_async(ok_plus_3).await, Err(2));
-        assert_eq!(future::ready(Err(2)).slim_and_then_async(err_plus_3).await, Err(2));
+        assert_eq!(future::ok(2).slim_and_then_async(ok_plus_3).await, Ok(5));
+        assert_eq!(future::ok(2).slim_and_then_async(err_plus_3).await, Err(5));
+        assert_eq!(future::err(2).slim_and_then_async(ok_plus_3).await, Err(2));
+        assert_eq!(future::err(2).slim_and_then_async(err_plus_3).await, Err(2));
     }
 
     #[tokio::test]

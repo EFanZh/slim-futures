@@ -68,23 +68,19 @@ mod tests {
     #[tokio::test]
     async fn test_unwrap_or_else() {
         assert_eq!(
-            future::ready(Ok::<u32, u32>(2))
-                .slim_unwrap_or_else(|value| value + 3)
-                .await,
+            future::ok::<u32, u32>(2).slim_unwrap_or_else(|value| value + 3).await,
             2,
         );
 
         assert_eq!(
-            future::ready(Err::<u32, u32>(2))
-                .slim_unwrap_or_else(|value| value + 3)
-                .await,
+            future::err::<u32, u32>(2).slim_unwrap_or_else(|value| value + 3).await,
             5,
         );
     }
 
     #[tokio::test]
     async fn test_unwrap_or_else_clone() {
-        let future = future::ready(Err::<u32, u32>(2)).slim_unwrap_or_else(|value| value + 3);
+        let future = future::err::<u32, u32>(2).slim_unwrap_or_else(|value| value + 3);
         let future_2 = future.clone();
 
         assert_eq!(future.await, 5);
@@ -93,7 +89,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_unwrap_or_else_fused_future() {
-        let mut future = future::ready(Err::<u32, u32>(2)).slim_unwrap_or_else(|value| value + 3);
+        let mut future = future::err::<u32, u32>(2).slim_unwrap_or_else(|value| value + 3);
 
         assert!(!future.is_terminated());
         assert_eq!((&mut future).await, 5);

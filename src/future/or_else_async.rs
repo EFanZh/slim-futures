@@ -75,28 +75,28 @@ mod tests {
     #[tokio::test]
     async fn test_or_else_async() {
         assert_eq!(
-            future::ready(Ok::<u32, u32>(2))
+            future::ok::<u32, u32>(2)
                 .slim_or_else_async(|value| future::ready(Ok::<u32, u32>(value + 3)))
                 .await,
             Ok(2)
         );
 
         assert_eq!(
-            future::ready(Ok::<u32, u32>(2))
+            future::ok::<u32, u32>(2)
                 .slim_or_else_async(|value| future::ready(Err(value + 3)))
                 .await,
             Ok(2)
         );
 
         assert_eq!(
-            future::ready(Err::<u32, u32>(2))
+            future::err::<u32, u32>(2)
                 .slim_or_else_async(|value| future::ready(Ok::<u32, u32>(value + 3)))
                 .await,
             Ok(5)
         );
 
         assert_eq!(
-            future::ready(Err::<u32, u32>(2))
+            future::err::<u32, u32>(2)
                 .slim_or_else_async(|value| future::ready(Err(value + 3)))
                 .await,
             Err(5)
@@ -105,7 +105,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_or_else_async_clone() {
-        let future = future::ready(Err::<u32, u32>(2)).slim_or_else_async(|value| future::ready(Err(value + 3)));
+        let future = future::err::<u32, u32>(2).slim_or_else_async(|value| future::ready(Err(value + 3)));
         let future_2 = future.clone();
 
         assert_eq!(future.await, Err(5));
@@ -114,7 +114,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_or_else_async_fused_future() {
-        let mut future = future::ready(Err::<u32, u32>(2)).slim_or_else_async(|value| future::ready(Err(value + 3)));
+        let mut future = future::err::<u32, u32>(2).slim_or_else_async(|value| future::ready(Err(value + 3)));
 
         assert!(!future.is_terminated());
         assert_eq!((&mut future).await, Err(5));
