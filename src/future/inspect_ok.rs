@@ -54,7 +54,7 @@ where
 impl<Fut, F, T, E> FusedFuture for InspectOk<Fut, F>
 where
     Fut: FusedFuture<Output = Result<T, E>>,
-    F: FnMut(&T),
+    F: for<'a> FnMut1<&'a T, Output = ()>,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()
