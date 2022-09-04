@@ -108,7 +108,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_inspect_err_fused_future() {
-        let mut future = future::ready(Err::<(), ()>(())).slim_inspect_err(|_| {});
+        let mut future = future::err::<(), ()>(()).slim_inspect_err(|_| {});
 
         assert!(!future.is_terminated());
         assert_eq!((&mut future).await, Err(()));

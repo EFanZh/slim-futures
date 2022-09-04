@@ -76,11 +76,11 @@ mod tests {
     use std::num::NonZeroU32;
 
     fn ok_plus_3(value: u32) -> Ready<Result<u32, u32>> {
-        future::ready(Ok(value + 3))
+        future::ok(value + 3)
     }
 
     fn err_plus_3(value: u32) -> Ready<Result<u32, u32>> {
-        future::ready(Err(value + 3))
+        future::err(value + 3)
     }
 
     #[tokio::test]

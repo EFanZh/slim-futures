@@ -92,7 +92,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_and_then_async_clone() {
-        let future = future::ready(Ok(2)).slim_and_then_async(ok_plus_3);
+        let future = future::ok(2).slim_and_then_async(ok_plus_3);
         let future_2 = future.clone();
 
         assert_eq!(future.await, Ok(5));
@@ -101,7 +101,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_and_then_async_fused_future() {
-        let mut future = future::ready(Ok(2)).slim_and_then_async(ok_plus_3);
+        let mut future = future::ok(2).slim_and_then_async(ok_plus_3);
 
         assert!(!future.is_terminated());
         assert_eq!((&mut future).await, Ok(5));
