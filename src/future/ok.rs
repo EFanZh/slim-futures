@@ -6,7 +6,6 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 pin_project_lite::pin_project! {
-    #[derive(Clone)]
     pub struct OkFuture<T, E>
     where
         T: Copy,
@@ -26,6 +25,17 @@ where
     {
         Self {
             inner: IntoTryFuture::new(Ready::new(value)),
+        }
+    }
+}
+
+impl<T, E> Clone for OkFuture<T, E>
+where
+    T: Clone + Copy,
+{
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
         }
     }
 }

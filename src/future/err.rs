@@ -6,7 +6,6 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 pin_project_lite::pin_project! {
-    #[derive(Clone)]
     pub struct ErrFuture<T, E> {
         #[pin]
         inner: Map<Ready<E>, ErrFn<T, E>>
@@ -17,6 +16,17 @@ impl<T, E> ErrFuture<T, E> {
     fn new(error: E) -> Self {
         Self {
             inner: Map::new(Ready::new(error), ErrFn::default()),
+        }
+    }
+}
+
+impl<T, E> Clone for ErrFuture<T, E>
+where
+    E: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
         }
     }
 }

@@ -7,7 +7,6 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 pin_project_lite::pin_project! {
-    #[derive(Clone)]
     pub struct ErrInto<Fut, U>
     where
         Fut: TryFuture,
@@ -24,6 +23,17 @@ where
     pub(crate) fn new(fut: Fut) -> Self {
         Self {
             inner: MapErr::new(fut, IntoFn::default()),
+        }
+    }
+}
+
+impl<Fut, U> Clone for ErrInto<Fut, U>
+where
+    Fut: TryFuture + Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
         }
     }
 }
