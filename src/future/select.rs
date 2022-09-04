@@ -1,3 +1,4 @@
+use crate::support;
 use futures_core::FusedFuture;
 use std::future::Future;
 use std::pin::Pin;
@@ -43,4 +44,12 @@ where
     fn is_terminated(&self) -> bool {
         self.fut_1.is_terminated() || self.fut_2.is_terminated()
     }
+}
+
+pub fn select<Fut1, Fut2>(fut_1: Fut1, fut_2: Fut2) -> Select<Fut1, Fut2>
+where
+    Fut1: Future,
+    Fut2: Future<Output = Fut1::Output>,
+{
+    support::assert_future::<_, Fut1::Output>(Select::new(fut_1, fut_2))
 }

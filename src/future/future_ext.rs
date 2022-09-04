@@ -16,7 +16,6 @@ use crate::future::map_ok_async::MapOkAsync;
 use crate::future::ok_into::OkInto;
 use crate::future::or_else::OrElse;
 use crate::future::or_else_async::OrElseAsync;
-use crate::future::select::Select;
 use crate::future::try_flatten::TryFlatten;
 use crate::future::try_flatten_err::TryFlattenErr;
 use crate::future::unwrap_or_else::UnwrapOrElse;
@@ -186,14 +185,6 @@ pub trait FutureExt: Future {
         Fut2: Future<Output = Result<T, U>>,
     {
         support::assert_future::<_, Result<T, U>>(OrElseAsync::new(self, f))
-    }
-
-    fn slim_select<Fut>(self, fut: Fut) -> Select<Self, Fut>
-    where
-        Self: Sized,
-        Fut: Future<Output = Self::Output>,
-    {
-        support::assert_future::<_, Self::Output>(Select::new(self, fut))
     }
 
     fn slim_try_flatten<Fut2, E, T>(self) -> TryFlatten<Self>

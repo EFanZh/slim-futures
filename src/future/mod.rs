@@ -19,7 +19,7 @@ pub use self::map_ok_async::MapOkAsync;
 pub use self::ok_into::OkInto;
 pub use self::or_else_async::OrElseAsync;
 pub use self::ready::{ready, Ready};
-pub use self::select::Select;
+pub use self::select::{select, Select};
 pub use self::try_flatten::TryFlatten;
 pub use self::try_flatten_err::TryFlattenErr;
 pub use self::unwrap_or_else::UnwrapOrElse;
