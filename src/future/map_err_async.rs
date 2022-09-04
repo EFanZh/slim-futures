@@ -110,27 +110,22 @@ mod tests {
     use crate::future::future_ext::FutureExt;
     use futures_core::FusedFuture;
     use futures_util::future;
+    use std::mem;
+    use std::num::NonZeroU32;
+
+    fn plus_3(value: u32) -> impl FusedFuture<Output = u32> + Clone {
+        future::ready(value + 3)
+    }
 
     #[tokio::test]
     async fn test_map_err_async() {
-        assert_eq!(
-            future::ok::<u32, u32>(2)
-                .slim_map_err_async(|value| future::ready(value + 3))
-                .await,
-            Ok(2)
-        );
-
-        assert_eq!(
-            future::err::<u32, u32>(2)
-                .slim_map_err_async(|value| future::ready(value + 3))
-                .await,
-            Err(5)
-        );
+        assert_eq!(future::ok::<u32, _>(2).slim_map_err_async(plus_3).await, Ok(2));
+        assert_eq!(future::err::<u32, _>(2).slim_map_err_async(plus_3).await, Err(5));
     }
 
     #[tokio::test]
     async fn test_map_err_async_clone() {
-        let future = future::err::<u32, u32>(2).slim_map_err_async(|value| future::ready(value + 3));
+        let future = future::err::<u32, _>(2).slim_map_err_async(plus_3);
         let future_2 = future.clone();
 
         assert_eq!(future.await, Err(5));
@@ -139,10 +134,21 @@ mod tests {
 
     #[tokio::test]
     async fn test_map_err_async_fused_future() {
-        let mut future = future::err::<u32, u32>(2).slim_map_err_async(|value| future::ready(value + 3));
+        let mut future = future::err::<u32, _>(2).slim_map_err_async(plus_3);
 
         assert!(!future.is_terminated());
         assert_eq!((&mut future).await, Err(5));
         assert!(future.is_terminated());
+    }
+
+    #[tokio::test]
+    async fn test_map_err_async_is_slim() {
+        let make_base_future = || crate::future::err::<u32, _>(NonZeroU32::new(2).unwrap());
+        let base_future = make_base_future();
+        let future = make_base_future().slim_map_err_async(|_| crate::future::ready(()));
+
+        assert_eq!(mem::size_of_val(&base_future), mem::size_of_val(&future));
+        assert_eq!(base_future.await.map_err(NonZeroU32::get), Err(2));
+        assert_eq!(future.await, Err(()));
     }
 }
