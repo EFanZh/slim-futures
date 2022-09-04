@@ -113,7 +113,7 @@ mod tests {
 
     #[test]
     fn test_inspect_is_slim() {
-        let make_future = test_utilities::full_bytes_future;
+        let make_future = || test_utilities::full_bytes_future(2);
         let future = make_future().slim_inspect(|_| {});
         let other = make_future().map(|_| {});
 

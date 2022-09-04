@@ -1,6 +1,7 @@
+use crate::future::SlimFutureExt;
 use futures_core::FusedFuture;
 use std::future::Future;
-use std::num::NonZeroUsize;
+use std::num::NonZeroU32;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
@@ -43,10 +44,10 @@ impl FusedFuture for Defer {
     }
 }
 
-pub fn full_bytes_future() -> impl Future {
-    crate::future::ready(0_usize)
+pub fn full_bytes_future(value: u32) -> impl Future<Output = u32> {
+    crate::future::ready(value)
 }
 
-pub fn almost_full_bytes_future() -> impl Future {
-    crate::future::ready(NonZeroUsize::new(1).unwrap())
+pub fn almost_full_bytes_future(value: u32) -> impl Future<Output = u32> {
+    crate::future::ready(NonZeroU32::new(value).unwrap()).slim_map(NonZeroU32::get)
 }

@@ -77,7 +77,7 @@ mod tests {
 
     #[test]
     fn test_map_is_slim() {
-        let make_future = test_utilities::full_bytes_future;
+        let make_future = || test_utilities::full_bytes_future(2);
         let future = make_future().slim_map(drop);
         let other = make_future().map(drop);
 

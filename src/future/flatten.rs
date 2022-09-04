@@ -100,76 +100,70 @@ where
 #[cfg(test)]
 mod tests {
     use crate::future::future_ext::FutureExt;
+    use crate::support::FusedAsyncIterator;
     use crate::test_utilities::{self, Defer};
     use futures_core::FusedFuture;
     use futures_util::{future, stream, FutureExt as _, StreamExt};
     use std::mem;
-    use std::task::Poll;
 
-    #[tokio::test]
-    async fn test_flatten() {
-        let original = future::ready(future::ready(7));
-        let wrapped = original.clone().slim_flatten();
+    fn make_flatten_future() -> impl FusedFuture<Output = u32> + Clone {
+        Defer::new(1).slim_map(|()| future::ready(2)).slim_flatten()
+    }
 
-        assert_eq!(original.await.await, 7);
-        assert_eq!(wrapped.await, 7);
+    fn make_flatten_async_iter() -> impl FusedAsyncIterator<Item = u32> {
+        future::ready(stream::once(future::ready(2))).slim_flatten_async_iter()
     }
 
     #[tokio::test]
-    async fn test_flatten_future_first_pending() {
-        let original = Defer::new(1).slim_map(|()| future::ready(7));
-        let wrapped = original.clone().slim_flatten();
-
-        assert_eq!(original.await.await, 7);
-        assert_eq!(wrapped.await, 7);
+    async fn test_flatten() {
+        assert_eq!(make_flatten_future().await, 2);
     }
 
     #[tokio::test]
     async fn test_flatten_clone() {
-        let mut wrapped = future::ready(Defer::new(1)).slim_flatten();
+        let future = make_flatten_future();
+        let future_2 = future.clone();
 
-        assert_eq!(futures_util::poll!(wrapped.clone()), Poll::Pending);
-
-        assert!(futures_util::poll!(&mut wrapped).is_pending());
-
-        assert_eq!(futures_util::poll!(wrapped.clone()), Poll::Ready(()));
+        assert_eq!(future.await, 2);
+        assert_eq!(future_2.await, 2);
     }
 
     #[tokio::test]
     async fn test_flatten_fused_future() {
-        let mut wrapped = future::ready(Defer::new(1)).slim_flatten();
+        let mut future = make_flatten_future();
 
-        assert!(!wrapped.is_terminated());
-
-        assert!(futures_util::poll!(&mut wrapped).is_pending());
-
-        assert!(!wrapped.is_terminated());
-
-        assert_eq!(futures_util::poll!(&mut wrapped), Poll::Ready(()));
-
-        assert!(wrapped.is_terminated());
+        assert!(!future.is_terminated());
+        assert_eq!((&mut future).await, 2);
+        assert!(future.is_terminated());
     }
 
     #[tokio::test]
     async fn test_flatten_async_iter() {
-        let original = future::ready(stream::iter(Some(7)));
-        let mut wrapped = original.clone().slim_flatten_async_iter();
+        let mut iter = make_flatten_async_iter();
 
-        let mut original_async_iter = original.await;
-
-        assert_eq!(original_async_iter.next().await, Some(7));
-        assert_eq!(original_async_iter.next().await, None);
-
-        assert_eq!(wrapped.next().await, Some(7));
-        assert_eq!(wrapped.next().await, None);
+        assert_eq!(iter.next().await, Some(2));
+        assert_eq!(iter.next().await, None);
     }
 
-    #[test]
-    fn test_flatten_is_slim() {
-        let make_future = || crate::future::lazy(|_| test_utilities::almost_full_bytes_future());
-        let future = make_future().slim_flatten();
-        let other = make_future().flatten();
+    #[tokio::test]
+    async fn test_flatten_fused_async_iter() {
+        let mut iter = make_flatten_async_iter();
 
-        assert!(mem::size_of_val(&future) < mem::size_of_val(&other));
+        assert!(!iter.is_terminated());
+        assert_eq!(iter.next().await, Some(2));
+        assert!(iter.is_terminated());
+        assert_eq!(iter.next().await, None);
+        assert!(iter.is_terminated());
+    }
+
+    #[tokio::test]
+    async fn test_flatten_is_slim() {
+        let make_future = || crate::future::lazy(|_| test_utilities::almost_full_bytes_future(2));
+        let future = make_future().slim_flatten();
+        let future_2 = make_future().flatten();
+
+        assert!(mem::size_of_val(&future) < mem::size_of_val(&future_2));
+        assert_eq!(future.await, 2);
+        assert_eq!(future_2.await, 2);
     }
 }

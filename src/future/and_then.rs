@@ -65,40 +65,27 @@ mod tests {
     use futures_core::FusedFuture;
     use futures_util::future;
 
+    #[allow(clippy::unnecessary_wraps)]
+    fn ok_plus_3(value: u32) -> Result<u32, u32> {
+        Ok(value + 3)
+    }
+
+    #[allow(clippy::unnecessary_wraps)]
+    fn err_plus_3(value: u32) -> Result<u32, u32> {
+        Err(value + 3)
+    }
+
     #[tokio::test]
     async fn test_and_then() {
-        assert_eq!(
-            future::ready(Ok::<u32, u32>(2))
-                .slim_and_then(|value| Ok(value + 3))
-                .await,
-            Ok(5)
-        );
-
-        assert_eq!(
-            future::ready(Ok::<u32, u32>(2))
-                .slim_and_then(|value| Err::<u32, u32>(value + 3))
-                .await,
-            Err(5)
-        );
-
-        assert_eq!(
-            future::ready(Err::<u32, u32>(2))
-                .slim_and_then(|value| Ok(value + 3))
-                .await,
-            Err(2)
-        );
-
-        assert_eq!(
-            future::ready(Err::<u32, u32>(2))
-                .slim_and_then(|value| Err::<u32, u32>(value + 3))
-                .await,
-            Err(2)
-        );
+        assert_eq!(future::ready(Ok(2)).slim_and_then(ok_plus_3).await, Ok(5));
+        assert_eq!(future::ready(Ok(2)).slim_and_then(err_plus_3).await, Err(5));
+        assert_eq!(future::ready(Err(2)).slim_and_then(ok_plus_3).await, Err(2));
+        assert_eq!(future::ready(Err(2)).slim_and_then(err_plus_3).await, Err(2));
     }
 
     #[tokio::test]
     async fn test_and_then_clone() {
-        let future = future::ready(Ok::<u32, u32>(2)).slim_and_then(|value| Ok(value + 3));
+        let future = future::ready(Ok(2)).slim_and_then(ok_plus_3);
         let future_2 = future.clone();
 
         assert_eq!(future.await, Ok(5));
@@ -107,7 +94,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_and_then_fused_future() {
-        let mut future = future::ready(Ok::<u32, u32>(2)).slim_and_then(|value| Ok(value + 3));
+        let mut future = future::ready(Ok(2)).slim_and_then(ok_plus_3);
 
         assert!(!future.is_terminated());
         assert_eq!((&mut future).await, Ok(5));

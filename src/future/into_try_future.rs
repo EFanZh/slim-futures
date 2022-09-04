@@ -111,7 +111,7 @@ mod tests {
 
     #[test]
     fn test_into_try_future_is_slim() {
-        let make_future = test_utilities::full_bytes_future;
+        let make_future = || test_utilities::full_bytes_future(2);
         let future = make_future().slim_unit_error();
         let other = make_future().unit_error();
 
