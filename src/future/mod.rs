@@ -21,7 +21,7 @@ pub use self::ok::{ok, Ok};
 pub use self::ok_into::OkInto;
 pub use self::or_else_async::OrElseAsync;
 pub use self::ready::{ready, Ready};
-pub use self::simple_select::{select, Select};
+pub use self::simple_select::{simple_select, SimpleSelect};
 pub use self::try_flatten::TryFlatten;
 pub use self::try_flatten_err::TryFlattenErr;
 pub use self::unwrap_or_else::UnwrapOrElse;

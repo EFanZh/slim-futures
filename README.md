@@ -37,6 +37,7 @@ Async combinators that focus on small binary sizes.
 | `future::lazy`                                     | [`future::lazy`]                         |
 | `future::ok`                                       | [`future::ok`]                           |
 | `future::ready`                                    | [`future::ready`]                        |
+| `future::simple_select`                            |                                          |
 
 [`futures`]: https://docs.rs/futures/latest/futures/
 [`future::FutureExt::flatten`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.flatten
