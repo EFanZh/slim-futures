@@ -54,7 +54,8 @@ where
 mod tests {
     use crate::future::future_ext::FutureExt;
     use futures_core::FusedFuture;
-    use futures_util::future;
+    use futures_util::{future, TryFutureExt};
+    use std::mem;
 
     #[tokio::test]
     async fn test_err_into() {
@@ -85,5 +86,19 @@ mod tests {
         assert!(!future.is_terminated());
         assert_eq!((&mut future).await, Err(Some(7)));
         assert!(future.is_terminated());
+    }
+
+    #[tokio::test]
+    async fn test_err_into_is_slim() {
+        let make_base_future = || crate::future::err::<u32, u32>(2);
+        let base_future = make_base_future();
+        let future_1 = make_base_future().slim_err_into::<Option<_>>();
+        let future_2 = make_base_future().err_into::<Option<_>>();
+
+        assert_eq!(mem::size_of_val(&base_future), mem::size_of_val(&future_1));
+        assert!(mem::size_of_val(&future_1) < mem::size_of_val(&future_2));
+        assert_eq!(base_future.await, Err(2));
+        assert_eq!(future_1.await, Err(Some(2)));
+        assert_eq!(future_2.await, Err(Some(2)));
     }
 }
