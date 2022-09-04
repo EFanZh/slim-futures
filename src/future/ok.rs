@@ -6,7 +6,7 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 pin_project_lite::pin_project! {
-    pub struct OkFuture<T, E>
+    pub struct Ok<T, E>
     where
         T: Copy,
     {
@@ -15,7 +15,7 @@ pin_project_lite::pin_project! {
     }
 }
 
-impl<T, E> OkFuture<T, E>
+impl<T, E> Ok<T, E>
 where
     T: Copy,
 {
@@ -29,7 +29,7 @@ where
     }
 }
 
-impl<T, E> Clone for OkFuture<T, E>
+impl<T, E> Clone for Ok<T, E>
 where
     T: Clone + Copy,
 {
@@ -40,7 +40,7 @@ where
     }
 }
 
-impl<T, E> Future for OkFuture<T, E>
+impl<T, E> Future for Ok<T, E>
 where
     T: Copy,
 {
@@ -51,11 +51,11 @@ where
     }
 }
 
-pub fn ok<T, E>(value: T) -> OkFuture<T, E>
+pub fn ok<T, E>(value: T) -> Ok<T, E>
 where
     T: Copy,
 {
-    support::assert_future::<_, Result<T, E>>(OkFuture::new(value))
+    support::assert_future::<_, Result<T, E>>(Ok::new(value))
 }
 
 #[cfg(test)]

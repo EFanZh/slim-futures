@@ -6,13 +6,13 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 pin_project_lite::pin_project! {
-    pub struct ErrFuture<T, E> {
+    pub struct Err<T, E> {
         #[pin]
         inner: Map<Ready<E>, ErrFn<T, E>>
     }
 }
 
-impl<T, E> ErrFuture<T, E> {
+impl<T, E> Err<T, E> {
     fn new(error: E) -> Self {
         Self {
             inner: Map::new(Ready::new(error), ErrFn::default()),
@@ -20,7 +20,7 @@ impl<T, E> ErrFuture<T, E> {
     }
 }
 
-impl<T, E> Clone for ErrFuture<T, E>
+impl<T, E> Clone for Err<T, E>
 where
     E: Clone,
 {
@@ -31,7 +31,7 @@ where
     }
 }
 
-impl<T, E> Future for ErrFuture<T, E>
+impl<T, E> Future for Err<T, E>
 where
     E: Copy,
 {
@@ -42,11 +42,11 @@ where
     }
 }
 
-pub fn err<T, E>(error: E) -> ErrFuture<T, E>
+pub fn err<T, E>(error: E) -> Err<T, E>
 where
     E: Copy,
 {
-    support::assert_future::<_, Result<T, E>>(ErrFuture::new(error))
+    support::assert_future::<_, Result<T, E>>(Err::new(error))
 }
 
 #[cfg(test)]

@@ -2,7 +2,7 @@
 
 pub use self::and_then::AndThen;
 pub use self::and_then_async::AndThenAsync;
-pub use self::err::{err, ErrFuture};
+pub use self::err::{err, Err};
 pub use self::err_into::ErrInto;
 pub use self::flatten::Flatten;
 pub use self::future_ext::FutureExt as SlimFutureExt;
@@ -17,7 +17,7 @@ pub use self::map_err::MapErr;
 pub use self::map_into::MapInto;
 pub use self::map_ok::MapOk;
 pub use self::map_ok_async::MapOkAsync;
-pub use self::ok::{ok, OkFuture};
+pub use self::ok::{ok, Ok};
 pub use self::ok_into::OkInto;
 pub use self::or_else_async::OrElseAsync;
 pub use self::ready::{ready, Ready};
