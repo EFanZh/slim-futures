@@ -1,4 +1,4 @@
-use crate::support;
+use crate::support::{self, FnMut1};
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -12,12 +12,12 @@ impl<F> Unpin for Lazy<F> {}
 
 impl<F, T> Future for Lazy<F>
 where
-    F: FnMut(&mut Context) -> T,
+    F: for<'a, 'b> FnMut1<&'a mut Context<'b>, Output = T>,
 {
     type Output = T;
 
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
-        Poll::Ready((self.f)(cx))
+        Poll::Ready(self.f.call_mut(cx))
     }
 }
 
@@ -26,4 +26,31 @@ where
     F: FnMut(&mut Context) -> T,
 {
     support::assert_future::<_, T>(Lazy { f })
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::future;
+    use std::mem;
+    use std::task::Context;
+
+    fn lazy_fn(_: &mut Context) -> u32 {
+        2
+    }
+
+    #[tokio::test]
+    async fn test_lazy() {
+        assert_eq!(future::lazy(lazy_fn).await, 2);
+    }
+
+    #[tokio::test]
+    async fn test_lazy_is_slim() {
+        let future_1 = future::lazy(lazy_fn);
+        let future_2 = futures_util::future::lazy(lazy_fn);
+
+        assert_eq!(mem::size_of_val(&lazy_fn), mem::size_of_val(&future_1));
+        assert!(mem::size_of_val(&future_1) < mem::size_of_val(&future_2));
+        assert_eq!(future_1.await, 2);
+        assert_eq!(future_2.await, 2);
+    }
 }
