@@ -49,9 +49,9 @@ where
         self.project().inner.poll_with(
             cx,
             |fut, cx| match fut.poll(cx) {
-                Poll::Pending => ControlFlow::Break(Poll::Pending),
                 Poll::Ready(Ok(value)) => ControlFlow::Break(Poll::Ready(Ok(value))),
                 Poll::Ready(Err(fut)) => ControlFlow::Continue(fut),
+                Poll::Pending => ControlFlow::Break(Poll::Pending),
             },
             Fut2::poll,
         )
