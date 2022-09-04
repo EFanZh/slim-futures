@@ -143,12 +143,12 @@ mod tests {
 
     #[tokio::test]
     async fn test_map_ok_async_is_slim() {
-        let make_base_future = || crate::future::ok::<_, u32>(NonZeroU32::new(2).unwrap());
+        let make_base_future = || crate::future::ok::<_, u32>(NonZeroU32::new(2).unwrap()).slim_map_ok(drop);
         let base_future = make_base_future();
-        let future = make_base_future().slim_map_ok_async(|_| crate::future::ready(()));
+        let future = make_base_future().slim_map_ok_async(crate::future::ready);
 
         assert_eq!(mem::size_of_val(&base_future), mem::size_of_val(&future));
-        assert_eq!(base_future.await.map(NonZeroU32::get), Ok(2));
+        assert_eq!(base_future.await, Ok(()));
         assert_eq!(future.await, Ok(()));
     }
 }
