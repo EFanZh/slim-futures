@@ -6,50 +6,52 @@
 
 Async combinators that focus on small binary sizes.
 
-| slim-futures                               | [`futures`]                      |
-| ------------------------------------------ | -------------------------------- |
-| `SlimFutureExt::slim_and_then`             |                                  |
-| `SlimFutureExt::slim_and_then_async`       | [`TryFutureExt::and_then`]       |
-| `SlimFutureExt::slim_err_into`             | [`TryFutureExt::err_into`]       |
-| `SlimFutureExt::slim_flatten`              | [`FutureExt::flatten`]           |
-| `SlimFutureExt::slim_flatten_async_iter`   | [`FutureExt::flatten_stream`]    |
-| `SlimFutureExt::slim_inspect`              | [`FutureExt::inspect`]           |
-| `SlimFutureExt::slim_inspect_err`          | [`TryFutureExt::inspect_err`]    |
-| `SlimFutureExt::slim_inspect_ok`           | [`TryFutureExt::inspect_ok`]     |
-| `SlimFutureExt::slim_into_try_future`      |                                  |
-| `SlimFutureExt::slim_map`                  | [`FutureExt::map`]               |
-| `SlimFutureExt::slim_map_async`            | [`FutureExt::then`]              |
-| `SlimFutureExt::slim_map_err`              | [`TryFutureExt::map_err`]        |
-| `SlimFutureExt::slim_map_err_async`        |                                  |
-| `SlimFutureExt::slim_map_into`             | [`FutureExt::map_into`]          |
-| `SlimFutureExt::slim_map_ok`               | [`TryFutureExt::map_ok`]         |
-| `SlimFutureExt::slim_map_ok_async`         |                                  |
-| `SlimFutureExt::slim_never_error`          | [`FutureExt::never_error`]       |
-| `SlimFutureExt::slim_ok_into`              | [`TryFutureExt::ok_into`]        |
-| `SlimFutureExt::slim_or_else`              |                                  |
-| `SlimFutureExt::slim_or_else_async`        | [`TryFutureExt::or_else`]        |
-| `SlimFutureExt::slim_try_flatten`          | [`TryFutureExt::try_flatten`]    |
-| `SlimFutureExt::slim_try_flatten_err`      |                                  |
-| `SlimFutureExt::slim_unit_error`           | [`FutureExt::unit_error`]        |
-| `SlimFutureExt::slim_unwrap_or_else`       | [`TryFutureExt::unwrap_or_else`] |
-| `SlimFutureExt::slim_unwrap_or_else_async` |                                  |
+| slim-futures                                       | [`futures`]                              |
+| -------------------------------------------------- | ---------------------------------------- |
+| `future::SlimFutureExt::slim_and_then`             |                                          |
+| `future::SlimFutureExt::slim_and_then_async`       | [`future::TryFutureExt::and_then`]       |
+| `future::SlimFutureExt::slim_err_into`             | [`future::TryFutureExt::err_into`]       |
+| `future::SlimFutureExt::slim_flatten`              | [`future::FutureExt::flatten`]           |
+| `future::SlimFutureExt::slim_flatten_async_iter`   | [`future::FutureExt::flatten_stream`]    |
+| `future::SlimFutureExt::slim_inspect`              | [`future::FutureExt::inspect`]           |
+| `future::SlimFutureExt::slim_inspect_err`          | [`future::TryFutureExt::inspect_err`]    |
+| `future::SlimFutureExt::slim_inspect_ok`           | [`future::TryFutureExt::inspect_ok`]     |
+| `future::SlimFutureExt::slim_into_try_future`      |                                          |
+| `future::SlimFutureExt::slim_map`                  | [`future::FutureExt::map`]               |
+| `future::SlimFutureExt::slim_map_async`            | [`future::FutureExt::then`]              |
+| `future::SlimFutureExt::slim_map_err`              | [`future::TryFutureExt::map_err`]        |
+| `future::SlimFutureExt::slim_map_err_async`        |                                          |
+| `future::SlimFutureExt::slim_map_into`             | [`future::FutureExt::map_into`]          |
+| `future::SlimFutureExt::slim_map_ok`               | [`future::TryFutureExt::map_ok`]         |
+| `future::SlimFutureExt::slim_map_ok_async`         |                                          |
+| `future::SlimFutureExt::slim_never_error`          | [`future::FutureExt::never_error`]       |
+| `future::SlimFutureExt::slim_ok_into`              | [`future::TryFutureExt::ok_into`]        |
+| `future::SlimFutureExt::slim_or_else`              |                                          |
+| `future::SlimFutureExt::slim_or_else_async`        | [`future::TryFutureExt::or_else`]        |
+| `future::SlimFutureExt::slim_try_flatten`          | [`future::TryFutureExt::try_flatten`]    |
+| `future::SlimFutureExt::slim_try_flatten_err`      |                                          |
+| `future::SlimFutureExt::slim_unit_error`           | [`future::FutureExt::unit_error`]        |
+| `future::SlimFutureExt::slim_unwrap_or_else`       | [`future::TryFutureExt::unwrap_or_else`] |
+| `future::SlimFutureExt::slim_unwrap_or_else_async` |                                          |
+| `future::err`                                      | [`future::err`]                          |
 
 [`futures`]: https://docs.rs/futures/latest/futures/
-[`FutureExt::flatten`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.flatten
-[`FutureExt::flatten_stream`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.flatten_stream
-[`FutureExt::inspect`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.inspect
-[`FutureExt::map`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.map
-[`FutureExt::map_into`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.map_into
-[`FutureExt::never_error`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.never_error
-[`FutureExt::then`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.then
-[`FutureExt::unit_error`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.unit_error
-[`TryFutureExt::and_then`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.and_then
-[`TryFutureExt::err_into`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.err_into
-[`TryFutureExt::inspect_err`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.inspect_err
-[`TryFutureExt::inspect_ok`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.inspect_ok
-[`TryFutureExt::map_err`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.map_err
-[`TryFutureExt::map_ok`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.map_ok
-[`TryFutureExt::ok_into`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.ok_into
-[`TryFutureExt::or_else`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.or_else
-[`TryFutureExt::try_flatten`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.try_flatten
-[`TryFutureExt::unwrap_or_else`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.unwrap_or_else
+[`future::FutureExt::flatten`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.flatten
+[`future::FutureExt::flatten_stream`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.flatten_stream
+[`future::FutureExt::inspect`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.inspect
+[`future::FutureExt::map`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.map
+[`future::FutureExt::map_into`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.map_into
+[`future::FutureExt::never_error`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.never_error
+[`future::FutureExt::then`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.then
+[`future::FutureExt::unit_error`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.unit_error
+[`future::TryFutureExt::and_then`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.and_then
+[`future::TryFutureExt::err_into`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.err_into
+[`future::TryFutureExt::inspect_err`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.inspect_err
+[`future::TryFutureExt::inspect_ok`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.inspect_ok
+[`future::TryFutureExt::map_err`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.map_err
+[`future::TryFutureExt::map_ok`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.map_ok
+[`future::TryFutureExt::ok_into`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.ok_into
+[`future::TryFutureExt::or_else`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.or_else
+[`future::TryFutureExt::try_flatten`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.try_flatten
+[`future::TryFutureExt::unwrap_or_else`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.unwrap_or_else
+[`future::err`]: https://docs.rs/futures/latest/futures/future/fn.err.html
