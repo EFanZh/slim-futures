@@ -6,17 +6,17 @@ use std::pin::Pin;
 use std::task::{Context, Poll};
 
 #[derive(Clone)]
-pub struct Defer {
+pub struct Yield {
     count: Option<usize>,
 }
 
-impl Defer {
+impl Yield {
     pub fn new(count: usize) -> Self {
         Self { count: Some(count) }
     }
 }
 
-impl Future for Defer {
+impl Future for Yield {
     type Output = ();
 
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
@@ -38,7 +38,7 @@ impl Future for Defer {
     }
 }
 
-impl FusedFuture for Defer {
+impl FusedFuture for Yield {
     fn is_terminated(&self) -> bool {
         self.count.is_none()
     }

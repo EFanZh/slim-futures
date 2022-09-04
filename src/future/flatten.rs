@@ -101,13 +101,13 @@ where
 mod tests {
     use crate::future::future_ext::FutureExt;
     use crate::support::FusedAsyncIterator;
-    use crate::test_utilities::{self, Defer};
+    use crate::test_utilities::{self, Yield};
     use futures_core::FusedFuture;
     use futures_util::{future, stream, FutureExt as _, StreamExt};
     use std::mem;
 
     fn make_flatten_future() -> impl FusedFuture<Output = u32> + Clone {
-        Defer::new(1).slim_map(|()| future::ready(2)).slim_flatten()
+        Yield::new(1).slim_map(|()| future::ready(2)).slim_flatten()
     }
 
     fn make_flatten_async_iter() -> impl FusedAsyncIterator<Item = u32> {
