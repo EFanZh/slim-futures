@@ -70,7 +70,9 @@ where
 mod tests {
     use crate::future::future_ext::FutureExt;
     use futures_core::FusedFuture;
-    use futures_util::future;
+    use futures_util::{future, FutureExt as _};
+    use std::mem;
+    use std::num::NonZeroU32;
 
     #[tokio::test]
     async fn test_map_async() {
@@ -95,5 +97,16 @@ mod tests {
         assert!(!future.is_terminated());
         assert_eq!((&mut future).await, 9);
         assert!(future.is_terminated());
+    }
+
+    #[tokio::test]
+    async fn test_map_async_is_slim() {
+        let make_base_future = || crate::future::ready(NonZeroU32::new(2).unwrap()).slim_map(drop);
+        let future_1 = make_base_future().slim_map_async(crate::future::ready);
+        let future_2 = make_base_future().then(crate::future::ready);
+
+        assert!(mem::size_of_val(&future_1) < mem::size_of_val(&future_2));
+        assert!(matches!(future_1.await, ()));
+        assert!(matches!(future_2.await, ()));
     }
 }
