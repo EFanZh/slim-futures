@@ -5,22 +5,6 @@ use std::ops::ControlFlow;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
-#[derive(Clone)]
-struct UnwrapOrElseFn<F> {
-    inner: F,
-}
-
-impl<T, E, F> FnMut1<Result<T, E>> for UnwrapOrElseFn<F>
-where
-    F: FnMut1<E, Output = T>,
-{
-    type Output = T;
-
-    fn call_mut(&mut self, arg: Result<T, E>) -> Self::Output {
-        arg.unwrap_or_else(|error| self.inner.call_mut(error))
-    }
-}
-
 pin_project_lite::pin_project! {
     #[derive(Clone)]
     pub struct UnwrapOrElseAsync<Fut, F>
