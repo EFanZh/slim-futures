@@ -158,9 +158,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_flatten_is_slim() {
-        let make_future = || crate::future::lazy(|_| test_utilities::almost_full_bytes_future(2));
-        let future = make_future().slim_flatten();
-        let future_2 = make_future().flatten();
+        let base_future = || crate::future::lazy(|_| test_utilities::almost_full_bytes_future(2));
+        let future = base_future().slim_flatten();
+        let future_2 = base_future().flatten();
 
         assert!(mem::size_of_val(&future) < mem::size_of_val(&future_2));
         assert_eq!(future.await, 2);

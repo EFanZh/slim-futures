@@ -8,6 +8,12 @@ pub struct Ready<T> {
     value: T,
 }
 
+impl<T> Ready<T> {
+    pub(crate) fn new(value: T) -> Self {
+        Self { value }
+    }
+}
+
 impl<T> Unpin for Ready<T> {}
 
 impl<T> Future for Ready<T>
@@ -25,5 +31,5 @@ pub fn ready<T>(value: T) -> Ready<T>
 where
     T: Copy,
 {
-    support::assert_future::<_, T>(Ready { value })
+    support::assert_future::<_, T>(Ready::new(value))
 }

@@ -64,6 +64,7 @@ mod tests {
     use crate::future::future_ext::FutureExt;
     use futures_core::FusedFuture;
     use futures_util::future;
+    use std::mem;
 
     #[allow(clippy::unnecessary_wraps)]
     fn ok_plus_3(value: u32) -> Result<u32, u32> {
@@ -99,5 +100,16 @@ mod tests {
         assert!(!future.is_terminated());
         assert_eq!((&mut future).await, Ok(5));
         assert!(future.is_terminated());
+    }
+
+    #[tokio::test]
+    async fn test_and_then_is_slim() {
+        let make_base_future = || crate::future::ok::<u32, u32>(2);
+        let base_future = make_base_future();
+        let future = make_base_future().slim_and_then(Ok);
+
+        assert_eq!(mem::size_of_val(&base_future), mem::size_of_val(&future));
+        assert_eq!(base_future.await, Ok(2));
+        assert_eq!(future.await, Ok(2));
     }
 }

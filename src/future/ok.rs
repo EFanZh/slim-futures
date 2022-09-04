@@ -1,29 +1,38 @@
-use crate::future::{ready::Ready, Map};
+use crate::future::into_try_future::IntoTryFuture;
+use crate::future::ready::Ready;
 use crate::support;
-use crate::support::fns::ErrFn;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
 pin_project_lite::pin_project! {
     #[derive(Clone)]
-    pub struct ErrFuture<T, E> {
+    pub struct OkFuture<T, E>
+    where
+        T: Copy,
+    {
         #[pin]
-        inner: Map<Ready<E>, ErrFn<T, E>>
+        inner: IntoTryFuture<Ready<T>, E>
     }
 }
 
-impl<T, E> ErrFuture<T, E> {
-    fn new(error: E) -> Self {
+impl<T, E> OkFuture<T, E>
+where
+    T: Copy,
+{
+    fn new(value: T) -> Self
+    where
+        T: Copy,
+    {
         Self {
-            inner: Map::new(Ready::new(error), ErrFn::default()),
+            inner: IntoTryFuture::new(Ready::new(value)),
         }
     }
 }
 
-impl<T, E> Future for ErrFuture<T, E>
+impl<T, E> Future for OkFuture<T, E>
 where
-    E: Copy,
+    T: Copy,
 {
     type Output = Result<T, E>;
 
@@ -32,11 +41,11 @@ where
     }
 }
 
-pub fn err<T, E>(error: E) -> ErrFuture<T, E>
+pub fn ok<T, E>(value: T) -> OkFuture<T, E>
 where
-    E: Copy,
+    T: Copy,
 {
-    support::assert_future::<_, Result<T, E>>(ErrFuture::new(error))
+    support::assert_future::<_, Result<T, E>>(OkFuture::new(value))
 }
 
 #[cfg(test)]
