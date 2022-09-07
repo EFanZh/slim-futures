@@ -73,6 +73,7 @@ where
 #[cfg(test)]
 mod tests {
     use crate::future::future_ext::FutureExt;
+    use crate::test_utilities::Yield;
     use futures_core::FusedFuture;
     use futures_util::future::{self, Ready};
     use futures_util::TryFutureExt;
@@ -87,6 +88,15 @@ mod tests {
     async fn test_unwrap_or_else_async() {
         assert_eq!(future::ok::<u32, _>(2).slim_unwrap_or_else_async(plus_3).await, 2);
         assert_eq!(future::err::<u32, _>(2).slim_unwrap_or_else_async(plus_3).await, 5);
+    }
+
+    #[tokio::test]
+    async fn test_unwrap_or_else_async_with_pending() {
+        let future = Yield::new(1)
+            .slim_map(|()| Err::<u32, _>(()))
+            .slim_unwrap_or_else_async(|()| future::ready(2));
+
+        assert_eq!(future.await, 2);
     }
 
     #[tokio::test]

@@ -71,6 +71,7 @@ where
 #[cfg(test)]
 mod tests {
     use crate::future::future_ext::FutureExt;
+    use crate::test_utilities::Yield;
     use futures_core::FusedFuture;
     use futures_util::future::{self, Ready};
     use futures_util::TryFutureExt;
@@ -93,6 +94,15 @@ mod tests {
             future::err::<Ready<Result<u32, _>>, u32>(2).slim_try_flatten().await,
             Err(2),
         );
+    }
+
+    #[tokio::test]
+    async fn test_try_flatten_with_pending() {
+        let future = Yield::new(1)
+            .slim_map(|()| Ok::<_, u32>(future::ok::<u32, _>(2)))
+            .slim_try_flatten();
+
+        assert_eq!(future.await, Ok(2));
     }
 
     #[tokio::test]
