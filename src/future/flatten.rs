@@ -101,10 +101,11 @@ where
 mod tests {
     use crate::future::future_ext::FutureExt;
     use crate::support::FusedAsyncIterator;
-    use crate::test_utilities::{self, Yield};
+    use crate::test_utilities::Yield;
     use futures_core::FusedFuture;
     use futures_util::{future, stream, FutureExt as _, StreamExt};
     use std::mem;
+    use std::num::NonZeroU32;
 
     fn make_flatten_future() -> impl FusedFuture<Output = u32> + Clone {
         Yield::new(1).slim_map(|()| future::ready(2)).slim_flatten()
@@ -158,12 +159,17 @@ mod tests {
 
     #[tokio::test]
     async fn test_flatten_is_slim() {
-        let base_future = || crate::future::lazy(|_| test_utilities::almost_full_bytes_future(2));
-        let future = base_future().slim_flatten();
-        let future_2 = base_future().flatten();
+        let make_base_future =
+            || crate::future::ready(NonZeroU32::new(2).unwrap()).slim_map(|_| crate::future::ready(()));
 
-        assert!(mem::size_of_val(&future) < mem::size_of_val(&future_2));
-        assert_eq!(future.await, 2);
-        assert_eq!(future_2.await, 2);
+        let base_future = make_base_future();
+        let future_1 = make_base_future().slim_flatten();
+        let future_2 = make_base_future().flatten();
+
+        assert_eq!(mem::size_of_val(&base_future), mem::size_of_val(&future_1));
+        assert!(mem::size_of_val(&future_1) < mem::size_of_val(&future_2));
+        assert!(matches!(base_future.await.await, ()));
+        assert!(matches!(future_1.await, ()));
+        assert!(matches!(future_2.await, ()));
     }
 }

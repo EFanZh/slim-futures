@@ -1,7 +1,5 @@
-use crate::future::SlimFutureExt;
 use futures_core::FusedFuture;
 use std::future::Future;
-use std::num::NonZeroU32;
 use std::pin::Pin;
 use std::task::{Context, Poll};
 
@@ -42,12 +40,4 @@ impl FusedFuture for Yield {
     fn is_terminated(&self) -> bool {
         self.count.is_none()
     }
-}
-
-pub fn full_bytes_future(value: u32) -> impl Future<Output = u32> {
-    crate::future::ready(value)
-}
-
-pub fn almost_full_bytes_future(value: u32) -> impl Future<Output = u32> {
-    crate::future::ready(NonZeroU32::new(value).unwrap()).slim_map(NonZeroU32::get)
 }
