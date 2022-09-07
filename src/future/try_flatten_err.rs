@@ -73,6 +73,8 @@ mod tests {
     use crate::future::future_ext::FutureExt;
     use futures_core::FusedFuture;
     use futures_util::future::{self, Ready};
+    use std::mem;
+    use std::num::NonZeroU32;
 
     #[tokio::test]
     async fn test_try_flatten_err() {
@@ -112,5 +114,18 @@ mod tests {
         assert!(!future.is_terminated());
         assert_eq!((&mut future).await, Err(2));
         assert!(future.is_terminated());
+    }
+
+    #[tokio::test]
+    async fn test_try_flatten_err_is_slim() {
+        let make_base_future =
+            || crate::future::err(NonZeroU32::new(2).unwrap()).slim_map_err(|_| crate::future::err::<(), _>(()));
+
+        let base_future = make_base_future();
+        let future = make_base_future().slim_try_flatten_err();
+
+        assert_eq!(mem::size_of_val(&base_future), mem::size_of_val(&future));
+        assert_eq!(base_future.await.unwrap_err().await, Err(()));
+        assert_eq!(future.await, Err(()));
     }
 }
