@@ -69,9 +69,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_ok_into() {
-        assert_eq!(future::ok::<u32, u32>(7).slim_ok_into::<Option<_>>().await, Ok(Some(7)),);
-
-        assert_eq!(future::err::<u32, u32>(7).slim_ok_into::<Option<_>>().await, Err(7),);
+        assert_eq!(future::ok::<u32, u32>(7).slim_ok_into::<Option<_>>().await, Ok(Some(7)));
+        assert_eq!(future::err::<u32, u32>(7).slim_ok_into::<Option<_>>().await, Err(7));
     }
 
     #[tokio::test]
