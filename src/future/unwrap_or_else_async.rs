@@ -75,6 +75,9 @@ mod tests {
     use crate::future::future_ext::FutureExt;
     use futures_core::FusedFuture;
     use futures_util::future::{self, Ready};
+    use futures_util::TryFutureExt;
+    use std::mem;
+    use std::num::NonZeroU32;
 
     fn plus_3(value: u32) -> Ready<u32> {
         future::ready(value + 3)
@@ -102,5 +105,19 @@ mod tests {
         assert!(!future.is_terminated());
         assert_eq!((&mut future).await, 5);
         assert!(future.is_terminated());
+    }
+
+    #[tokio::test]
+    async fn test_or_else_async_is_slim() {
+        let make_base_future = || crate::future::err::<u32, _>(NonZeroU32::new(2).unwrap()).slim_map_err(drop);
+        let base_future = make_base_future();
+        let future_1 = make_base_future().slim_or_else_async(crate::future::err);
+        let future_2 = make_base_future().or_else(crate::future::err);
+
+        assert_eq!(mem::size_of_val(&base_future), mem::size_of_val(&future_1));
+        assert!(mem::size_of_val(&future_1) < mem::size_of_val(&future_2));
+        assert_eq!(base_future.await, Err(()));
+        assert_eq!(future_1.await, Err(()));
+        assert_eq!(future_2.await, Err(()));
     }
 }
