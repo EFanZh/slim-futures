@@ -2,7 +2,7 @@ use crate::support::fn_mut_1::FnMut1;
 use std::marker::PhantomData;
 
 pub struct ErrFn<T, E> {
-    _phantom: PhantomData<fn() -> Result<T, E>>,
+    _phantom: PhantomData<fn(E) -> Result<T, E>>,
 }
 
 impl<T, E> Default for ErrFn<T, E> {
