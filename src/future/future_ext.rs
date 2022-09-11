@@ -13,6 +13,7 @@ use crate::future::map_err_async::MapErrAsync;
 use crate::future::map_into::MapInto;
 use crate::future::map_ok::MapOk;
 use crate::future::map_ok_async::MapOkAsync;
+use crate::future::map_ok_or_else::MapOkOrElse;
 use crate::future::ok_into::OkInto;
 use crate::future::or_else::OrElse;
 use crate::future::or_else_async::OrElseAsync;
@@ -153,6 +154,15 @@ pub trait FutureExt: Future {
         Fut2: Future,
     {
         support::assert_future::<_, Result<Fut2::Output, E>>(MapOkAsync::new(self, f))
+    }
+
+    fn slim_map_ok_or_else<F, T, E, G, U>(self, ok_fn: F, err_fn: G) -> MapOkOrElse<Self, F, G>
+    where
+        Self: Future<Output = Result<T, E>> + Sized,
+        F: FnMut(T) -> U,
+        G: FnMut(E) -> U,
+    {
+        support::assert_future::<_, U>(MapOkOrElse::new(self, ok_fn, err_fn))
     }
 
     fn slim_never_error(self) -> IntoTryFuture<Self, Never>

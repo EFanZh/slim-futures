@@ -1,4 +1,5 @@
-use crate::future::{ready::Ready, Map};
+use crate::future::map::Map;
+use crate::future::ready::Ready;
 use crate::support;
 use crate::support::fns::ErrFn;
 use std::future::Future;
