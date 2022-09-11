@@ -156,13 +156,13 @@ pub trait FutureExt: Future {
         support::assert_future::<_, Result<Fut2::Output, E>>(MapOkAsync::new(self, f))
     }
 
-    fn slim_map_ok_or_else<F, T, E, G, U>(self, ok_fn: F, err_fn: G) -> MapOkOrElse<Self, F, G>
+    fn slim_map_ok_or_else<D, T, E, F, U>(self, default: D, f: F) -> MapOkOrElse<Self, D, F>
     where
         Self: Future<Output = Result<T, E>> + Sized,
+        D: FnMut(E) -> U,
         F: FnMut(T) -> U,
-        G: FnMut(E) -> U,
     {
-        support::assert_future::<_, U>(MapOkOrElse::new(self, ok_fn, err_fn))
+        support::assert_future::<_, U>(MapOkOrElse::new(self, default, f))
     }
 
     fn slim_never_error(self) -> IntoTryFuture<Self, Never>

@@ -8,25 +8,25 @@ use std::task::{Context, Poll};
 
 pin_project_lite::pin_project! {
     #[derive(Clone)]
-    pub struct MapOkOrElse<Fut, F, G> {
+    pub struct MapOkOrElse<Fut, D,F> {
         #[pin]
-        inner: Map<Fut, MapOkOrElseFn<F, G>>,
+        inner: Map<Fut, MapOkOrElseFn<D,F>>,
     }
 }
 
-impl<Fut, F, G> MapOkOrElse<Fut, F, G> {
-    pub(crate) fn new(fut: Fut, ok_fn: F, err_fn: G) -> Self {
+impl<Fut, D, F> MapOkOrElse<Fut, D, F> {
+    pub(crate) fn new(fut: Fut, default: D, f: F) -> Self {
         Self {
-            inner: Map::new(fut, MapOkOrElseFn::new(ok_fn, err_fn)),
+            inner: Map::new(fut, MapOkOrElseFn::new(default, f)),
         }
     }
 }
 
-impl<Fut, F, G, T, E> Future for MapOkOrElse<Fut, F, G>
+impl<Fut, D, F, T, E> Future for MapOkOrElse<Fut, D, F>
 where
     Fut: Future<Output = Result<T, E>>,
-    F: FnMut1<T>,
-    G: FnMut1<E, Output = F::Output>,
+    D: FnMut1<E>,
+    F: FnMut1<T, Output = D::Output>,
 {
     type Output = F::Output;
 
@@ -35,11 +35,11 @@ where
     }
 }
 
-impl<Fut, F, G, T, E> FusedFuture for MapOkOrElse<Fut, F, G>
+impl<Fut, D, F, T, E> FusedFuture for MapOkOrElse<Fut, D, F>
 where
     Fut: FusedFuture<Output = Result<T, E>>,
-    F: FnMut1<T>,
-    G: FnMut1<E, Output = F::Output>,
+    D: FnMut1<E>,
+    F: FnMut1<T, Output = D::Output>,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()
@@ -63,8 +63,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_map_ok_or_else() {
-        assert_eq!(future::ok::<_, u32>(2).slim_map_ok_or_else(plus_3, plus_4).await, 5);
-        assert_eq!(future::err::<_, u32>(2).slim_map_ok_or_else(plus_3, plus_4).await, 6);
+        assert_eq!(future::ok::<_, u32>(2).slim_map_ok_or_else(plus_3, plus_4).await, 6);
+        assert_eq!(future::err::<_, u32>(2).slim_map_ok_or_else(plus_3, plus_4).await, 5);
     }
 
     #[tokio::test]
@@ -72,8 +72,8 @@ mod tests {
         let future = future::ok::<_, u32>(2).slim_map_ok_or_else(plus_3, plus_4);
         let future_2 = future.clone();
 
-        assert_eq!(future.await, 5);
-        assert_eq!(future_2.await, 5);
+        assert_eq!(future.await, 6);
+        assert_eq!(future_2.await, 6);
     }
 
     #[tokio::test]
@@ -81,7 +81,7 @@ mod tests {
         let mut future = future::ok::<_, u32>(2).slim_map_ok_or_else(plus_3, plus_4);
 
         assert!(!future.is_terminated());
-        assert_eq!((&mut future).await, 5);
+        assert_eq!((&mut future).await, 6);
         assert!(future.is_terminated());
     }
 
@@ -90,12 +90,12 @@ mod tests {
         let make_base_future = || crate::future::ok::<u32, u32>(2);
         let base_future = make_base_future();
         let future_1 = make_base_future().slim_map_ok_or_else(plus_3, plus_4);
-        let future_2 = make_base_future().map_ok_or_else(plus_4, plus_3);
+        let future_2 = make_base_future().map_ok_or_else(plus_3, plus_4);
 
         assert_eq!(mem::size_of_val(&base_future), mem::size_of_val(&future_1));
         assert!(mem::size_of_val(&future_1) < mem::size_of_val(&future_2));
         assert_eq!(base_future.await, Ok(2));
-        assert_eq!(future_1.await, 5);
-        assert_eq!(future_2.await, 5);
+        assert_eq!(future_1.await, 6);
+        assert_eq!(future_2.await, 6);
     }
 }
