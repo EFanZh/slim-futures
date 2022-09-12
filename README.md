@@ -33,6 +33,7 @@ Async combinators that focus on small binary sizes.
 | `SlimFutureExt::slim_raw_map_ok_or_else_async` |                                  |
 | `SlimFutureExt::slim_try_flatten`              | [`TryFutureExt::try_flatten`]    |
 | `SlimFutureExt::slim_try_flatten_err`          |                                  |
+| `SlimFutureExt::slim_try_select_either`        |                                  |
 | `SlimFutureExt::slim_unit_error`               | [`FutureExt::unit_error`]        |
 | `SlimFutureExt::slim_unwrap_or_else`           | [`TryFutureExt::unwrap_or_else`] |
 | `SlimFutureExt::slim_unwrap_or_else_async`     |                                  |

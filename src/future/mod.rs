@@ -28,6 +28,7 @@ pub use self::ready::{ready, Ready};
 pub use self::select_either::{select_either, SelectEither};
 pub use self::try_flatten::TryFlatten;
 pub use self::try_flatten_err::TryFlattenErr;
+pub use self::try_select_either::{try_select_either, TrySelectEither};
 pub use self::unwrap_or_else::UnwrapOrElse;
 pub use self::unwrap_or_else_async::UnwrapOrElseAsync;
 
@@ -61,5 +62,6 @@ mod ready;
 mod select_either;
 mod try_flatten;
 mod try_flatten_err;
+mod try_select_either;
 mod unwrap_or_else;
 mod unwrap_or_else_async;
