@@ -1,5 +1,5 @@
 use crate::future::map::Map;
-use crate::future::simple_select::SimpleSelect;
+use crate::future::raw_select::RawSelect;
 use crate::support;
 use crate::support::fns::{EitherLeftFn, EitherRightFn};
 use futures_core::FusedFuture;
@@ -19,7 +19,7 @@ pin_project_lite::pin_project! {
         Fut2: Future,
     {
         #[pin]
-        inner: SimpleSelect<LeftFuture<Fut1, Fut2>, RightFuture<Fut1, Fut2>>
+        inner: RawSelect<LeftFuture<Fut1, Fut2>, RightFuture<Fut1, Fut2>>
     }
 }
 
@@ -30,7 +30,7 @@ where
 {
     pub(crate) fn new(fut_1: Fut1, fut_2: Fut2) -> Self {
         Self {
-            inner: SimpleSelect::new(
+            inner: RawSelect::new(
                 Map::new(fut_1, EitherLeftFn::default()),
                 Map::new(fut_2, EitherRightFn::default()),
             ),

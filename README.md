@@ -40,8 +40,8 @@ Async combinators that focus on small binary sizes.
 | `lazy`                                         | [`lazy`]                         |
 | `ok`                                           | [`ok`]                           |
 | `ready`                                        | [`ready`]                        |
+| `raw_select`                                   |                                  |
 | `select_either`                                |                                  |
-| `simple_select`                                |                                  |
 
 [`futures`]: https://docs.rs/futures/latest/futures/
 [`FutureExt::flatten`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.flatten
