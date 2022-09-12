@@ -5,7 +5,7 @@ pub use self::and_then_async::AndThenAsync;
 pub use self::err::{err, Err};
 pub use self::err_into::ErrInto;
 pub use self::flatten::Flatten;
-pub use self::future_ext::FutureExt as SlimFutureExt;
+pub use self::future_ext::FutureExt;
 pub use self::inspect::Inspect;
 pub use self::inspect_err::InspectErr;
 pub use self::inspect_ok::InspectOk;

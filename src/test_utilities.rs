@@ -53,7 +53,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::Yield;
-    use crate::future::SlimFutureExt;
+    use crate::future::FutureExt;
     use futures_core::FusedFuture;
     use std::task::Poll;
 
