@@ -3,3 +3,4 @@ pub use self::fold::Fold;
 
 mod async_iter_ext;
 mod fold;
+mod fold_async;
