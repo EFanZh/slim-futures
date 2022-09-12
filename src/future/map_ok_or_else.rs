@@ -8,9 +8,9 @@ use std::task::{Context, Poll};
 
 pin_project_lite::pin_project! {
     #[derive(Clone)]
-    pub struct MapOkOrElse<Fut, D,F> {
+    pub struct MapOkOrElse<Fut, D, F> {
         #[pin]
-        inner: Map<Fut, MapOkOrElseFn<D,F>>,
+        inner: Map<Fut, MapOkOrElseFn<D, F>>,
     }
 }
 

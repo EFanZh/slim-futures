@@ -1,0 +1,128 @@
+use crate::future::map_async::MapAsync;
+use crate::support::fns::MapOkOrElseFn;
+use crate::support::{FnMut1, TryFuture};
+use futures_core::FusedFuture;
+use std::future::Future;
+use std::pin::Pin;
+use std::task::{Context, Poll};
+
+pin_project_lite::pin_project! {
+    pub struct RawMapOkOrElseAsync<Fut, D, F>
+    where
+        Fut: TryFuture,
+        D: FnMut1<Fut::Error>,
+        F: FnMut1<Fut::Ok, Output = D::Output>,
+    {
+        #[pin]
+        inner: MapAsync<Fut, MapOkOrElseFn<D, F>>,
+    }
+}
+
+impl<Fut, D, F, T, E> Clone for RawMapOkOrElseAsync<Fut, D, F>
+where
+    Fut: Future<Output = Result<T, E>> + Clone,
+    D: FnMut1<E> + Clone,
+    F: FnMut1<T, Output = D::Output> + Clone,
+    D::Output: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+        }
+    }
+}
+
+impl<Fut, D, F, T, E> RawMapOkOrElseAsync<Fut, D, F>
+where
+    Fut: Future<Output = Result<T, E>>,
+    D: FnMut1<E>,
+    F: FnMut1<T, Output = D::Output>,
+{
+    pub(crate) fn new(fut: Fut, default: D, f: F) -> Self {
+        Self {
+            inner: MapAsync::new(fut, MapOkOrElseFn::new(default, f)),
+        }
+    }
+}
+
+impl<Fut, D, F, T, E> Future for RawMapOkOrElseAsync<Fut, D, F>
+where
+    Fut: Future<Output = Result<T, E>>,
+    D: FnMut1<E>,
+    F: FnMut1<T, Output = D::Output>,
+    D::Output: Future,
+{
+    type Output = <D::Output as Future>::Output;
+
+    fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
+        self.project().inner.poll(cx)
+    }
+}
+
+impl<Fut, D, F, T, E> FusedFuture for RawMapOkOrElseAsync<Fut, D, F>
+where
+    Fut: FusedFuture<Output = Result<T, E>>,
+    D: FnMut1<E>,
+    F: FnMut1<T, Output = D::Output>,
+    D::Output: FusedFuture,
+{
+    fn is_terminated(&self) -> bool {
+        self.inner.is_terminated()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::future::future_ext::FutureExt;
+    use futures_core::FusedFuture;
+    use futures_util::future::{self, Ready};
+    use std::mem;
+    use std::num::NonZeroU32;
+
+    fn plus_3(value: u32) -> Ready<u32> {
+        future::ready(value + 3)
+    }
+
+    fn plus_4(value: u32) -> Ready<u32> {
+        future::ready(value + 4)
+    }
+
+    #[tokio::test]
+    async fn test_raw_map_ok_or_else_async() {
+        let future_1 = future::ok::<_, u32>(2).slim_raw_map_ok_or_else_async(plus_3, plus_4);
+        let future_2 = future::err::<_, u32>(2).slim_raw_map_ok_or_else_async(plus_3, plus_4);
+
+        assert_eq!(future_1.await, 6);
+        assert_eq!(future_2.await, 5,);
+    }
+
+    #[tokio::test]
+    async fn test_raw_map_ok_or_else_async_clone() {
+        let future = future::ok::<_, u32>(2).slim_raw_map_ok_or_else_async(plus_3, plus_4);
+        let future_2 = future.clone();
+
+        assert_eq!(future.await, 6);
+        assert_eq!(future_2.await, 6);
+    }
+
+    #[tokio::test]
+    async fn test_raw_map_ok_or_else_async_fused_future() {
+        let mut future = future::ok::<_, u32>(2).slim_raw_map_ok_or_else_async(plus_3, plus_4);
+
+        assert!(!future.is_terminated());
+        assert_eq!((&mut future).await, 6);
+        assert!(future.is_terminated());
+    }
+
+    #[tokio::test]
+    async fn test_raw_map_ok_or_else_async_is_slim() {
+        let make_base_future = || crate::future::ok::<_, NonZeroU32>(NonZeroU32::new(2).unwrap());
+        let base_future = make_base_future();
+        let f = |_| crate::future::lazy(|_| 3);
+        let future = make_base_future().slim_raw_map_ok_or_else_async(f, f);
+
+        assert_eq!(mem::size_of_val(&base_future), mem::size_of_val(&future));
+        assert_eq!(base_future.await.map(NonZeroU32::get), Ok(2));
+        assert_eq!(future.await, 3);
+    }
+}

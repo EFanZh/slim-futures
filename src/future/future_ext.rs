@@ -14,9 +14,11 @@ use crate::future::map_into::MapInto;
 use crate::future::map_ok::MapOk;
 use crate::future::map_ok_async::MapOkAsync;
 use crate::future::map_ok_or_else::MapOkOrElse;
+use crate::future::map_ok_or_else_async::MapOkOrElseAsync;
 use crate::future::ok_into::OkInto;
 use crate::future::or_else::OrElse;
 use crate::future::or_else_async::OrElseAsync;
+use crate::future::raw_map_ok_or_else_async::RawMapOkOrElseAsync;
 use crate::future::try_flatten::TryFlatten;
 use crate::future::try_flatten_err::TryFlattenErr;
 use crate::future::unwrap_or_else::UnwrapOrElse;
@@ -165,6 +167,17 @@ pub trait FutureExt: Future {
         support::assert_future::<_, U>(MapOkOrElse::new(self, default, f))
     }
 
+    fn slim_map_ok_or_else_async<D, T, E, F, Fut1, Fut2>(self, default: D, f: F) -> MapOkOrElseAsync<Self, D, F>
+    where
+        Self: Future<Output = Result<T, E>> + Sized,
+        D: FnMut(E) -> Fut1,
+        F: FnMut(T) -> Fut2,
+        Fut1: Future,
+        Fut2: Future<Output = Fut1::Output>,
+    {
+        support::assert_future::<_, Fut1::Output>(MapOkOrElseAsync::new(self, default, f))
+    }
+
     fn slim_never_error(self) -> IntoTryFuture<Self, Never>
     where
         Self: Sized,
@@ -195,6 +208,16 @@ pub trait FutureExt: Future {
         Fut2: Future<Output = Result<T, U>>,
     {
         support::assert_future::<_, Result<T, U>>(OrElseAsync::new(self, f))
+    }
+
+    fn slim_raw_map_ok_or_else_async<D, T, E, F, Fut>(self, default: D, f: F) -> RawMapOkOrElseAsync<Self, D, F>
+    where
+        Self: Future<Output = Result<T, E>> + Sized,
+        D: FnMut(E) -> Fut,
+        F: FnMut(T) -> Fut,
+        Fut: Future,
+    {
+        support::assert_future::<_, Fut::Output>(RawMapOkOrElseAsync::new(self, default, f))
     }
 
     fn slim_try_flatten<Fut2, E, T>(self) -> TryFlatten<Self>
