@@ -1,4 +1,5 @@
 pub use self::fn_mut_1::FnMut1;
+pub use self::fn_mut_2::FnMut2;
 pub use self::pinned_and_not_pinned::PinnedAndNotPinned;
 pub use self::try_future::TryFuture;
 pub use self::two_phases::TwoPhases;
@@ -7,6 +8,7 @@ pub use futures_core::{FusedStream as FusedAsyncIterator, Stream as AsyncIterato
 pub use std::convert::Infallible as Never;
 
 mod fn_mut_1;
+mod fn_mut_2;
 pub mod fns;
 mod pinned_and_not_pinned;
 mod try_future;

@@ -60,6 +60,7 @@
     clippy::wildcard_dependencies
 )]
 
+pub mod async_iter;
 pub mod future;
 mod support;
 #[cfg(test)]
