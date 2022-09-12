@@ -1,4 +1,5 @@
 use futures_core::FusedFuture;
+use futures_util::FutureExt;
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -42,6 +43,13 @@ impl FusedFuture for Yield {
     }
 }
 
+pub fn delayed<F>(fut: F) -> impl Future<Output = F::Output>
+where
+    F: Future,
+{
+    Yield::new(1).then(|()| fut)
+}
+
 #[cfg(test)]
 mod tests {
     use super::Yield;
@@ -63,5 +71,13 @@ mod tests {
         assert!(future.is_terminated());
         assert_eq!(futures_util::poll!(&mut future), Poll::Ready(()));
         assert!(future.is_terminated());
+    }
+
+    #[tokio::test]
+    async fn test_delayed() {
+        let mut future = super::delayed(crate::future::ready::<u32>(2));
+
+        assert_eq!(futures_util::poll!(&mut future), Poll::Pending);
+        assert_eq!(futures_util::poll!(&mut future), Poll::Ready(2));
     }
 }

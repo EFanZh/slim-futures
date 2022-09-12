@@ -69,9 +69,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::future;
     use crate::future::future_ext::FutureExt;
-    use crate::test_utilities::Yield;
+    use crate::{future, test_utilities};
     use futures_core::FusedFuture;
     use futures_util::FutureExt as _;
     use std::mem;
@@ -79,16 +78,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_raw_select() {
-        fn map_fn(_: ()) -> u32 {
-            2
-        }
-
         assert_eq!(future::raw_select(future::ready(2), future::ready(3)).await, 2);
 
-        assert_eq!(map_fn(()), 2);
-
         assert_eq!(
-            future::raw_select(Yield::new(1).slim_map(map_fn), future::ready(3)).await,
+            future::raw_select(test_utilities::delayed(future::ready(2)), future::ready(3)).await,
             3,
         );
     }

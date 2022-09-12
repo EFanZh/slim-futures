@@ -70,9 +70,8 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::future;
     use crate::future::future_ext::FutureExt;
-    use crate::test_utilities::Yield;
+    use crate::{future, test_utilities};
     use futures_core::FusedFuture;
     use futures_util::future::Either;
     use futures_util::FutureExt as _;
@@ -81,19 +80,13 @@ mod tests {
 
     #[tokio::test]
     async fn test_select_either() {
-        fn map_fn(_: ()) -> u32 {
-            2
-        }
-
         assert!(matches!(
             future::select_either(future::ready(2), future::ready(3)).await,
             Either::Left(2),
         ));
 
-        assert_eq!(map_fn(()), 2);
-
         assert!(matches!(
-            future::select_either(Yield::new(1).slim_map(map_fn), future::ready(3)).await,
+            future::select_either(test_utilities::delayed(future::ready(2)), future::ready(3)).await,
             Either::Right(3),
         ));
     }

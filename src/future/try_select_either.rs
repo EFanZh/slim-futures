@@ -96,10 +96,9 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::future;
     use crate::future::future_ext::FutureExt;
-    use crate::test_utilities::Yield;
-    use futures_core::{FusedFuture, Future};
+    use crate::{future, test_utilities};
+    use futures_core::FusedFuture;
     use futures_util::future::Either;
     use futures_util::FutureExt as _;
     use std::mem;
@@ -107,10 +106,6 @@ mod tests {
 
     #[tokio::test]
     async fn test_try_select_either() {
-        fn delayed(fut: impl Future<Output = Result<u32, u32>>) -> impl Future<Output = Result<u32, u32>> {
-            Yield::new(1).then(|()| fut)
-        }
-
         let ok_2 = || future::ok::<u32, u32>(2);
         let ok_3 = || future::ok::<u32, u32>(3);
         let err_2 = || future::err::<u32, u32>(2);
@@ -137,22 +132,22 @@ mod tests {
         ));
 
         assert!(matches!(
-            future::try_select_either(delayed(ok_2()), ok_3()).await,
+            future::try_select_either(test_utilities::delayed(ok_2()), ok_3()).await,
             Ok(Either::Right(3)),
         ));
 
         assert!(matches!(
-            future::try_select_either(delayed(ok_2()), err_3()).await,
+            future::try_select_either(test_utilities::delayed(ok_2()), err_3()).await,
             Err(Either::Right(3)),
         ));
 
         assert!(matches!(
-            future::try_select_either(delayed(err_2()), ok_3()).await,
+            future::try_select_either(test_utilities::delayed(err_2()), ok_3()).await,
             Ok(Either::Right(3)),
         ));
 
         assert!(matches!(
-            future::try_select_either(delayed(err_2()), err_3()).await,
+            future::try_select_either(test_utilities::delayed(err_2()), err_3()).await,
             Err(Either::Right(3)),
         ));
     }
