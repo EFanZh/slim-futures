@@ -27,6 +27,10 @@ use crate::support::{self, AsyncIterator, Never, TryFuture};
 use std::future::Future;
 
 pub trait FutureExt: Future {
+    fn by_ref(&mut self) -> &mut Self {
+        self
+    }
+
     fn slim_and_then<F, U>(self, f: F) -> AndThen<Self, F>
     where
         Self: TryFuture + Sized,

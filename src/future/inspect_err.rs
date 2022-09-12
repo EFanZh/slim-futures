@@ -111,7 +111,7 @@ mod tests {
         let mut future = future::err::<(), ()>(()).slim_inspect_err(|_| {});
 
         assert!(!future.is_terminated());
-        assert_eq!((&mut future).await, Err(()));
+        assert_eq!(future.by_ref().await, Err(()));
         assert!(future.is_terminated());
     }
 

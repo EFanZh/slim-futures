@@ -119,7 +119,7 @@ mod tests {
         let mut future = future::ok::<_, u32>(future::ok::<u32, _>(2)).slim_try_flatten();
 
         assert!(!future.is_terminated());
-        assert_eq!((&mut future).await, Ok(2));
+        assert_eq!(future.by_ref().await, Ok(2));
         assert!(future.is_terminated());
     }
 

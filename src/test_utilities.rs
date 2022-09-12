@@ -53,6 +53,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::Yield;
+    use crate::future::SlimFutureExt;
     use futures_core::FusedFuture;
     use std::task::Poll;
 
@@ -61,15 +62,15 @@ mod tests {
         let mut future = Yield::new(2);
 
         assert!(!future.is_terminated());
-        assert_eq!(futures_util::poll!(&mut future), Poll::Pending);
+        assert_eq!(futures_util::poll!(future.by_ref()), Poll::Pending);
         assert!(!future.is_terminated());
-        assert_eq!(futures_util::poll!(&mut future), Poll::Pending);
+        assert_eq!(futures_util::poll!(future.by_ref()), Poll::Pending);
         assert!(!future.is_terminated());
-        assert_eq!(futures_util::poll!(&mut future), Poll::Ready(()));
+        assert_eq!(futures_util::poll!(future.by_ref()), Poll::Ready(()));
         assert!(future.is_terminated());
-        assert_eq!(futures_util::poll!(&mut future), Poll::Ready(()));
+        assert_eq!(futures_util::poll!(future.by_ref()), Poll::Ready(()));
         assert!(future.is_terminated());
-        assert_eq!(futures_util::poll!(&mut future), Poll::Ready(()));
+        assert_eq!(futures_util::poll!(future.by_ref()), Poll::Ready(()));
         assert!(future.is_terminated());
     }
 
@@ -77,7 +78,7 @@ mod tests {
     async fn test_delayed() {
         let mut future = super::delayed(crate::future::ready::<u32>(2));
 
-        assert_eq!(futures_util::poll!(&mut future), Poll::Pending);
-        assert_eq!(futures_util::poll!(&mut future), Poll::Ready(2));
+        assert_eq!(futures_util::poll!(future.by_ref()), Poll::Pending);
+        assert_eq!(futures_util::poll!(future.by_ref()), Poll::Ready(2));
     }
 }

@@ -74,7 +74,7 @@ mod tests {
         let mut future = future::ready(2).slim_map(plus_3);
 
         assert!(!future.is_terminated());
-        assert_eq!((&mut future).await, 5);
+        assert_eq!(future.by_ref().await, 5);
         assert!(future.is_terminated());
     }
 

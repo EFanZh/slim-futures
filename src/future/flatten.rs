@@ -134,7 +134,7 @@ mod tests {
         let mut future = make_flatten_future();
 
         assert!(!future.is_terminated());
-        assert_eq!((&mut future).await, 2);
+        assert_eq!(future.by_ref().await, 2);
         assert!(future.is_terminated());
     }
 

@@ -104,7 +104,7 @@ mod tests {
         let mut future: IntoTryFuture<_, String> = future::ready(7).slim_into_try_future::<String>();
 
         assert!(!future.is_terminated());
-        assert_eq!((&mut future).await, Ok(7));
+        assert_eq!(future.by_ref().await, Ok(7));
         assert!(future.is_terminated());
     }
 

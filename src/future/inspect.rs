@@ -105,7 +105,7 @@ mod tests {
 
         assert!(!future.is_terminated());
 
-        (&mut future).await;
+        future.by_ref().await;
 
         assert!(future.is_terminated());
     }

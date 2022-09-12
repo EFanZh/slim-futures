@@ -137,7 +137,7 @@ mod tests {
         let mut future = future::ok::<_, u32>(2).slim_map_ok_async(plus_3);
 
         assert!(!future.is_terminated());
-        assert_eq!((&mut future).await, Ok(5));
+        assert_eq!(future.by_ref().await, Ok(5));
         assert!(future.is_terminated());
     }
 

@@ -95,7 +95,7 @@ mod tests {
         let mut future = future::ready(7).slim_map_async(|value| future::lazy(move |_| value + 2));
 
         assert!(!future.is_terminated());
-        assert_eq!((&mut future).await, 9);
+        assert_eq!(future.by_ref().await, 9);
         assert!(future.is_terminated());
     }
 
