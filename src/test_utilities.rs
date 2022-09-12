@@ -41,3 +41,27 @@ impl FusedFuture for Yield {
         self.count.is_none()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::Yield;
+    use futures_core::FusedFuture;
+    use std::task::Poll;
+
+    #[tokio::test]
+    async fn test_yield() {
+        let mut future = Yield::new(2);
+
+        assert!(!future.is_terminated());
+        assert_eq!(futures_util::poll!(&mut future), Poll::Pending);
+        assert!(!future.is_terminated());
+        assert_eq!(futures_util::poll!(&mut future), Poll::Pending);
+        assert!(!future.is_terminated());
+        assert_eq!(futures_util::poll!(&mut future), Poll::Ready(()));
+        assert!(future.is_terminated());
+        assert_eq!(futures_util::poll!(&mut future), Poll::Ready(()));
+        assert!(future.is_terminated());
+        assert_eq!(futures_util::poll!(&mut future), Poll::Ready(()));
+        assert!(future.is_terminated());
+    }
+}
