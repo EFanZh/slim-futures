@@ -6,7 +6,7 @@ use core::task::{Context, Poll};
 use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
-    pub struct IntoTryFuture<Fut, E>
+    pub struct IntoResultFuture<Fut, E>
     where
         Fut: Future,
     {
@@ -15,7 +15,7 @@ pin_project_lite::pin_project! {
     }
 }
 
-impl<Fut, E> IntoTryFuture<Fut, E>
+impl<Fut, E> IntoResultFuture<Fut, E>
 where
     Fut: Future,
 {
@@ -26,7 +26,7 @@ where
     }
 }
 
-impl<Fut, E> Clone for IntoTryFuture<Fut, E>
+impl<Fut, E> Clone for IntoResultFuture<Fut, E>
 where
     Fut: Clone + Future,
 {
@@ -37,7 +37,7 @@ where
     }
 }
 
-impl<Fut, E> Future for IntoTryFuture<Fut, E>
+impl<Fut, E> Future for IntoResultFuture<Fut, E>
 where
     Fut: Future,
 {
@@ -48,7 +48,7 @@ where
     }
 }
 
-impl<Fut, E> FusedFuture for IntoTryFuture<Fut, E>
+impl<Fut, E> FusedFuture for IntoResultFuture<Fut, E>
 where
     Fut: FusedFuture,
 {
@@ -59,7 +59,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use super::IntoTryFuture;
+    use super::IntoResultFuture;
     use crate::future::future_ext::FutureExt;
     use crate::support::Never;
     use futures_core::FusedFuture;
@@ -69,7 +69,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_into_try_future() {
-        let future: IntoTryFuture<_, String> = future::ready(7).slim_into_try_future::<String>();
+        let future: IntoResultFuture<_, String> = future::ready(7).slim_into_result_future::<String>();
         let result: Result<u32, String> = future.await;
 
         assert_eq!(result, Ok(7));
@@ -77,7 +77,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_never_error() {
-        let future: IntoTryFuture<_, Never> = future::ready(7).slim_never_error();
+        let future: IntoResultFuture<_, Never> = future::ready(7).slim_never_error();
         let result: Result<u32, Never> = future.await;
 
         assert_eq!(result, Ok(7));
@@ -85,7 +85,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_unit_error() {
-        let future: IntoTryFuture<_, ()> = future::ready(7).slim_unit_error();
+        let future: IntoResultFuture<_, ()> = future::ready(7).slim_unit_error();
         let result: Result<u32, ()> = future.await;
 
         assert_eq!(result, Ok(7));
@@ -93,7 +93,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_into_try_future_clone() {
-        let future: IntoTryFuture<_, String> = future::ready(7).slim_into_try_future::<String>();
+        let future: IntoResultFuture<_, String> = future::ready(7).slim_into_result_future::<String>();
         let future_2 = future.clone();
 
         assert_eq!(future.await, Ok(7));
@@ -102,7 +102,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_into_try_future_fused_future() {
-        let mut future: IntoTryFuture<_, String> = future::ready(7).slim_into_try_future::<String>();
+        let mut future: IntoResultFuture<_, String> = future::ready(7).slim_into_result_future::<String>();
 
         assert!(!future.is_terminated());
         assert_eq!(future.by_ref().await, Ok(7));

@@ -5,7 +5,7 @@ use crate::future::flatten::Flatten;
 use crate::future::inspect::Inspect;
 use crate::future::inspect_err::InspectErr;
 use crate::future::inspect_ok::InspectOk;
-use crate::future::into_try_future::IntoTryFuture;
+use crate::future::into_result_future::IntoResultFuture;
 use crate::future::map::Map;
 use crate::future::map_async::MapAsync;
 use crate::future::map_err::MapErr;
@@ -96,11 +96,11 @@ pub trait FutureExt: Future {
         support::assert_future::<_, Self::Output>(InspectOk::new(self, f))
     }
 
-    fn slim_into_try_future<E>(self) -> IntoTryFuture<Self, E>
+    fn slim_into_result_future<E>(self) -> IntoResultFuture<Self, E>
     where
         Self: Sized,
     {
-        support::assert_future::<_, Result<Self::Output, E>>(IntoTryFuture::new(self))
+        support::assert_future::<_, Result<Self::Output, E>>(IntoResultFuture::new(self))
     }
 
     fn slim_map<F, U>(self, f: F) -> Map<Self, F>
@@ -182,11 +182,11 @@ pub trait FutureExt: Future {
         support::assert_future::<_, Fut1::Output>(MapOkOrElseAsync::new(self, default, f))
     }
 
-    fn slim_never_error(self) -> IntoTryFuture<Self, Never>
+    fn slim_never_error(self) -> IntoResultFuture<Self, Never>
     where
         Self: Sized,
     {
-        support::assert_future::<_, Result<Self::Output, Never>>(self.slim_into_try_future())
+        support::assert_future::<_, Result<Self::Output, Never>>(self.slim_into_result_future())
     }
 
     fn slim_ok_into<U>(self) -> OkInto<Self, U>
@@ -240,11 +240,11 @@ pub trait FutureExt: Future {
         support::assert_future::<_, Result<Self::Ok, <Self::Error as ResultFuture>::Error>>(TryFlattenErr::new(self))
     }
 
-    fn slim_unit_error(self) -> IntoTryFuture<Self, ()>
+    fn slim_unit_error(self) -> IntoResultFuture<Self, ()>
     where
         Self: Sized,
     {
-        support::assert_future::<_, Result<Self::Output, ()>>(self.slim_into_try_future())
+        support::assert_future::<_, Result<Self::Output, ()>>(self.slim_into_result_future())
     }
 
     fn slim_unwrap_or_else<F>(self, f: F) -> UnwrapOrElse<Self, F>

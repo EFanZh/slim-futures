@@ -1,4 +1,4 @@
-use crate::future::into_try_future::IntoTryFuture;
+use crate::future::into_result_future::IntoResultFuture;
 use crate::future::ready::Ready;
 use crate::support;
 use core::future::Future;
@@ -11,7 +11,7 @@ pin_project_lite::pin_project! {
         T: Copy,
     {
         #[pin]
-        inner: IntoTryFuture<Ready<T>, E>
+        inner: IntoResultFuture<Ready<T>, E>
     }
 }
 
@@ -24,7 +24,7 @@ where
         T: Copy,
     {
         Self {
-            inner: IntoTryFuture::new(Ready::new(value)),
+            inner: IntoResultFuture::new(Ready::new(value)),
         }
     }
 }
