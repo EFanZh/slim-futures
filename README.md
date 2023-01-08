@@ -8,6 +8,10 @@ Async combinators that focus on small binary sizes.
 
 | slim-futures                               | [`futures`]                      |
 | ------------------------------------------ | -------------------------------- |
+| `AsyncIteratorExt::fold`                   |                                  |
+| `AsyncIteratorExt::fold_async`             | [`StreamExt::fold`]              |
+| `AsyncIteratorExt::try_fold`               |                                  |
+| `AsyncIteratorExt::try_fold_async`         | [`TryStreamExt::try_fold`]       |
 | `FutureExt::slim_and_then`                 |                                  |
 | `FutureExt::slim_and_then_async`           | [`TryFutureExt::and_then`]       |
 | `FutureExt::slim_err_into`                 | [`TryFutureExt::err_into`]       |
@@ -53,6 +57,7 @@ Async combinators that focus on small binary sizes.
 [`FutureExt::never_error`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.never_error
 [`FutureExt::then`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.then
 [`FutureExt::unit_error`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.unit_error
+[`StreamExt::fold`]: https://docs.rs/futures/latest/futures/stream/trait.StreamExt.html#method.fold
 [`TryFutureExt::and_then`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.and_then
 [`TryFutureExt::err_into`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.err_into
 [`TryFutureExt::inspect_err`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.inspect_err
@@ -64,6 +69,7 @@ Async combinators that focus on small binary sizes.
 [`TryFutureExt::or_else`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.or_else
 [`TryFutureExt::try_flatten`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.try_flatten
 [`TryFutureExt::unwrap_or_else`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.unwrap_or_else
+[`TryStreamExt::try_fold`]: https://docs.rs/futures/latest/futures/stream/trait.TryStreamExt.html#method.try_fold
 [`err`]: https://docs.rs/futures/latest/futures/future/fn.err.html
 [`lazy`]: https://docs.rs/futures/latest/futures/future/fn.lazy.html
 [`ok`]: https://docs.rs/futures/latest/futures/future/fn.ok.html

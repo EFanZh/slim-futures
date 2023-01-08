@@ -1,5 +1,5 @@
-use crate::support::{AsyncIterator, FnMut2};
-use crate::support::{FromResidual, Try};
+use crate::support::{AsyncIterator, FnMut2, FromResidual, Try};
+use futures_core::{FusedFuture, FusedStream};
 use std::future::Future;
 use std::ops::ControlFlow;
 use std::pin::Pin;
@@ -53,11 +53,23 @@ where
         while let Some(item) = futures_core::ready!(iter.as_mut().poll_next(cx)) {
             match f.call_mut(*acc, item).branch() {
                 ControlFlow::Continue(result) => *acc = result,
-                ControlFlow::Break(residual) => return Poll::Ready(<Self::Output>::from_residual(residual)),
+                ControlFlow::Break(residual) => return Poll::Ready(Self::Output::from_residual(residual)),
             }
         }
 
         Poll::Ready(<Self::Output>::from_output(*acc))
+    }
+}
+
+impl<I, B, F> FusedFuture for TryFold<I, B, F>
+where
+    I: FusedStream,
+    B: Copy,
+    F: FnMut2<B, I::Item>,
+    F::Output: Try<Output = B>,
+{
+    fn is_terminated(&self) -> bool {
+        self.iter.is_terminated()
     }
 }
 

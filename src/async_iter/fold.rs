@@ -1,4 +1,5 @@
 use crate::support::{AsyncIterator, FnMut2};
+use futures_core::{FusedFuture, FusedStream};
 use std::future::Future;
 use std::pin::Pin;
 use std::task::{Context, Poll};
@@ -52,6 +53,17 @@ where
         }
 
         Poll::Ready(*acc)
+    }
+}
+
+impl<I, B, F> FusedFuture for Fold<I, B, F>
+where
+    I: FusedStream,
+    B: Copy,
+    F: FnMut2<B, I::Item, Output = B>,
+{
+    fn is_terminated(&self) -> bool {
+        self.iter.is_terminated()
     }
 }
 
