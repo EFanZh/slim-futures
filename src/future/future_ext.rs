@@ -43,11 +43,13 @@ pub trait FutureExt: Future {
 
     fn slim_and_then_async<F, Fut2>(self, f: F) -> AndThenAsync<Self, F>
     where
-        Self: ResultFuture + Sized,
-        F: FnMut(Self::Ok) -> Fut2,
-        Fut2: ResultFuture<Error = Self::Error>,
+        Self: Sized,
+        Self::Output: Try,
+        F: FnMut(<Self::Output as Try>::Output) -> Fut2,
+        Fut2: Future,
+        Fut2::Output: FromResidual<<Self::Output as Try>::Residual> + Try,
     {
-        support::assert_future::<_, Result<Fut2::Ok, Self::Error>>(AndThenAsync::new(self, f))
+        support::assert_future::<_, Fut2::Output>(AndThenAsync::new(self, f))
     }
 
     fn slim_err_into<U>(self) -> ErrInto<Self, U>

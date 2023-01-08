@@ -1,5 +1,6 @@
 pub use self::fn_mut_1::FnMut1;
 pub use self::fn_mut_2::FnMut2;
+pub use self::raw_residual::RawResidual;
 pub use self::result_future::ResultFuture;
 pub use self::try_::{FromResidual, Try};
 pub use self::two_phases::TwoPhases;
@@ -10,6 +11,7 @@ pub use futures_core::{FusedStream as FusedAsyncIterator, Stream as AsyncIterato
 mod fn_mut_1;
 mod fn_mut_2;
 pub mod fns;
+mod raw_residual;
 mod result_future;
 mod try_;
 mod two_phases;

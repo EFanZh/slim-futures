@@ -1,39 +1,71 @@
-use crate::future::map_ok::MapOk;
+use crate::future::map::Map;
 use crate::future::try_flatten::TryFlatten;
-use crate::support::{FnMut1, ResultFuture};
+use crate::support::{FnMut1, FromResidual, RawResidual, Try};
 use core::future::Future;
+use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use futures_core::FusedFuture;
 
-pin_project_lite::pin_project! {
-    pub struct AndThenAsync<Fut, F>
-    where
-        Fut: ResultFuture,
-        F: FnMut1<Fut::Ok>,
-    {
-        #[pin]
-        inner: TryFlatten<MapOk<Fut, F>>
-    }
+#[derive(Clone)]
+struct AndThenAsyncFn<F> {
+    inner: F,
 }
 
-impl<Fut, F, T, E> AndThenAsync<Fut, F>
+impl<T, F> FnMut1<T> for AndThenAsyncFn<F>
 where
-    Fut: Future<Output = Result<T, E>>,
-    F: FnMut1<T>,
+    T: Try,
+    F: FnMut1<T::Output>,
+    F::Output: Future,
+    <F::Output as Future>::Output: FromResidual<T::Residual>,
 {
-    pub(crate) fn new(fut: Fut, f: F) -> Self {
-        Self {
-            inner: TryFlatten::new(MapOk::new(fut, f)),
+    type Output = RawResidual<T::Residual, F::Output>;
+
+    fn call_mut(&mut self, arg: T) -> Self::Output {
+        match arg.branch() {
+            ControlFlow::Continue(output) => RawResidual::Continue(self.inner.call_mut(output)),
+            ControlFlow::Break(residual) => RawResidual::Break(residual),
         }
     }
 }
 
-impl<Fut, F, T, E> Clone for AndThenAsync<Fut, F>
+pin_project_lite::pin_project! {
+    pub struct AndThenAsync<Fut, F>
+    where
+        Fut: Future,
+        Fut::Output: Try,
+        F: FnMut1<<Fut::Output as Try>::Output>,
+        F::Output: Future,
+        <F::Output as Future>::Output: FromResidual<<Fut::Output as Try>::Residual>,
+        <F::Output as Future>::Output: Try,
+    {
+        #[pin]
+        inner: TryFlatten<Map<Fut, AndThenAsyncFn<F>>>
+    }
+}
+
+impl<Fut, F> AndThenAsync<Fut, F>
 where
-    Fut: Clone + Future<Output = Result<T, E>>,
-    F: Clone + FnMut1<T>,
-    F::Output: Clone,
+    Fut: Future,
+    Fut::Output: Try,
+    F: FnMut1<<Fut::Output as Try>::Output>,
+    F::Output: Future,
+    <F::Output as Future>::Output: FromResidual<<Fut::Output as Try>::Residual> + Try,
+{
+    pub(crate) fn new(fut: Fut, f: F) -> Self {
+        Self {
+            inner: TryFlatten::new(Map::new(fut, AndThenAsyncFn { inner: f })),
+        }
+    }
+}
+
+impl<Fut, F> Clone for AndThenAsync<Fut, F>
+where
+    Fut: Clone + Future,
+    Fut::Output: Try,
+    F: Clone + FnMut1<<Fut::Output as Try>::Output>,
+    F::Output: Clone + Future,
+    <F::Output as Future>::Output: FromResidual<<Fut::Output as Try>::Residual> + Try,
 {
     fn clone(&self) -> Self {
         Self {
@@ -42,24 +74,28 @@ where
     }
 }
 
-impl<Fut, F, T, E, U> Future for AndThenAsync<Fut, F>
+impl<Fut, F> Future for AndThenAsync<Fut, F>
 where
-    Fut: Future<Output = Result<T, E>>,
-    F: FnMut1<T>,
-    F::Output: Future<Output = Result<U, E>>,
+    Fut: Future,
+    Fut::Output: Try,
+    F: FnMut1<<Fut::Output as Try>::Output>,
+    F::Output: Future,
+    <F::Output as Future>::Output: FromResidual<<Fut::Output as Try>::Residual> + Try,
 {
-    type Output = Result<U, E>;
+    type Output = <F::Output as Future>::Output;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         self.project().inner.poll(cx)
     }
 }
 
-impl<Fut, F, T, E, U> FusedFuture for AndThenAsync<Fut, F>
+impl<Fut, F> FusedFuture for AndThenAsync<Fut, F>
 where
-    Fut: FusedFuture<Output = Result<T, E>>,
-    F: FnMut1<T>,
-    F::Output: FusedFuture<Output = Result<U, E>>,
+    Fut: FusedFuture,
+    Fut::Output: Try,
+    F: FnMut1<<Fut::Output as Try>::Output>,
+    F::Output: FusedFuture,
+    <F::Output as Future>::Output: FromResidual<<Fut::Output as Try>::Residual> + Try,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()
@@ -84,15 +120,15 @@ mod tests {
 
     #[tokio::test]
     async fn test_and_then_async() {
-        assert_eq!(future::ok(2).slim_and_then_async(ok_plus_3).await, Ok(5));
-        assert_eq!(future::ok(2).slim_and_then_async(err_plus_3).await, Err(5));
-        assert_eq!(future::err(2).slim_and_then_async(ok_plus_3).await, Err(2));
-        assert_eq!(future::err(2).slim_and_then_async(err_plus_3).await, Err(2));
+        assert_eq!(future::ok::<_, u32>(2).slim_and_then_async(ok_plus_3).await, Ok(5));
+        assert_eq!(future::ok::<_, u32>(2).slim_and_then_async(err_plus_3).await, Err(5));
+        assert_eq!(future::err::<_, u32>(2).slim_and_then_async(ok_plus_3).await, Err(2));
+        assert_eq!(future::err::<_, u32>(2).slim_and_then_async(err_plus_3).await, Err(2));
     }
 
     #[tokio::test]
     async fn test_and_then_async_clone() {
-        let future = future::ok(2).slim_and_then_async(ok_plus_3);
+        let future = future::ok::<u32, u32>(2).slim_and_then_async(ok_plus_3);
         let future_2 = future.clone();
 
         assert_eq!(future.await, Ok(5));
@@ -101,7 +137,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_and_then_async_fused_future() {
-        let mut future = future::ok(2).slim_and_then_async(ok_plus_3);
+        let mut future = future::ok::<u32, u32>(2).slim_and_then_async(ok_plus_3);
 
         assert!(!future.is_terminated());
         assert_eq!(future.by_ref().await, Ok(5));
@@ -112,7 +148,7 @@ mod tests {
     async fn test_and_then_async_is_slim() {
         let make_base_future = || crate::future::ok::<_, u32>(NonZeroU32::new(2).unwrap()).slim_map_ok(drop);
         let base_future = make_base_future();
-        let future_1 = make_base_future().slim_and_then_async(crate::future::ok);
+        let future_1 = make_base_future().slim_and_then_async(crate::future::ok::<_, u32>);
         let future_2 = make_base_future().and_then(crate::future::ok);
 
         assert_eq!(mem::size_of_val(&base_future), mem::size_of_val(&future_1));

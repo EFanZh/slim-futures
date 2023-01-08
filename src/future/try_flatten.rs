@@ -68,10 +68,12 @@ where
     }
 }
 
-impl<Fut, Fut2, E, T> FusedFuture for TryFlatten<Fut>
+impl<Fut> FusedFuture for TryFlatten<Fut>
 where
-    Fut: FusedFuture<Output = Result<Fut2, E>>,
-    Fut2: FusedFuture<Output = Result<T, E>>,
+    Fut: FusedFuture,
+    Fut::Output: Try,
+    <Fut::Output as Try>::Output: FusedFuture,
+    <<Fut::Output as Try>::Output as Future>::Output: FromResidual<<Fut::Output as Try>::Residual> + Try,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_future_terminated()
@@ -128,7 +130,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_try_flatten_fused_future() {
-        let mut future = future::ok::<_, u32>(future::ok::<u32, _>(2)).slim_try_flatten();
+        let mut future = future::ok::<_, u32>(future::ok::<u32, u32>(2)).slim_try_flatten();
 
         assert!(!future.is_terminated());
         assert_eq!(future.by_ref().await, Ok(2));
