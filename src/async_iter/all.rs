@@ -1,11 +1,11 @@
 use crate::async_iter::TryFold;
 use crate::support::{AsyncIterator, FnMut1, FnMut2};
+use core::future::Future;
+use core::ops::ControlFlow;
+use core::pin::Pin;
 use core::task;
+use core::task::{Context, Poll};
 use futures_core::{FusedFuture, FusedStream};
-use std::future::Future;
-use std::ops::ControlFlow;
-use std::pin::Pin;
-use std::task::{Context, Poll};
 
 #[derive(Clone)]
 struct AllFn<F> {

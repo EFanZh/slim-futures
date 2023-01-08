@@ -4,9 +4,9 @@ pub use self::pinned_and_not_pinned::PinnedAndNotPinned;
 pub use self::try_::{FromResidual, Try};
 pub use self::try_future::TryFuture;
 pub use self::two_phases::TwoPhases;
+pub use core::convert::Infallible as Never;
 use futures_core::Future;
 pub use futures_core::{FusedStream as FusedAsyncIterator, Stream as AsyncIterator};
-pub use std::convert::Infallible as Never;
 
 mod fn_mut_1;
 mod fn_mut_2;

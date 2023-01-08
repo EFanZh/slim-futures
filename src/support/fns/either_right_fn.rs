@@ -1,6 +1,6 @@
 use crate::support::fn_mut_1::FnMut1;
+use core::marker::PhantomData;
 use futures_util::future::Either;
-use std::marker::PhantomData;
 
 pub struct EitherRightFn<A, B> {
     _phantom: PhantomData<fn(B) -> Either<A, B>>,

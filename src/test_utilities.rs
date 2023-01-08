@@ -1,8 +1,8 @@
+use core::future::Future;
+use core::pin::Pin;
+use core::task::{Context, Poll};
 use futures_core::FusedFuture;
 use futures_util::FutureExt;
-use std::future::Future;
-use std::pin::Pin;
-use std::task::{Context, Poll};
 
 #[derive(Clone)]
 pub struct Yield {

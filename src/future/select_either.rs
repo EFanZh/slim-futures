@@ -2,11 +2,11 @@ use crate::future::map::Map;
 use crate::future::raw_select::RawSelect;
 use crate::support;
 use crate::support::fns::{EitherLeftFn, EitherRightFn};
+use core::future::Future;
+use core::pin::Pin;
+use core::task::{Context, Poll};
 use futures_core::FusedFuture;
 use futures_util::future::Either;
-use std::future::Future;
-use std::pin::Pin;
-use std::task::{Context, Poll};
 
 type LeftFuture<A, B> = Map<A, EitherLeftFn<<A as Future>::Output, <B as Future>::Output>>;
 type RightFuture<A, B> = Map<B, EitherRightFn<<A as Future>::Output, <B as Future>::Output>>;

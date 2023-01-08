@@ -1,9 +1,9 @@
 use crate::future::into_try_future::IntoTryFuture;
 use crate::future::ready::Ready;
 use crate::support;
-use std::future::Future;
-use std::pin::Pin;
-use std::task::{Context, Poll};
+use core::future::Future;
+use core::pin::Pin;
+use core::task::{Context, Poll};
 
 pin_project_lite::pin_project! {
     pub struct Ok<T, E>

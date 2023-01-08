@@ -1,10 +1,10 @@
 use crate::future::raw_map_ok_or_else_async::RawMapOkOrElseAsync;
 use crate::support::fns::{ComposeFn, EitherLeftFn, EitherRightFn};
 use crate::support::{FnMut1, TryFuture};
+use core::future::Future;
+use core::pin::Pin;
+use core::task::{Context, Poll};
 use futures_core::FusedFuture;
-use std::future::Future;
-use std::pin::Pin;
-use std::task::{Context, Poll};
 
 type ExtractOk<Fut> = <Fut as TryFuture>::Ok;
 type ExtractError<Fut> = <Fut as TryFuture>::Error;

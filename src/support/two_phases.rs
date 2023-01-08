@@ -1,8 +1,8 @@
 use crate::support::FusedAsyncIterator;
+use core::ops::ControlFlow;
+use core::pin::Pin;
+use core::task::{Context, Poll};
 use futures_core::FusedFuture;
-use std::ops::ControlFlow;
-use std::pin::Pin;
-use std::task::{Context, Poll};
 
 pin_project_lite::pin_project! {
     #[project = TwoPhasesProject]

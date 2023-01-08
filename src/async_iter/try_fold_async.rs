@@ -1,9 +1,9 @@
 use crate::support::{AsyncIterator, FnMut2, FromResidual, Try};
+use core::future::Future;
+use core::ops::ControlFlow;
+use core::pin::Pin;
+use core::task::{Context, Poll};
 use futures_core::{FusedFuture, FusedStream};
-use std::future::Future;
-use std::ops::ControlFlow;
-use std::pin::Pin;
-use std::task::{Context, Poll};
 
 pin_project_lite::pin_project! {
     pub struct TryFoldAsync<I, B, F>

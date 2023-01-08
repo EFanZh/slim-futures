@@ -1,6 +1,6 @@
-use std::convert::Infallible;
-use std::ops::ControlFlow;
-use std::task::Poll;
+use core::convert::Infallible;
+use core::ops::ControlFlow;
+use core::task::Poll;
 
 pub trait FromResidual<R = <Self as Try>::Residual> {
     fn from_residual(residual: R) -> Self;

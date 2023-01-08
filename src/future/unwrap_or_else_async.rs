@@ -1,9 +1,9 @@
 use crate::support::{FnMut1, PinnedAndNotPinned, TryFuture, TwoPhases};
+use core::future::Future;
+use core::ops::ControlFlow;
+use core::pin::Pin;
+use core::task::{Context, Poll};
 use futures_core::FusedFuture;
-use std::future::Future;
-use std::ops::ControlFlow;
-use std::pin::Pin;
-use std::task::{Context, Poll};
 
 pin_project_lite::pin_project! {
     #[derive(Clone)]

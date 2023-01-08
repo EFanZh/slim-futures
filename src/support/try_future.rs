@@ -1,4 +1,4 @@
-use std::future::Future;
+use core::future::Future;
 
 pub trait TryFuture: Future<Output = Result<Self::Ok, Self::Error>> {
     type Ok;

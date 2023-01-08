@@ -1,9 +1,9 @@
 use crate::future::map::Map;
 use crate::support::FnMut1;
+use core::future::Future;
+use core::pin::Pin;
+use core::task::{Context, Poll};
 use futures_core::FusedFuture;
-use std::future::Future;
-use std::pin::Pin;
-use std::task::{Context, Poll};
 
 #[derive(Clone)]
 struct InspectFn<F> {

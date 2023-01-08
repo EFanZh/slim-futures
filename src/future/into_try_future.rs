@@ -1,9 +1,9 @@
 use crate::future::map::Map;
 use crate::support::fns::OkFn;
+use core::future::Future;
+use core::pin::Pin;
+use core::task::{Context, Poll};
 use futures_core::FusedFuture;
-use std::future::Future;
-use std::pin::Pin;
-use std::task::{Context, Poll};
 
 pin_project_lite::pin_project! {
     pub struct IntoTryFuture<Fut, E>
@@ -65,6 +65,7 @@ mod tests {
     use futures_core::FusedFuture;
     use futures_util::{future, FutureExt as _};
     use std::mem;
+    use std::string::String;
 
     #[tokio::test]
     async fn test_into_try_future() {

@@ -1,10 +1,10 @@
 use crate::future::map_err::MapErr;
 use crate::support::fns::IntoFn;
 use crate::support::TryFuture;
+use core::future::Future;
+use core::pin::Pin;
+use core::task::{Context, Poll};
 use futures_core::FusedFuture;
-use std::future::Future;
-use std::pin::Pin;
-use std::task::{Context, Poll};
 
 pin_project_lite::pin_project! {
     pub struct ErrInto<Fut, U>

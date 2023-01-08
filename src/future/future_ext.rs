@@ -24,7 +24,7 @@ use crate::future::try_flatten_err::TryFlattenErr;
 use crate::future::unwrap_or_else::UnwrapOrElse;
 use crate::future::unwrap_or_else_async::UnwrapOrElseAsync;
 use crate::support::{self, AsyncIterator, Never, TryFuture};
-use std::future::Future;
+use core::future::Future;
 
 pub trait FutureExt: Future {
     fn by_ref(&mut self) -> &mut Self {

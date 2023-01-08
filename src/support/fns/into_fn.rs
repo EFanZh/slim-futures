@@ -1,5 +1,5 @@
 use crate::support::fn_mut_1::FnMut1;
-use std::marker::PhantomData;
+use core::marker::PhantomData;
 
 pub struct IntoFn<T, U> {
     _phantom: PhantomData<fn(T) -> U>,

@@ -4,7 +4,7 @@ use crate::async_iter::fold_async::FoldAsync;
 use crate::async_iter::try_fold::TryFold;
 use crate::async_iter::try_fold_async::TryFoldAsync;
 use crate::support::{AsyncIterator, Try};
-use std::future::Future;
+use core::future::Future;
 
 pub trait AsyncIteratorExt: AsyncIterator {
     fn all<F>(self, f: F) -> All<Self, F>

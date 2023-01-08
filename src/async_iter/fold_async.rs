@@ -1,8 +1,8 @@
 use crate::support::{AsyncIterator, FnMut2};
+use core::future::Future;
+use core::pin::Pin;
+use core::task::{Context, Poll};
 use futures_core::{FusedFuture, FusedStream};
-use std::future::Future;
-use std::pin::Pin;
-use std::task::{Context, Poll};
 
 pin_project_lite::pin_project! {
     pub struct FoldAsync<I, B, F>

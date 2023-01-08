@@ -59,6 +59,10 @@
     clippy::verbose_file_reads,
     clippy::wildcard_dependencies
 )]
+#![no_std]
+
+#[cfg(test)]
+extern crate std;
 
 pub mod async_iter;
 pub mod future;

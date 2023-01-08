@@ -2,11 +2,11 @@ use crate::future::map_ok_or_else::MapOkOrElse;
 use crate::future::raw_select::RawSelect;
 use crate::support::fns::{ComposeFn, EitherLeftFn, EitherRightFn, ErrFn, OkFn};
 use crate::support::{self, TryFuture};
+use core::future::Future;
+use core::pin::Pin;
+use core::task::{Context, Poll};
 use futures_core::FusedFuture;
 use futures_util::future::Either;
-use std::future::Future;
-use std::pin::Pin;
-use std::task::{Context, Poll};
 
 type OkEitherLeftFn<Fut1, Fut2> = EitherLeftFn<<Fut1 as TryFuture>::Ok, <Fut2 as TryFuture>::Ok>;
 type OkEitherRightFn<Fut1, Fut2> = EitherRightFn<<Fut1 as TryFuture>::Ok, <Fut2 as TryFuture>::Ok>;

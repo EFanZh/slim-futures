@@ -2,11 +2,11 @@ use crate::future::and_then_async::AndThenAsync;
 use crate::future::map::Map;
 use crate::support::fns::OkFn;
 use crate::support::{FnMut1, TryFuture};
+use core::future::Future;
+use core::marker::PhantomData;
+use core::pin::Pin;
+use core::task::{Context, Poll};
 use futures_core::FusedFuture;
-use std::future::Future;
-use std::marker::PhantomData;
-use std::pin::Pin;
-use std::task::{Context, Poll};
 
 struct MapOkAsyncFn<F, E> {
     inner: F,

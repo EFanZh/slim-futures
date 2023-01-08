@@ -2,9 +2,9 @@ use crate::future::map::Map;
 use crate::future::ready::Ready;
 use crate::support;
 use crate::support::fns::ErrFn;
-use std::future::Future;
-use std::pin::Pin;
-use std::task::{Context, Poll};
+use core::future::Future;
+use core::pin::Pin;
+use core::task::{Context, Poll};
 
 pin_project_lite::pin_project! {
     pub struct Err<T, E> {
