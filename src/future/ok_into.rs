@@ -1,6 +1,6 @@
 use crate::future::map_ok::MapOk;
 use crate::support::fns::IntoFn;
-use crate::support::TryFuture;
+use crate::support::ResultFuture;
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
@@ -9,7 +9,7 @@ use futures_core::FusedFuture;
 pin_project_lite::pin_project! {
     pub struct OkInto<Fut, U>
     where
-        Fut: TryFuture,
+        Fut: ResultFuture,
     {
         #[pin]
         inner: MapOk<Fut, IntoFn<Fut::Ok, U>>,
@@ -18,7 +18,7 @@ pin_project_lite::pin_project! {
 
 impl<Fut, U> OkInto<Fut, U>
 where
-    Fut: TryFuture,
+    Fut: ResultFuture,
 {
     pub(crate) fn new(fut: Fut) -> Self {
         Self {
@@ -29,7 +29,7 @@ where
 
 impl<Fut, U> Clone for OkInto<Fut, U>
 where
-    Fut: TryFuture + Clone,
+    Fut: ResultFuture + Clone,
 {
     fn clone(&self) -> Self {
         Self {

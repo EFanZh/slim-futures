@@ -23,7 +23,7 @@ use crate::future::try_flatten::TryFlatten;
 use crate::future::try_flatten_err::TryFlattenErr;
 use crate::future::unwrap_or_else::UnwrapOrElse;
 use crate::future::unwrap_or_else_async::UnwrapOrElseAsync;
-use crate::support::{self, AsyncIterator, Never, TryFuture};
+use crate::support::{self, AsyncIterator, Never, ResultFuture};
 use core::future::Future;
 
 pub trait FutureExt: Future {
@@ -33,7 +33,7 @@ pub trait FutureExt: Future {
 
     fn slim_and_then<F, U>(self, f: F) -> AndThen<Self, F>
     where
-        Self: TryFuture + Sized,
+        Self: ResultFuture + Sized,
         F: FnMut(Self::Ok) -> Result<U, Self::Error>,
     {
         support::assert_future::<_, Result<U, Self::Error>>(AndThen::new(self, f))
@@ -41,16 +41,16 @@ pub trait FutureExt: Future {
 
     fn slim_and_then_async<F, Fut2>(self, f: F) -> AndThenAsync<Self, F>
     where
-        Self: TryFuture + Sized,
+        Self: ResultFuture + Sized,
         F: FnMut(Self::Ok) -> Fut2,
-        Fut2: TryFuture<Error = Self::Error>,
+        Fut2: ResultFuture<Error = Self::Error>,
     {
         support::assert_future::<_, Result<Fut2::Ok, Self::Error>>(AndThenAsync::new(self, f))
     }
 
     fn slim_err_into<U>(self) -> ErrInto<Self, U>
     where
-        Self: TryFuture + Sized,
+        Self: ResultFuture + Sized,
         Self::Error: Into<U>,
     {
         support::assert_future::<_, Result<Self::Ok, U>>(ErrInto::new(self))
@@ -82,7 +82,7 @@ pub trait FutureExt: Future {
 
     fn slim_inspect_err<F>(self, f: F) -> InspectErr<Self, F>
     where
-        Self: TryFuture + Sized,
+        Self: ResultFuture + Sized,
         F: FnMut(&Self::Error),
     {
         support::assert_future::<_, Self::Output>(InspectErr::new(self, f))
@@ -90,7 +90,7 @@ pub trait FutureExt: Future {
 
     fn slim_inspect_ok<F>(self, f: F) -> InspectOk<Self, F>
     where
-        Self: TryFuture + Sized,
+        Self: ResultFuture + Sized,
         F: FnMut(&Self::Ok),
     {
         support::assert_future::<_, Self::Output>(InspectOk::new(self, f))
@@ -122,7 +122,7 @@ pub trait FutureExt: Future {
 
     fn slim_map_err<F, U>(self, f: F) -> MapErr<Self, F>
     where
-        Self: TryFuture + Sized,
+        Self: ResultFuture + Sized,
         F: FnMut(Self::Error) -> U,
     {
         support::assert_future::<_, Result<Self::Ok, U>>(MapErr::new(self, f))
@@ -130,7 +130,7 @@ pub trait FutureExt: Future {
 
     fn slim_map_err_async<F, Fut2>(self, f: F) -> MapErrAsync<Self, F>
     where
-        Self: TryFuture + Sized,
+        Self: ResultFuture + Sized,
         F: FnMut(Self::Error) -> Fut2,
         Fut2: Future,
     {
@@ -147,7 +147,7 @@ pub trait FutureExt: Future {
 
     fn slim_map_ok<F, U>(self, f: F) -> MapOk<Self, F>
     where
-        Self: TryFuture + Sized,
+        Self: ResultFuture + Sized,
         F: FnMut(Self::Ok) -> U,
     {
         support::assert_future::<_, Result<U, Self::Error>>(MapOk::new(self, f))
@@ -155,7 +155,7 @@ pub trait FutureExt: Future {
 
     fn slim_map_ok_async<F, Fut2>(self, f: F) -> MapOkAsync<Self, F>
     where
-        Self: TryFuture + Sized,
+        Self: ResultFuture + Sized,
         F: FnMut(Self::Ok) -> Fut2,
         Fut2: Future,
     {
@@ -164,7 +164,7 @@ pub trait FutureExt: Future {
 
     fn slim_map_ok_or_else<D, F, U>(self, default: D, f: F) -> MapOkOrElse<Self, D, F>
     where
-        Self: TryFuture + Sized,
+        Self: ResultFuture + Sized,
         D: FnMut(Self::Error) -> U,
         F: FnMut(Self::Ok) -> U,
     {
@@ -173,7 +173,7 @@ pub trait FutureExt: Future {
 
     fn slim_map_ok_or_else_async<D, F, Fut1, Fut2>(self, default: D, f: F) -> MapOkOrElseAsync<Self, D, F>
     where
-        Self: TryFuture + Sized,
+        Self: ResultFuture + Sized,
         D: FnMut(Self::Error) -> Fut1,
         F: FnMut(Self::Ok) -> Fut2,
         Fut1: Future,
@@ -191,7 +191,7 @@ pub trait FutureExt: Future {
 
     fn slim_ok_into<U>(self) -> OkInto<Self, U>
     where
-        Self: TryFuture + Sized,
+        Self: ResultFuture + Sized,
         Self::Ok: Into<U>,
     {
         support::assert_future::<_, Result<U, Self::Error>>(OkInto::new(self))
@@ -199,7 +199,7 @@ pub trait FutureExt: Future {
 
     fn slim_or_else<F, U>(self, f: F) -> OrElse<Self, F>
     where
-        Self: TryFuture + Sized,
+        Self: ResultFuture + Sized,
         F: FnMut(Self::Error) -> Result<Self::Ok, U>,
     {
         support::assert_future::<_, Result<Self::Ok, U>>(OrElse::new(self, f))
@@ -207,16 +207,16 @@ pub trait FutureExt: Future {
 
     fn slim_or_else_async<F, Fut2>(self, f: F) -> OrElseAsync<Self, F>
     where
-        Self: TryFuture + Sized,
+        Self: ResultFuture + Sized,
         F: FnMut(Self::Error) -> Fut2,
-        Fut2: TryFuture<Ok = Self::Ok>,
+        Fut2: ResultFuture<Ok = Self::Ok>,
     {
         support::assert_future::<_, Result<Self::Ok, Fut2::Error>>(OrElseAsync::new(self, f))
     }
 
     fn slim_raw_map_ok_or_else_async<D, F, Fut>(self, default: D, f: F) -> RawMapOkOrElseAsync<Self, D, F>
     where
-        Self: TryFuture + Sized,
+        Self: ResultFuture + Sized,
         D: FnMut(Self::Error) -> Fut,
         F: FnMut(Self::Ok) -> Fut,
         Fut: Future,
@@ -226,18 +226,18 @@ pub trait FutureExt: Future {
 
     fn slim_try_flatten(self) -> TryFlatten<Self>
     where
-        Self: TryFuture + Sized,
-        Self::Ok: TryFuture<Error = Self::Error> + Sized,
+        Self: ResultFuture + Sized,
+        Self::Ok: ResultFuture<Error = Self::Error> + Sized,
     {
-        support::assert_future::<_, Result<<Self::Ok as TryFuture>::Ok, Self::Error>>(TryFlatten::new(self))
+        support::assert_future::<_, Result<<Self::Ok as ResultFuture>::Ok, Self::Error>>(TryFlatten::new(self))
     }
 
     fn slim_try_flatten_err(self) -> TryFlattenErr<Self>
     where
-        Self: TryFuture + Sized,
-        Self::Error: TryFuture<Ok = Self::Ok> + Sized,
+        Self: ResultFuture + Sized,
+        Self::Error: ResultFuture<Ok = Self::Ok> + Sized,
     {
-        support::assert_future::<_, Result<Self::Ok, <Self::Error as TryFuture>::Error>>(TryFlattenErr::new(self))
+        support::assert_future::<_, Result<Self::Ok, <Self::Error as ResultFuture>::Error>>(TryFlattenErr::new(self))
     }
 
     fn slim_unit_error(self) -> IntoTryFuture<Self, ()>
@@ -249,7 +249,7 @@ pub trait FutureExt: Future {
 
     fn slim_unwrap_or_else<F>(self, f: F) -> UnwrapOrElse<Self, F>
     where
-        Self: TryFuture + Sized,
+        Self: ResultFuture + Sized,
         F: FnMut(Self::Error) -> Self::Ok,
     {
         support::assert_future::<_, Self::Ok>(UnwrapOrElse::new(self, f))
@@ -257,7 +257,7 @@ pub trait FutureExt: Future {
 
     fn slim_unwrap_or_else_async<F, Fut2>(self, f: F) -> UnwrapOrElseAsync<Self, F>
     where
-        Self: TryFuture + Sized,
+        Self: ResultFuture + Sized,
         F: FnMut(Self::Error) -> Fut2,
         Fut2: Future<Output = Self::Ok>,
     {

@@ -1,6 +1,6 @@
 use crate::future::map_err::MapErr;
 use crate::future::try_flatten_err::TryFlattenErr;
-use crate::support::{FnMut1, TryFuture};
+use crate::support::{FnMut1, ResultFuture};
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
@@ -9,7 +9,7 @@ use futures_core::FusedFuture;
 pin_project_lite::pin_project! {
     pub struct OrElseAsync<Fut, F>
     where
-        Fut: TryFuture,
+        Fut: ResultFuture,
         F: FnMut1<Fut::Error>,
     {
         #[pin]

@@ -1,13 +1,13 @@
 use crate::future::raw_map_ok_or_else_async::RawMapOkOrElseAsync;
 use crate::support::fns::{ComposeFn, EitherLeftFn, EitherRightFn};
-use crate::support::{FnMut1, TryFuture};
+use crate::support::{FnMut1, ResultFuture};
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use futures_core::FusedFuture;
 
-type ExtractOk<Fut> = <Fut as TryFuture>::Ok;
-type ExtractError<Fut> = <Fut as TryFuture>::Error;
+type ExtractOk<Fut> = <Fut as ResultFuture>::Ok;
+type ExtractError<Fut> = <Fut as ResultFuture>::Error;
 
 type MapOkOrElseOkFn<Fut, D, F> =
     ComposeFn<F, EitherLeftFn<<F as FnMut1<ExtractOk<Fut>>>::Output, <D as FnMut1<ExtractError<Fut>>>::Output>>;
@@ -18,7 +18,7 @@ type MapOkOrElseErrFn<Fut, D, F> =
 pin_project_lite::pin_project! {
     pub struct MapOkOrElseAsync<Fut, D, F>
     where
-        Fut: TryFuture,
+        Fut: ResultFuture,
         D: FnMut1<Fut::Error>,
         F: FnMut1<Fut::Ok>,
     {

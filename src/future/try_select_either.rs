@@ -1,20 +1,20 @@
 use crate::future::map_ok_or_else::MapOkOrElse;
 use crate::future::raw_select::RawSelect;
 use crate::support::fns::{ComposeFn, EitherLeftFn, EitherRightFn, ErrFn, OkFn};
-use crate::support::{self, TryFuture};
+use crate::support::{self, ResultFuture};
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use futures_core::FusedFuture;
 use futures_util::future::Either;
 
-type OkEitherLeftFn<Fut1, Fut2> = EitherLeftFn<<Fut1 as TryFuture>::Ok, <Fut2 as TryFuture>::Ok>;
-type OkEitherRightFn<Fut1, Fut2> = EitherRightFn<<Fut1 as TryFuture>::Ok, <Fut2 as TryFuture>::Ok>;
-type ErrorEitherLeftFn<Fut1, Fut2> = EitherLeftFn<<Fut1 as TryFuture>::Error, <Fut2 as TryFuture>::Error>;
-type ErrorEitherRightFn<Fut1, Fut2> = EitherRightFn<<Fut1 as TryFuture>::Error, <Fut2 as TryFuture>::Error>;
+type OkEitherLeftFn<Fut1, Fut2> = EitherLeftFn<<Fut1 as ResultFuture>::Ok, <Fut2 as ResultFuture>::Ok>;
+type OkEitherRightFn<Fut1, Fut2> = EitherRightFn<<Fut1 as ResultFuture>::Ok, <Fut2 as ResultFuture>::Ok>;
+type ErrorEitherLeftFn<Fut1, Fut2> = EitherLeftFn<<Fut1 as ResultFuture>::Error, <Fut2 as ResultFuture>::Error>;
+type ErrorEitherRightFn<Fut1, Fut2> = EitherRightFn<<Fut1 as ResultFuture>::Error, <Fut2 as ResultFuture>::Error>;
 
-type OkEither<Fut1, Fut2> = Either<<Fut1 as TryFuture>::Ok, <Fut2 as TryFuture>::Ok>;
-type ErrorEither<Fut1, Fut2> = Either<<Fut1 as TryFuture>::Error, <Fut2 as TryFuture>::Error>;
+type OkEither<Fut1, Fut2> = Either<<Fut1 as ResultFuture>::Ok, <Fut2 as ResultFuture>::Ok>;
+type ErrorEither<Fut1, Fut2> = Either<<Fut1 as ResultFuture>::Error, <Fut2 as ResultFuture>::Error>;
 
 type OkEitherFn<Fut1, Fut2> = OkFn<OkEither<Fut1, Fut2>, ErrorEither<Fut1, Fut2>>;
 type ErrorEitherFn<Fut1, Fut2> = ErrFn<OkEither<Fut1, Fut2>, ErrorEither<Fut1, Fut2>>;
@@ -31,8 +31,8 @@ pin_project_lite::pin_project! {
     #[derive(Clone)]
     pub struct TrySelectEither<Fut1, Fut2>
     where
-        Fut1: TryFuture,
-        Fut2: TryFuture,
+        Fut1: ResultFuture,
+        Fut2: ResultFuture,
     {
         #[pin]
         inner: RawSelect<LeftFuture<Fut1, Fut2>, RightFuture<Fut1, Fut2>>
@@ -86,8 +86,8 @@ where
 
 pub fn try_select_either<Fut1, Fut2>(fut_1: Fut1, fut_2: Fut2) -> TrySelectEither<Fut1, Fut2>
 where
-    Fut1: TryFuture,
-    Fut2: TryFuture,
+    Fut1: ResultFuture,
+    Fut2: ResultFuture,
 {
     support::assert_future::<_, Result<Either<Fut1::Ok, Fut2::Ok>, Either<Fut1::Error, Fut2::Error>>>(
         TrySelectEither::new(fut_1, fut_2),

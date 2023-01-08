@@ -1,7 +1,7 @@
 use crate::future::and_then_async::AndThenAsync;
 use crate::future::map::Map;
 use crate::support::fns::OkFn;
-use crate::support::{FnMut1, TryFuture};
+use crate::support::{FnMut1, ResultFuture};
 use core::future::Future;
 use core::marker::PhantomData;
 use core::pin::Pin;
@@ -40,7 +40,7 @@ where
 pin_project_lite::pin_project! {
     pub struct MapOkAsync<Fut, F>
     where
-        Fut: TryFuture,
+        Fut: ResultFuture,
         F: FnMut1<Fut::Ok>,
         F::Output: Future,
     {

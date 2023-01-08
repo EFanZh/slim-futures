@@ -1,6 +1,6 @@
 use crate::future::map_ok::MapOk;
 use crate::future::try_flatten::TryFlatten;
-use crate::support::{FnMut1, TryFuture};
+use crate::support::{FnMut1, ResultFuture};
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
@@ -9,7 +9,7 @@ use futures_core::FusedFuture;
 pin_project_lite::pin_project! {
     pub struct AndThenAsync<Fut, F>
     where
-        Fut: TryFuture,
+        Fut: ResultFuture,
         F: FnMut1<Fut::Ok>,
     {
         #[pin]

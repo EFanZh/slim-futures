@@ -1,4 +1,4 @@
-use crate::support::{TryFuture, TwoPhases};
+use crate::support::{ResultFuture, TwoPhases};
 use core::future::Future;
 use core::ops::ControlFlow;
 use core::pin::Pin;
@@ -8,7 +8,7 @@ use futures_core::FusedFuture;
 pin_project_lite::pin_project! {
     pub struct TryFlattenErr<Fut>
     where
-        Fut: TryFuture,
+        Fut: ResultFuture,
     {
         #[pin]
         inner: TwoPhases<Fut, Fut::Error>,

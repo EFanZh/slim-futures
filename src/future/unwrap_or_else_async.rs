@@ -1,4 +1,4 @@
-use crate::support::{FnMut1, PinnedAndNotPinned, TryFuture, TwoPhases};
+use crate::support::{FnMut1, PinnedAndNotPinned, ResultFuture, TwoPhases};
 use core::future::Future;
 use core::ops::ControlFlow;
 use core::pin::Pin;
@@ -9,7 +9,7 @@ pin_project_lite::pin_project! {
     #[derive(Clone)]
     pub struct UnwrapOrElseAsync<Fut, F>
     where
-        Fut: TryFuture,
+        Fut: ResultFuture,
         F: FnMut1<Fut::Error>
     {
         #[pin]
@@ -19,7 +19,7 @@ pin_project_lite::pin_project! {
 
 impl<Fut, F> UnwrapOrElseAsync<Fut, F>
 where
-    Fut: TryFuture,
+    Fut: ResultFuture,
     F: FnMut1<Fut::Error>,
 {
     pub(crate) fn new(fut: Fut, f: F) -> Self {

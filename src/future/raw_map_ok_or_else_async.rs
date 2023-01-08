@@ -1,6 +1,6 @@
 use crate::future::map_async::MapAsync;
 use crate::support::fns::MapOkOrElseFn;
-use crate::support::{FnMut1, TryFuture};
+use crate::support::{FnMut1, ResultFuture};
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
@@ -9,7 +9,7 @@ use futures_core::FusedFuture;
 pin_project_lite::pin_project! {
     pub struct RawMapOkOrElseAsync<Fut, D, F>
     where
-        Fut: TryFuture,
+        Fut: ResultFuture,
         D: FnMut1<Fut::Error>,
         F: FnMut1<Fut::Ok, Output = D::Output>,
     {
