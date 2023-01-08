@@ -1,4 +1,4 @@
-use crate::support::{ResultFuture, TwoPhases};
+use crate::support::{FromResidual, Try, TwoPhases};
 use core::future::Future;
 use core::ops::ControlFlow;
 use core::pin::Pin;
@@ -8,16 +8,18 @@ use futures_core::FusedFuture;
 pin_project_lite::pin_project! {
     pub struct TryFlatten<Fut>
     where
-        Fut: ResultFuture,
+        Fut: Future,
+        Fut::Output: Try
     {
         #[pin]
-        inner: TwoPhases<Fut, Fut::Ok>,
+        inner: TwoPhases<Fut, <Fut::Output as Try>::Output>,
     }
 }
 
-impl<Fut, Fut2, E> TryFlatten<Fut>
+impl<Fut> TryFlatten<Fut>
 where
-    Fut: Future<Output = Result<Fut2, E>>,
+    Fut: Future,
+    Fut::Output: Try,
 {
     pub(crate) fn new(fut: Fut) -> Self {
         Self {
@@ -26,10 +28,11 @@ where
     }
 }
 
-impl<Fut, Fut2, E> Clone for TryFlatten<Fut>
+impl<Fut> Clone for TryFlatten<Fut>
 where
-    Fut: Clone + Future<Output = Result<Fut2, E>>,
-    Fut2: Clone,
+    Fut: Clone + Future,
+    Fut::Output: Try,
+    <Fut::Output as Try>::Output: Clone,
 {
     fn clone(&self) -> Self {
         Self {
@@ -38,22 +41,28 @@ where
     }
 }
 
-impl<Fut, Fut2, E, T> Future for TryFlatten<Fut>
+impl<Fut> Future for TryFlatten<Fut>
 where
-    Fut: Future<Output = Result<Fut2, E>>,
-    Fut2: Future<Output = Result<T, E>>,
+    Fut: Future,
+    Fut::Output: Try,
+    <Fut::Output as Try>::Output: Future,
+    <<Fut::Output as Try>::Output as Future>::Output: FromResidual<<Fut::Output as Try>::Residual> + Try,
 {
-    type Output = Result<T, E>;
+    type Output = <<Fut::Output as Try>::Output as Future>::Output;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         self.project().inner.poll_with(
             cx,
             |fut, cx| match fut.poll(cx) {
-                Poll::Ready(Ok(fut)) => ControlFlow::Continue(fut),
-                Poll::Ready(Err(error)) => ControlFlow::Break(Poll::Ready(Err(error))),
+                Poll::Ready(result) => match result.branch() {
+                    ControlFlow::Continue(fut) => ControlFlow::Continue(fut),
+                    ControlFlow::Break(residual) => {
+                        ControlFlow::Break(Poll::Ready(Self::Output::from_residual(residual)))
+                    }
+                },
                 Poll::Pending => ControlFlow::Break(Poll::Pending),
             },
-            Fut2::poll,
+            <Fut::Output as Try>::Output::poll,
         )
     }
 }
@@ -81,17 +90,19 @@ mod tests {
     #[tokio::test]
     async fn test_try_flatten() {
         assert_eq!(
-            future::ok::<_, u32>(future::ok::<u32, _>(2)).slim_try_flatten().await,
+            future::ok::<_, u32>(future::ok::<u32, u32>(2)).slim_try_flatten().await,
             Ok(2),
         );
 
         assert_eq!(
-            future::ok::<_, u32>(future::err::<u32, _>(2)).slim_try_flatten().await,
+            future::ok::<_, u32>(future::err::<u32, u32>(2))
+                .slim_try_flatten()
+                .await,
             Err(2),
         );
 
         assert_eq!(
-            future::err::<Ready<Result<u32, _>>, u32>(2).slim_try_flatten().await,
+            future::err::<Ready<Result<u32, u32>>, u32>(2).slim_try_flatten().await,
             Err(2),
         );
     }
@@ -99,7 +110,7 @@ mod tests {
     #[tokio::test]
     async fn test_try_flatten_with_pending() {
         let future = Yield::new(1)
-            .slim_map(|()| Ok::<_, u32>(future::ok::<u32, _>(2)))
+            .slim_map(|()| Ok::<_, u32>(future::ok::<u32, u32>(2)))
             .slim_try_flatten();
 
         assert_eq!(future.await, Ok(2));
@@ -107,7 +118,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_try_flatten_clone() {
-        let future = future::ok::<_, u32>(future::ok::<u32, _>(2)).slim_try_flatten();
+        let future = future::ok::<_, u32>(future::ok::<u32, u32>(2)).slim_try_flatten();
         let future_2 = future.clone();
 
         assert_eq!(future.await, Ok(2));

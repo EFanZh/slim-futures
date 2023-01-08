@@ -23,7 +23,7 @@ use crate::future::try_flatten::TryFlatten;
 use crate::future::try_flatten_err::TryFlattenErr;
 use crate::future::unwrap_or_else::UnwrapOrElse;
 use crate::future::unwrap_or_else_async::UnwrapOrElseAsync;
-use crate::support::{self, AsyncIterator, Never, ResultFuture};
+use crate::support::{self, AsyncIterator, FromResidual, Never, ResultFuture, Try};
 use core::future::Future;
 
 pub trait FutureExt: Future {
@@ -31,12 +31,14 @@ pub trait FutureExt: Future {
         self
     }
 
-    fn slim_and_then<F, U>(self, f: F) -> AndThen<Self, F>
+    fn slim_and_then<F, R>(self, f: F) -> AndThen<Self, F>
     where
-        Self: ResultFuture + Sized,
-        F: FnMut(Self::Ok) -> Result<U, Self::Error>,
+        Self: Sized,
+        Self::Output: Try,
+        F: FnMut(<Self::Output as Try>::Output) -> R,
+        R: FromResidual<<Self::Output as Try>::Residual> + Try,
     {
-        support::assert_future::<_, Result<U, Self::Error>>(AndThen::new(self, f))
+        support::assert_future::<_, R>(AndThen::new(self, f))
     }
 
     fn slim_and_then_async<F, Fut2>(self, f: F) -> AndThenAsync<Self, F>
@@ -226,10 +228,12 @@ pub trait FutureExt: Future {
 
     fn slim_try_flatten(self) -> TryFlatten<Self>
     where
-        Self: ResultFuture + Sized,
-        Self::Ok: ResultFuture<Error = Self::Error> + Sized,
+        Self: Sized,
+        Self::Output: Try,
+        <Self::Output as Try>::Output: Future,
+        <<Self::Output as Try>::Output as Future>::Output: FromResidual<<Self::Output as Try>::Residual> + Try,
     {
-        support::assert_future::<_, Result<<Self::Ok as ResultFuture>::Ok, Self::Error>>(TryFlatten::new(self))
+        support::assert_future::<_, <<Self::Output as Try>::Output as Future>::Output>(TryFlatten::new(self))
     }
 
     fn slim_try_flatten_err(self) -> TryFlattenErr<Self>
