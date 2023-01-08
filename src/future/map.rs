@@ -1,22 +1,21 @@
-use crate::support::{FnMut1, PinnedAndNotPinned};
+use crate::support::FnMut1;
 use core::future::Future;
 use core::pin::Pin;
-use core::task::{Context, Poll};
+use core::task::{self, Context, Poll};
 use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
     #[derive(Clone)]
     pub struct Map<Fut, F> {
         #[pin]
-        inner: PinnedAndNotPinned<Fut, F>
+        fut: Fut,
+        f: F,
     }
 }
 
 impl<Fut, F> Map<Fut, F> {
     pub(crate) fn new(fut: Fut, f: F) -> Self {
-        Self {
-            inner: PinnedAndNotPinned::new(fut, f),
-        }
+        Self { fut, f }
     }
 }
 
@@ -28,9 +27,9 @@ where
     type Output = F::Output;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
-        let inner = self.project().inner.project();
+        let this = self.project();
 
-        inner.pinned.poll(cx).map(|value| inner.not_pinned.call_mut(value))
+        Poll::Ready(this.f.call_mut(task::ready!(this.fut.poll(cx))))
     }
 }
 
@@ -40,7 +39,7 @@ where
     F: FnMut1<Fut::Output>,
 {
     fn is_terminated(&self) -> bool {
-        self.inner.pinned.is_terminated()
+        self.fut.is_terminated()
     }
 }
 
