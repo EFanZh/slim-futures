@@ -51,19 +51,20 @@ where
     type Output = <<Fut::Output as Try>::Output as Future>::Output;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
-        self.project().inner.poll_with(
-            cx,
-            |fut, cx| match fut.poll(cx) {
-                Poll::Ready(result) => match result.branch() {
-                    ControlFlow::Continue(fut) => ControlFlow::Continue(fut),
-                    ControlFlow::Break(residual) => {
-                        ControlFlow::Break(Poll::Ready(Self::Output::from_residual(residual)))
-                    }
-                },
-                Poll::Pending => ControlFlow::Break(Poll::Pending),
-            },
-            <Fut::Output as Try>::Output::poll,
-        )
+        fn dispatch<T1, T2>(result: T1) -> ControlFlow<T2, T1::Output>
+        where
+            T1: Try,
+            T2: FromResidual<T1::Residual> + Try,
+        {
+            match result.branch() {
+                ControlFlow::Continue(output) => ControlFlow::Continue(output),
+                ControlFlow::Break(residual) => ControlFlow::Break(T2::from_residual(residual)),
+            }
+        }
+
+        self.project()
+            .inner
+            .poll_with(cx, dispatch, <Fut::Output as Try>::Output::poll)
     }
 }
 

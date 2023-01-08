@@ -46,15 +46,14 @@ where
     type Output = Result<T, E>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
-        self.project().inner.poll_with(
-            cx,
-            |fut, cx| match fut.poll(cx) {
-                Poll::Ready(Ok(value)) => ControlFlow::Break(Poll::Ready(Ok(value))),
-                Poll::Ready(Err(fut)) => ControlFlow::Continue(fut),
-                Poll::Pending => ControlFlow::Break(Poll::Pending),
-            },
-            Fut2::poll,
-        )
+        fn dispatch<T, E, Fut2>(result: Result<T, Fut2>) -> ControlFlow<Result<T, E>, Fut2> {
+            match result {
+                Ok(value) => ControlFlow::Break(Ok(value)),
+                Err(error) => ControlFlow::Continue(error),
+            }
+        }
+
+        self.project().inner.poll_with(cx, dispatch, Fut2::poll)
     }
 }
 

@@ -1,7 +1,8 @@
 use crate::support::FusedAsyncIterator;
+use core::future::Future;
 use core::ops::ControlFlow;
 use core::pin::Pin;
-use core::task::{Context, Poll};
+use core::task::{self, Context, Poll};
 use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
@@ -23,13 +24,16 @@ impl<A, B> TwoPhases<A, B> {
     pub fn poll_with<T>(
         mut self: Pin<&mut Self>,
         cx: &mut Context,
-        f1: impl FnOnce(Pin<&mut A>, &mut Context) -> ControlFlow<Poll<T>, B>,
+        f1: impl FnOnce(A::Output) -> ControlFlow<T, B>,
         f2: impl FnOnce(Pin<&mut B>, &mut Context) -> Poll<T>,
-    ) -> Poll<T> {
+    ) -> Poll<T>
+    where
+        A: Future,
+    {
         if let TwoPhasesProject::First { state } = self.as_mut().project() {
-            let second_state = match f1(state, cx) {
+            let second_state = match f1(task::ready!(state.poll(cx))) {
                 ControlFlow::Continue(second_state) => second_state,
-                ControlFlow::Break(result) => return result,
+                ControlFlow::Break(result) => return Poll::Ready(result),
             };
 
             self.set(Self::Second { state: second_state });

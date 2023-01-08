@@ -1,9 +1,30 @@
-use crate::support::{FnMut1, PinnedAndNotPinned, ResultFuture, TwoPhases};
+use crate::future::map::Map;
+use crate::support::{FnMut1, ResultFuture, TwoPhases};
+use core::convert;
 use core::future::Future;
 use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use futures_core::FusedFuture;
+
+#[derive(Clone)]
+struct UnwrapOrElseAsyncFn<F> {
+    inner: F,
+}
+
+impl<T, E, F> FnMut1<Result<T, E>> for UnwrapOrElseAsyncFn<F>
+where
+    F: FnMut1<E>,
+{
+    type Output = ControlFlow<T, F::Output>;
+
+    fn call_mut(&mut self, arg: Result<T, E>) -> Self::Output {
+        match arg {
+            Ok(value) => ControlFlow::Break(value),
+            Err(error) => ControlFlow::Continue(self.inner.call_mut(error)),
+        }
+    }
+}
 
 pin_project_lite::pin_project! {
     #[derive(Clone)]
@@ -13,7 +34,7 @@ pin_project_lite::pin_project! {
         F: FnMut1<Fut::Error>
     {
         #[pin]
-        inner: TwoPhases<PinnedAndNotPinned<Fut, F>, F::Output>,
+        inner: TwoPhases<Map<Fut, UnwrapOrElseAsyncFn<F>>, F::Output>,
     }
 }
 
@@ -25,7 +46,7 @@ where
     pub(crate) fn new(fut: Fut, f: F) -> Self {
         Self {
             inner: TwoPhases::First {
-                state: PinnedAndNotPinned::new(fut, f),
+                state: Map::new(fut, UnwrapOrElseAsyncFn { inner: f }),
             },
         }
     }
@@ -40,19 +61,7 @@ where
     type Output = T;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
-        self.project().inner.poll_with(
-            cx,
-            |state, cx| {
-                let state = state.project();
-
-                match state.pinned.poll(cx) {
-                    Poll::Pending => ControlFlow::Break(Poll::Pending),
-                    Poll::Ready(Ok(value)) => ControlFlow::Break(Poll::Ready(value)),
-                    Poll::Ready(Err(error)) => ControlFlow::Continue(state.not_pinned.call_mut(error)),
-                }
-            },
-            F::Output::poll,
-        )
+        self.project().inner.poll_with(cx, convert::identity, F::Output::poll)
     }
 }
 
@@ -63,10 +72,7 @@ where
     F::Output: FusedFuture<Output = T>,
 {
     fn is_terminated(&self) -> bool {
-        match &self.inner {
-            TwoPhases::First { state } => state.pinned.is_terminated(),
-            TwoPhases::Second { state } => state.is_terminated(),
-        }
+        self.inner.is_future_terminated()
     }
 }
 

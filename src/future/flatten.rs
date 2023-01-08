@@ -30,14 +30,7 @@ where
         cx: &mut Context,
         f: impl FnOnce(Pin<&mut Fut::Output>, &mut Context) -> Poll<T>,
     ) -> Poll<T> {
-        self.project().inner.poll_with(
-            cx,
-            |fut, cx| match fut.poll(cx) {
-                Poll::Ready(fut) => ControlFlow::Continue(fut),
-                Poll::Pending => ControlFlow::Break(Poll::Pending),
-            },
-            f,
-        )
+        self.project().inner.poll_with(cx, ControlFlow::Continue, f)
     }
 }
 
