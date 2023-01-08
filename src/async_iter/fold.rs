@@ -1,7 +1,7 @@
 use crate::support::{AsyncIterator, FnMut2};
 use core::future::Future;
 use core::pin::Pin;
-use core::task::{Context, Poll};
+use core::task::{self, Context, Poll};
 use futures_core::{FusedFuture, FusedStream};
 
 pin_project_lite::pin_project! {
@@ -48,7 +48,7 @@ where
         let acc = this.acc;
         let f = this.f;
 
-        while let Some(item) = futures_core::ready!(iter.as_mut().poll_next(cx)) {
+        while let Some(item) = task::ready!(iter.as_mut().poll_next(cx)) {
             *acc = f.call_mut(*acc, item);
         }
 

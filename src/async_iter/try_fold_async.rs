@@ -2,7 +2,7 @@ use crate::support::{AsyncIterator, FnMut2, FromResidual, Try};
 use core::future::Future;
 use core::ops::ControlFlow;
 use core::pin::Pin;
-use core::task::{Context, Poll};
+use core::task::{self, Context, Poll};
 use futures_core::{FusedFuture, FusedStream};
 
 pin_project_lite::pin_project! {
@@ -71,13 +71,13 @@ where
 
         loop {
             if let Some(inner_future) = fut.as_mut().as_pin_mut() {
-                *acc = match futures_core::ready!(inner_future.poll(cx)).branch() {
+                *acc = match task::ready!(inner_future.poll(cx)).branch() {
                     ControlFlow::Continue(acc) => acc,
                     ControlFlow::Break(error) => return Poll::Ready(Self::Output::from_residual(error)),
                 };
 
                 fut.set(None);
-            } else if let Some(item) = futures_core::ready!(iter.as_mut().poll_next(cx)) {
+            } else if let Some(item) = task::ready!(iter.as_mut().poll_next(cx)) {
                 fut.set(Some(f.call_mut(*acc, item)));
             } else {
                 break;
