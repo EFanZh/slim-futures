@@ -1,4 +1,4 @@
-use crate::async_iter::TryFold;
+use crate::async_iter::try_fold::TryFold;
 use crate::support::{AsyncIterator, FnMut1, FnMut2};
 use core::future::Future;
 use core::ops::ControlFlow;
@@ -81,23 +81,31 @@ mod tests {
     use crate::async_iter::async_iter_ext::AsyncIteratorExt;
     use futures_util::stream;
 
+    fn less_than_10(x: u32) -> bool {
+        x < 10
+    }
+
+    fn equals_2(x: u32) -> bool {
+        x == 2
+    }
+
     #[tokio::test]
     async fn test_all() {
-        let future = stream::iter([2, 3, 5]).all(|x| x < 10);
+        let future = stream::iter([2, 3, 5]).all(less_than_10);
 
         assert!(future.await);
     }
 
     #[tokio::test]
     async fn test_all_fail() {
-        let future = stream::iter([2, 3, 5]).all(|x| x == 2);
+        let future = stream::iter([2, 3, 5]).all(equals_2);
 
         assert!(!future.await);
     }
 
     #[tokio::test]
     async fn test_all_clone() {
-        let future = stream::iter([2, 3, 5]).all(|x| x < 10);
+        let future = stream::iter([2, 3, 5]).all(less_than_10);
         let future_2 = future.clone();
 
         assert!(future.await);
