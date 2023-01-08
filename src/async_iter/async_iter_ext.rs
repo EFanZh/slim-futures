@@ -1,6 +1,7 @@
 use crate::async_iter::fold::Fold;
 use crate::async_iter::fold_async::FoldAsync;
-use crate::support::AsyncIterator;
+use crate::async_iter::try_fold::TryFold;
+use crate::support::{AsyncIterator, Try};
 use std::future::Future;
 
 pub trait AsyncIteratorExt: AsyncIterator {
@@ -21,6 +22,16 @@ pub trait AsyncIteratorExt: AsyncIterator {
         Fut: Future<Output = B>,
     {
         crate::support::assert_future::<_, B>(FoldAsync::new(self, init, f))
+    }
+
+    fn try_fold<B, F, R>(self, init: B, f: F) -> TryFold<Self, B, F>
+    where
+        Self: Sized,
+        B: Copy,
+        F: FnMut(B, Self::Item) -> R,
+        R: Try<Output = B>,
+    {
+        crate::support::assert_future::<_, R>(TryFold::new(self, init, f))
     }
 }
 
