@@ -22,7 +22,7 @@ Async combinators that focus on small binary sizes.
 | `FutureExt::slim_inspect`                  | [`FutureExt::inspect`]           |
 | `FutureExt::slim_inspect_err`              | [`TryFutureExt::inspect_err`]    |
 | `FutureExt::slim_inspect_ok`               | [`TryFutureExt::inspect_ok`]     |
-| `FutureExt::slim_into_try_future`          |                                  |
+| `FutureExt::slim_into_result_future`       |                                  |
 | `FutureExt::slim_map`                      | [`FutureExt::map`]               |
 | `FutureExt::slim_map_async`                | [`FutureExt::then`]              |
 | `FutureExt::slim_map_err`                  | [`TryFutureExt::map_err`]        |
