@@ -1,9 +1,10 @@
 use crate::async_iter::try_fold::TryFold;
+use crate::future::Map;
+use crate::support::fns::ControlFlowToBoolAllFn;
 use crate::support::{AsyncIterator, FnMut1, FnMut2};
 use core::future::Future;
 use core::ops::ControlFlow;
 use core::pin::Pin;
-use core::task;
 use core::task::{Context, Poll};
 use futures_core::{FusedFuture, FusedStream};
 
@@ -30,14 +31,17 @@ where
 pin_project_lite::pin_project! {
     pub struct All<I, F> {
         #[pin]
-        inner: TryFold<I, (), AllFn<F>>
+        inner: Map<TryFold<I, (), AllFn<F>>, ControlFlowToBoolAllFn>
     }
 }
 
 impl<I, F> All<I, F> {
     pub(crate) fn new(iter: I, f: F) -> Self {
         Self {
-            inner: TryFold::new(iter, (), AllFn { inner: f }),
+            inner: Map::new(
+                TryFold::new(iter, (), AllFn { inner: f }),
+                ControlFlowToBoolAllFn::default(),
+            ),
         }
     }
 }
@@ -62,7 +66,7 @@ where
     type Output = bool;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
-        Poll::Ready(task::ready!(self.project().inner.poll(cx)).is_continue())
+        self.project().inner.poll(cx)
     }
 }
 
