@@ -23,8 +23,8 @@ where
 
     fn call_mut(&mut self, arg: T) -> Self::Output {
         match arg.branch() {
-            ControlFlow::Continue(output) => RawResidual::Continue(self.inner.call_mut(output)),
-            ControlFlow::Break(residual) => RawResidual::Break(residual),
+            ControlFlow::Continue(output) => RawResidual::from_output(self.inner.call_mut(output)),
+            ControlFlow::Break(residual) => RawResidual::from_residual(residual),
         }
     }
 }
