@@ -1,6 +1,6 @@
 use crate::async_iter::try_fold_async::TryFoldAsync;
 use crate::future::Map;
-use crate::support::fns::ControlFlowIsContinueFn;
+use crate::support::fns::ControlFlowIsBreakFn;
 use crate::support::{AsyncIterator, FnMut1, FnMut2};
 use core::future::Future;
 use core::ops::ControlFlow;
@@ -9,48 +9,48 @@ use core::task::{Context, Poll};
 use futures_core::{FusedFuture, FusedStream};
 
 #[derive(Clone)]
-struct ContinueIfTrue;
+struct BreakIfTrue;
 
-impl FnMut1<bool> for ContinueIfTrue {
+impl FnMut1<bool> for BreakIfTrue {
     type Output = ControlFlow<()>;
 
     fn call_mut(&mut self, arg: bool) -> Self::Output {
         if arg {
-            ControlFlow::Continue(())
-        } else {
             ControlFlow::Break(())
+        } else {
+            ControlFlow::Continue(())
         }
     }
 }
 
 #[derive(Clone)]
-struct AllAsyncFn<F> {
+struct AnyAsyncFn<F> {
     inner: F,
 }
 
-impl<T, F> FnMut2<(), T> for AllAsyncFn<F>
+impl<T, F> FnMut2<(), T> for AnyAsyncFn<F>
 where
     F: FnMut1<T>,
 {
-    type Output = Map<F::Output, ContinueIfTrue>;
+    type Output = Map<F::Output, BreakIfTrue>;
 
     fn call_mut(&mut self, (): (), arg_2: T) -> Self::Output {
-        Map::new(self.inner.call_mut(arg_2), ContinueIfTrue)
+        Map::new(self.inner.call_mut(arg_2), BreakIfTrue)
     }
 }
 
 pin_project_lite::pin_project! {
-    pub struct AllAsync<I, F>
+    pub struct AnyAsync<I, F>
     where
         I: AsyncIterator,
         F: FnMut1<I::Item>,
     {
         #[pin]
-        inner: Map<TryFoldAsync<I, (), AllAsyncFn<F>>, ControlFlowIsContinueFn>
+        inner: Map<TryFoldAsync<I, (), AnyAsyncFn<F>>, ControlFlowIsBreakFn>
     }
 }
 
-impl<I, F> AllAsync<I, F>
+impl<I, F> AnyAsync<I, F>
 where
     I: AsyncIterator,
     F: FnMut1<I::Item>,
@@ -58,14 +58,14 @@ where
     pub(crate) fn new(iter: I, f: F) -> Self {
         Self {
             inner: Map::new(
-                TryFoldAsync::new(iter, (), AllAsyncFn { inner: f }),
-                ControlFlowIsContinueFn::default(),
+                TryFoldAsync::new(iter, (), AnyAsyncFn { inner: f }),
+                ControlFlowIsBreakFn::default(),
             ),
         }
     }
 }
 
-impl<I, F> Clone for AllAsync<I, F>
+impl<I, F> Clone for AnyAsync<I, F>
 where
     I: AsyncIterator + Clone,
     F: FnMut1<I::Item> + Clone,
@@ -78,7 +78,7 @@ where
     }
 }
 
-impl<I, F> Future for AllAsync<I, F>
+impl<I, F> Future for AnyAsync<I, F>
 where
     I: AsyncIterator,
     F: FnMut1<I::Item>,
@@ -91,7 +91,7 @@ where
     }
 }
 
-impl<I, F> FusedFuture for AllAsync<I, F>
+impl<I, F> FusedFuture for AnyAsync<I, F>
 where
     I: FusedStream,
     F: FnMut1<I::Item>,
@@ -108,31 +108,31 @@ mod tests {
     use futures_util::future::{self, Ready};
     use futures_util::stream;
 
-    fn less_than_10(x: u32) -> Ready<bool> {
-        future::ready(x < 10)
+    fn greater_than_2(x: u32) -> Ready<bool> {
+        future::ready(x > 2)
     }
 
-    fn equals_2(x: u32) -> Ready<bool> {
-        future::ready(x == 2)
+    fn equals_10(x: u32) -> Ready<bool> {
+        future::ready(x == 10)
     }
 
     #[tokio::test]
-    async fn test_all_async() {
-        let future = stream::iter([2, 3, 5]).all_async(less_than_10);
+    async fn test_any_async() {
+        let future = stream::iter([2, 3, 5]).any_async(greater_than_2);
 
         assert!(future.await);
     }
 
     #[tokio::test]
-    async fn test_all_async_fail() {
-        let future = stream::iter([2, 3, 5]).all_async(equals_2);
+    async fn test_any_async_fail() {
+        let future = stream::iter([2, 3, 5]).any_async(equals_10);
 
         assert!(!future.await);
     }
 
     #[tokio::test]
-    async fn test_all_async_clone() {
-        let future = stream::iter([2, 3, 5]).all_async(less_than_10);
+    async fn test_any_async_clone() {
+        let future = stream::iter([2, 3, 5]).any_async(greater_than_2);
         let future_2 = future.clone();
 
         assert!(future.await);

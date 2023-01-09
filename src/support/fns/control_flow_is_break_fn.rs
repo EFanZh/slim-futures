@@ -3,14 +3,14 @@ use core::marker::PhantomData;
 use core::ops::ControlFlow;
 
 #[derive(Clone, Default)]
-pub struct ControlFlowToBoolAllFn {
+pub struct ControlFlowIsBreakFn {
     _phantom: PhantomData<()>,
 }
 
-impl FnMut1<ControlFlow<()>> for ControlFlowToBoolAllFn {
+impl FnMut1<ControlFlow<()>> for ControlFlowIsBreakFn {
     type Output = bool;
 
     fn call_mut(&mut self, arg: ControlFlow<()>) -> Self::Output {
-        arg.is_continue()
+        arg.is_break()
     }
 }

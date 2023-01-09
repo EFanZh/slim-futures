@@ -1,5 +1,7 @@
 use crate::async_iter::all::All;
 use crate::async_iter::all_async::AllAsync;
+use crate::async_iter::any::Any;
+use crate::async_iter::any_async::AnyAsync;
 use crate::async_iter::fold::Fold;
 use crate::async_iter::fold_async::FoldAsync;
 use crate::async_iter::try_fold::TryFold;
@@ -23,6 +25,23 @@ pub trait AsyncIteratorExt: AsyncIterator {
         Fut: Future<Output = bool>,
     {
         crate::support::assert_future::<_, bool>(AllAsync::new(self, f))
+    }
+
+    fn any<F>(self, f: F) -> Any<Self, F>
+    where
+        Self: Sized,
+        F: FnMut(Self::Item) -> bool,
+    {
+        crate::support::assert_future::<_, bool>(Any::new(self, f))
+    }
+
+    fn any_async<F, Fut>(self, f: F) -> AnyAsync<Self, F>
+    where
+        Self: Sized,
+        F: FnMut(Self::Item) -> Fut,
+        Fut: Future<Output = bool>,
+    {
+        crate::support::assert_future::<_, bool>(AnyAsync::new(self, f))
     }
 
     fn fold<B, F>(self, init: B, f: F) -> Fold<Self, B, F>

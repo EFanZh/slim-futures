@@ -1,6 +1,6 @@
 use crate::async_iter::try_fold::TryFold;
 use crate::future::Map;
-use crate::support::fns::ControlFlowIsContinueFn;
+use crate::support::fns::ControlFlowIsBreakFn;
 use crate::support::{AsyncIterator, FnMut1, FnMut2};
 use core::future::Future;
 use core::ops::ControlFlow;
@@ -9,11 +9,11 @@ use core::task::{Context, Poll};
 use futures_core::{FusedFuture, FusedStream};
 
 #[derive(Clone)]
-struct AllFn<F> {
+struct AnyFn<F> {
     inner: F,
 }
 
-impl<T, F> FnMut2<(), T> for AllFn<F>
+impl<T, F> FnMut2<(), T> for AnyFn<F>
 where
     F: FnMut1<T, Output = bool>,
 {
@@ -21,32 +21,32 @@ where
 
     fn call_mut(&mut self, (): (), arg_2: T) -> Self::Output {
         if self.inner.call_mut(arg_2) {
-            ControlFlow::Continue(())
-        } else {
             ControlFlow::Break(())
+        } else {
+            ControlFlow::Continue(())
         }
     }
 }
 
 pin_project_lite::pin_project! {
-    pub struct All<I, F> {
+    pub struct Any<I, F> {
         #[pin]
-        inner: Map<TryFold<I, (), AllFn<F>>, ControlFlowIsContinueFn>
+        inner: Map<TryFold<I, (), AnyFn<F>>, ControlFlowIsBreakFn>
     }
 }
 
-impl<I, F> All<I, F> {
+impl<I, F> Any<I, F> {
     pub(crate) fn new(iter: I, f: F) -> Self {
         Self {
             inner: Map::new(
-                TryFold::new(iter, (), AllFn { inner: f }),
-                ControlFlowIsContinueFn::default(),
+                TryFold::new(iter, (), AnyFn { inner: f }),
+                ControlFlowIsBreakFn::default(),
             ),
         }
     }
 }
 
-impl<I, F> Clone for All<I, F>
+impl<I, F> Clone for Any<I, F>
 where
     I: Clone,
     F: Clone,
@@ -58,7 +58,7 @@ where
     }
 }
 
-impl<I, F> Future for All<I, F>
+impl<I, F> Future for Any<I, F>
 where
     I: AsyncIterator,
     F: FnMut1<I::Item, Output = bool>,
@@ -70,7 +70,7 @@ where
     }
 }
 
-impl<I, F> FusedFuture for All<I, F>
+impl<I, F> FusedFuture for Any<I, F>
 where
     I: FusedStream,
     F: FnMut1<I::Item, Output = bool>,
@@ -85,31 +85,31 @@ mod tests {
     use crate::async_iter::async_iter_ext::AsyncIteratorExt;
     use futures_util::stream;
 
-    fn less_than_10(x: u32) -> bool {
-        x < 10
+    fn greater_than_2(x: u32) -> bool {
+        x > 2
     }
 
-    fn equals_2(x: u32) -> bool {
-        x == 2
+    fn equals_10(x: u32) -> bool {
+        x == 10
     }
 
     #[tokio::test]
-    async fn test_all() {
-        let future = stream::iter([2, 3, 5]).all(less_than_10);
+    async fn test_any() {
+        let future = stream::iter([2, 3, 5]).any(greater_than_2);
 
         assert!(future.await);
     }
 
     #[tokio::test]
-    async fn test_all_fail() {
-        let future = stream::iter([2, 3, 5]).all(equals_2);
+    async fn test_any_fail() {
+        let future = stream::iter([2, 3, 5]).any(equals_10);
 
         assert!(!future.await);
     }
 
     #[tokio::test]
-    async fn test_all_clone() {
-        let future = stream::iter([2, 3, 5]).all(less_than_10);
+    async fn test_any_clone() {
+        let future = stream::iter([2, 3, 5]).any(greater_than_2);
         let future_2 = future.clone();
 
         assert!(future.await);
