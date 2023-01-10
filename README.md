@@ -12,6 +12,7 @@ Async combinators that focus on small binary sizes.
 | `AsyncIteratorExt::all_async`              | [`StreamExt::all`]               |
 | `AsyncIteratorExt::any`                    |                                  |
 | `AsyncIteratorExt::any_async`              | [`StreamExt::any`]               |
+| `AsyncIteratorExt::filter`                 |                                  |
 | `AsyncIteratorExt::fold`                   |                                  |
 | `AsyncIteratorExt::fold_async`             | [`StreamExt::fold`]              |
 | `AsyncIteratorExt::try_fold`               |                                  |
