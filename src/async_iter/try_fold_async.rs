@@ -118,7 +118,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_try_fold_async() {
-        let future = stream::iter([2, 3, 5]).try_fold_async(1_u64, accumulate);
+        let future = stream::iter([2, 3, 5]).slim_try_fold_async(1_u64, accumulate);
 
         assert_eq!(future.await, Ok(30_u64));
     }
@@ -127,7 +127,7 @@ mod tests {
     async fn test_try_fold_async_error() {
         let mut counter = 0;
 
-        let future = stream::iter([2, 3, 5]).try_fold_async(1_u64, |state, item: u32| {
+        let future = stream::iter([2, 3, 5]).slim_try_fold_async(1_u64, |state, item: u32| {
             if counter < 2 {
                 counter += 1;
 
@@ -143,7 +143,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_try_fold_async_clone() {
-        let future = stream::iter([2, 3, 5]).try_fold_async(1_u64, accumulate);
+        let future = stream::iter([2, 3, 5]).slim_try_fold_async(1_u64, accumulate);
         let future_2 = future.clone();
 
         assert_eq!(future.await, Ok(30_u64));

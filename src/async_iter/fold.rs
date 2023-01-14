@@ -78,14 +78,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_fold() {
-        let future = stream::iter([2, 3, 5]).fold(1_u64, accumulate);
+        let future = stream::iter([2, 3, 5]).slim_fold(1_u64, accumulate);
 
         assert_eq!(future.await, 30_u64);
     }
 
     #[tokio::test]
     async fn test_fold_clone() {
-        let future = stream::iter([2, 3, 5]).fold(1_u64, accumulate);
+        let future = stream::iter([2, 3, 5]).slim_fold(1_u64, accumulate);
         let future_2 = future.clone();
 
         assert_eq!(future.await, 30_u64);

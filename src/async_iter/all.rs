@@ -95,21 +95,21 @@ mod tests {
 
     #[tokio::test]
     async fn test_all() {
-        let future = stream::iter([2, 3, 5]).all(less_than_10);
+        let future = stream::iter([2, 3, 5]).slim_all(less_than_10);
 
         assert!(future.await);
     }
 
     #[tokio::test]
     async fn test_all_fail() {
-        let future = stream::iter([2, 3, 5]).all(equals_2);
+        let future = stream::iter([2, 3, 5]).slim_all(equals_2);
 
         assert!(!future.await);
     }
 
     #[tokio::test]
     async fn test_all_clone() {
-        let future = stream::iter([2, 3, 5]).all(less_than_10);
+        let future = stream::iter([2, 3, 5]).slim_all(less_than_10);
         let future_2 = future.clone();
 
         assert!(future.await);

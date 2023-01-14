@@ -8,16 +8,16 @@ Async combinators that focus on small binary sizes.
 
 | slim-futures                               | [`futures`]                      |
 | ------------------------------------------ | -------------------------------- |
-| `AsyncIteratorExt::all`                    |                                  |
-| `AsyncIteratorExt::all_async`              | [`StreamExt::all`]               |
-| `AsyncIteratorExt::any`                    |                                  |
-| `AsyncIteratorExt::any_async`              | [`StreamExt::any`]               |
-| `AsyncIteratorExt::filter`                 |                                  |
-| `AsyncIteratorExt::filter_async`           | [`StreamExt::filter`]            |
-| `AsyncIteratorExt::fold`                   |                                  |
-| `AsyncIteratorExt::fold_async`             | [`StreamExt::fold`]              |
-| `AsyncIteratorExt::try_fold`               |                                  |
-| `AsyncIteratorExt::try_fold_async`         | [`TryStreamExt::try_fold`]       |
+| `AsyncIteratorExt::slim_all`               |                                  |
+| `AsyncIteratorExt::slim_all_async`         | [`StreamExt::all`]               |
+| `AsyncIteratorExt::slim_any`               |                                  |
+| `AsyncIteratorExt::slim_any_async`         | [`StreamExt::any`]               |
+| `AsyncIteratorExt::slim_filter`            |                                  |
+| `AsyncIteratorExt::slim_filter_async`      | [`StreamExt::filter`]            |
+| `AsyncIteratorExt::slim_fold`              |                                  |
+| `AsyncIteratorExt::slim_fold_async`        | [`StreamExt::fold`]              |
+| `AsyncIteratorExt::slim_try_fold`          |                                  |
+| `AsyncIteratorExt::slim_try_fold_async`    | [`TryStreamExt::try_fold`]       |
 | `FutureExt::slim_and_then`                 |                                  |
 | `FutureExt::slim_and_then_async`           | [`TryFutureExt::and_then`]       |
 | `FutureExt::slim_err_into`                 | [`TryFutureExt::err_into`]       |

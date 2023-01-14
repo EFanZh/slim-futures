@@ -73,14 +73,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_filter() {
-        let iter = AsyncIteratorExt::filter(stream::iter(0..10), |&x| x % 2 == 0);
+        let iter = AsyncIteratorExt::slim_filter(stream::iter(0..10), |&x| x % 2 == 0);
 
         assert_eq!(iter.collect::<Vec<_>>().await, [0, 2, 4, 6, 8]);
     }
 
     #[tokio::test]
     async fn test_filter_clone() {
-        let iter = AsyncIteratorExt::filter(stream::iter(0..10), |&x| x % 2 == 0);
+        let iter = AsyncIteratorExt::slim_filter(stream::iter(0..10), |&x| x % 2 == 0);
         let iter_2 = iter.clone();
 
         assert_eq!(iter.collect::<Vec<_>>().await, [0, 2, 4, 6, 8]);

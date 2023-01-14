@@ -130,14 +130,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_filter_async() {
-        let iter = stream::iter(0..10).filter_async(|&x| future::ready(x % 2 == 0));
+        let iter = stream::iter(0..10).slim_filter_async(|&x| future::ready(x % 2 == 0));
 
         assert_eq!(iter.collect::<Vec<_>>().await, [0, 2, 4, 6, 8]);
     }
 
     #[tokio::test]
     async fn test_filter_async_clone() {
-        let iter = stream::iter(0..10).filter_async(|&x| future::ready(x % 2 == 0));
+        let iter = stream::iter(0..10).slim_filter_async(|&x| future::ready(x % 2 == 0));
         let iter_2 = iter.clone();
 
         assert_eq!(iter.collect::<Vec<_>>().await, [0, 2, 4, 6, 8]);

@@ -118,21 +118,21 @@ mod tests {
 
     #[tokio::test]
     async fn test_any_async() {
-        let future = stream::iter([2, 3, 5]).any_async(greater_than_2);
+        let future = stream::iter([2, 3, 5]).slim_any_async(greater_than_2);
 
         assert!(future.await);
     }
 
     #[tokio::test]
     async fn test_any_async_fail() {
-        let future = stream::iter([2, 3, 5]).any_async(equals_10);
+        let future = stream::iter([2, 3, 5]).slim_any_async(equals_10);
 
         assert!(!future.await);
     }
 
     #[tokio::test]
     async fn test_any_async_clone() {
-        let future = stream::iter([2, 3, 5]).any_async(greater_than_2);
+        let future = stream::iter([2, 3, 5]).slim_any_async(greater_than_2);
         let future_2 = future.clone();
 
         assert!(future.await);
