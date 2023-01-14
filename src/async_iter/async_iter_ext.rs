@@ -3,6 +3,7 @@ use crate::async_iter::all_async::AllAsync;
 use crate::async_iter::any::Any;
 use crate::async_iter::any_async::AnyAsync;
 use crate::async_iter::filter::Filter;
+use crate::async_iter::filter_async::FilterAsync;
 use crate::async_iter::fold::Fold;
 use crate::async_iter::fold_async::FoldAsync;
 use crate::async_iter::try_fold::TryFold;
@@ -60,6 +61,15 @@ pub trait AsyncIteratorExt: AsyncIterator {
         P: FnMut(&Self::Item) -> bool,
     {
         crate::support::assert_async_iter::<_, Self::Item>(Filter::new(self, predicate))
+    }
+
+    fn filter_async<P, Fut>(self, predicate: P) -> FilterAsync<Self, P, Fut>
+    where
+        Self: Sized,
+        P: FnMut(&Self::Item) -> Fut,
+        Fut: Future<Output = bool>,
+    {
+        crate::support::assert_async_iter::<_, Self::Item>(FilterAsync::new(self, predicate))
     }
 
     fn fold_async<B, F, Fut>(self, init: B, f: F) -> FoldAsync<Self, B, F>
