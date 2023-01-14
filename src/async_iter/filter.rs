@@ -1,7 +1,6 @@
-use crate::support::{AsyncIterator, FnMut1};
+use crate::support::{AsyncIterator, FnMut1, FusedAsyncIterator};
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
-use futures_core::FusedStream;
 
 pin_project_lite::pin_project! {
     pub struct Filter<I, P> {
@@ -37,7 +36,7 @@ where
 {
     type Item = I::Item;
 
-    fn poll_next(self: Pin<&mut Self>, cx: &mut Context<'_>) -> Poll<Option<Self::Item>> {
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         let this = self.project();
         let mut iter = this.iter;
         let predicate = this.predicate;
@@ -50,11 +49,15 @@ where
 
         Poll::Ready(None)
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (0, self.iter.size_hint().1)
+    }
 }
 
-impl<I, P> FusedStream for Filter<I, P>
+impl<I, P> FusedAsyncIterator for Filter<I, P>
 where
-    I: FusedStream,
+    I: FusedAsyncIterator,
     P: for<'a> FnMut1<&'a I::Item, Output = bool>,
 {
     fn is_terminated(&self) -> bool {

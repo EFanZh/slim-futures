@@ -1,9 +1,9 @@
-use crate::support::{AsyncIterator, FnMut2, FromResidual, Try};
+use crate::support::{AsyncIterator, FnMut2, FromResidual, FusedAsyncIterator, Try};
 use core::future::Future;
 use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
-use futures_core::{FusedFuture, FusedStream};
+use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
     pub struct TryFold<I, B, F> {
@@ -63,7 +63,7 @@ where
 
 impl<I, B, F> FusedFuture for TryFold<I, B, F>
 where
-    I: FusedStream,
+    I: FusedAsyncIterator,
     B: Copy,
     F: FnMut2<B, I::Item>,
     F::Output: Try<Output = B>,

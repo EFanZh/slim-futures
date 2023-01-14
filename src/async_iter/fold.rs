@@ -1,8 +1,8 @@
-use crate::support::{AsyncIterator, FnMut2};
+use crate::support::{AsyncIterator, FnMut2, FusedAsyncIterator};
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
-use futures_core::{FusedFuture, FusedStream};
+use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
     pub struct Fold<I, B, F> {
@@ -58,7 +58,7 @@ where
 
 impl<I, B, F> FusedFuture for Fold<I, B, F>
 where
-    I: FusedStream,
+    I: FusedAsyncIterator,
     B: Copy,
     F: FnMut2<B, I::Item, Output = B>,
 {

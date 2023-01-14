@@ -1,12 +1,12 @@
 use crate::async_iter::try_fold_async::TryFoldAsync;
 use crate::future::Map;
 use crate::support::fns::ControlFlowIsBreakFn;
-use crate::support::{AsyncIterator, FnMut1, FnMut2};
+use crate::support::{AsyncIterator, FnMut1, FnMut2, FusedAsyncIterator};
 use core::future::Future;
 use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{Context, Poll};
-use futures_core::{FusedFuture, FusedStream};
+use futures_core::FusedFuture;
 
 #[derive(Clone)]
 struct BreakIfTrue;
@@ -93,7 +93,7 @@ where
 
 impl<I, F> FusedFuture for AnyAsync<I, F>
 where
-    I: FusedStream,
+    I: FusedAsyncIterator,
     F: FnMut1<I::Item>,
     F::Output: FusedFuture<Output = bool>,
 {
