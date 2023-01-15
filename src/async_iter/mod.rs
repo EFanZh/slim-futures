@@ -12,6 +12,7 @@ pub use self::find_map_async::FindMapAsync;
 pub use self::flatten::Flatten;
 pub use self::fold::Fold;
 pub use self::fold_async::FoldAsync;
+pub use self::map::Map;
 pub use self::try_fold::TryFold;
 pub use self::try_fold_async::TryFoldAsync;
 
@@ -29,5 +30,6 @@ mod find_map_async;
 mod flatten;
 mod fold;
 mod fold_async;
+mod map;
 mod try_fold;
 mod try_fold_async;
