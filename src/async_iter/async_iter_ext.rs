@@ -9,6 +9,7 @@ use crate::async_iter::filter_map_async::FilterMapAsync;
 use crate::async_iter::find_map::FindMap;
 use crate::async_iter::find_map_async::FindMapAsync;
 use crate::async_iter::flat_map::FlatMap;
+use crate::async_iter::flat_map_async::FlatMapAsync;
 use crate::async_iter::flatten::Flatten;
 use crate::async_iter::fold::Fold;
 use crate::async_iter::fold_async::FoldAsync;
@@ -112,6 +113,18 @@ pub trait AsyncIteratorExt: AsyncIterator {
         I: IntoAsyncIterator,
     {
         crate::support::assert_async_iter::<_, I::Item>(FlatMap::new(self, f))
+    }
+
+    fn slim_flat_map_async<F, Fut>(self, f: F) -> FlatMapAsync<Self, F>
+    where
+        Self: Sized,
+        F: FnMut(Self::Item) -> Fut,
+        Fut: IntoFuture,
+        Fut::Output: IntoAsyncIterator,
+    {
+        crate::support::assert_async_iter::<_, <<F::Output as IntoFuture>::Output as IntoAsyncIterator>::Item>(
+            FlatMapAsync::new(self, f),
+        )
     }
 
     fn slim_flatten(self) -> Flatten<Self>
