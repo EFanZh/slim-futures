@@ -111,7 +111,7 @@ mod tests {
     use std::vec::Vec;
 
     #[tokio::test]
-    async fn test_find_map() {
+    async fn test_flatten() {
         let iter = stream::iter([
             stream::iter(std::vec![]),
             stream::iter(std::vec![2]),
@@ -124,7 +124,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_find_map_clone() {
+    async fn test_flatten_clone() {
         let iter = stream::iter([
             stream::iter(std::vec![]),
             stream::iter(std::vec![2]),
