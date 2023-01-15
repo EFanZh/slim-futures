@@ -106,7 +106,14 @@ where
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        (0, self.iter.size_hint().1)
+        let high = self.iter.size_hint().1;
+
+        let high = match &self.state {
+            PredicateState::Empty => high,
+            PredicateState::Polling { .. } => high.and_then(|high| high.checked_add(1)),
+        };
+
+        (0, high)
     }
 }
 
