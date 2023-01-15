@@ -74,38 +74,38 @@ pub trait AsyncIteratorExt: AsyncIterator {
         crate::support::assert_async_iter::<_, Self::Item>(FilterAsync::new(self, predicate))
     }
 
-    fn slim_filter_map<F, B>(self, f: F) -> FilterMap<Self, F>
+    fn slim_filter_map<F, T>(self, f: F) -> FilterMap<Self, F>
     where
         Self: Sized,
-        F: FnMut(Self::Item) -> Option<B>,
+        F: FnMut(Self::Item) -> Option<T>,
     {
-        crate::support::assert_async_iter::<_, B>(FilterMap::new(self, f))
+        crate::support::assert_async_iter::<_, T>(FilterMap::new(self, f))
     }
 
-    fn slim_filter_map_async<F, Fut, B>(self, f: F) -> FilterMapAsync<Self, F>
+    fn slim_filter_map_async<F, Fut, T>(self, f: F) -> FilterMapAsync<Self, F>
     where
         Self: Sized,
         F: FnMut(Self::Item) -> Fut,
-        Fut: IntoFuture<Output = Option<B>>,
+        Fut: IntoFuture<Output = Option<T>>,
     {
-        crate::support::assert_async_iter::<_, B>(FilterMapAsync::new(self, f))
+        crate::support::assert_async_iter::<_, T>(FilterMapAsync::new(self, f))
     }
 
-    fn slim_find_map<F, B>(self, f: F) -> FindMap<Self, F>
+    fn slim_find_map<F, T>(self, f: F) -> FindMap<Self, F>
     where
         Self: Sized,
-        F: FnMut(Self::Item) -> Option<B>,
+        F: FnMut(Self::Item) -> Option<T>,
     {
-        crate::support::assert_future::<_, Option<B>>(FindMap::new(self, f))
+        crate::support::assert_future::<_, Option<T>>(FindMap::new(self, f))
     }
 
-    fn slim_find_map_async<F, Fut, B>(self, f: F) -> FindMapAsync<Self, F>
+    fn slim_find_map_async<F, Fut, T>(self, f: F) -> FindMapAsync<Self, F>
     where
         Self: Sized,
         F: FnMut(Self::Item) -> Fut,
-        Fut: IntoFuture<Output = Option<B>>,
+        Fut: IntoFuture<Output = Option<T>>,
     {
-        crate::support::assert_future::<_, Option<B>>(FindMapAsync::new(self, f))
+        crate::support::assert_future::<_, Option<T>>(FindMapAsync::new(self, f))
     }
 
     fn slim_flat_map<F, I>(self, f: F) -> FlatMap<Self, F>
@@ -190,23 +190,23 @@ pub trait AsyncIteratorExt: AsyncIterator {
         crate::support::assert_async_iter::<_, Fut::Output>(MapAsync::new(self, f))
     }
 
-    fn slim_try_fold<B, F, R>(self, init: B, f: F) -> TryFold<Self, B, F>
+    fn slim_try_fold<T, F, R>(self, init: T, f: F) -> TryFold<Self, T, F>
     where
         Self: Sized,
-        B: Copy,
-        F: FnMut(B, Self::Item) -> R,
-        R: Try<Output = B>,
+        T: Copy,
+        F: FnMut(T, Self::Item) -> R,
+        R: Try<Output = T>,
     {
         crate::support::assert_future::<_, R>(TryFold::new(self, init, f))
     }
 
-    fn slim_try_fold_async<B, F, Fut>(self, init: B, f: F) -> TryFoldAsync<Self, B, F>
+    fn slim_try_fold_async<T, F, Fut>(self, init: T, f: F) -> TryFoldAsync<Self, T, F>
     where
         Self: Sized,
-        B: Copy,
-        F: FnMut(B, Self::Item) -> Fut,
+        T: Copy,
+        F: FnMut(T, Self::Item) -> Fut,
         Fut: IntoFuture,
-        Fut::Output: Try<Output = B>,
+        Fut::Output: Try<Output = T>,
     {
         crate::support::assert_future::<_, Fut::Output>(TryFoldAsync::new(self, init, f))
     }
