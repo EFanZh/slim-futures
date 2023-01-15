@@ -69,22 +69,20 @@ where
         let f = this.f;
         let mut fut = this.fut;
 
-        loop {
+        Poll::Ready(loop {
             if let Some(inner_future) = fut.as_mut().as_pin_mut() {
                 *acc = match task::ready!(inner_future.poll(cx)).branch() {
                     ControlFlow::Continue(acc) => acc,
-                    ControlFlow::Break(error) => return Poll::Ready(Self::Output::from_residual(error)),
+                    ControlFlow::Break(error) => break Self::Output::from_residual(error),
                 };
 
                 fut.set(None);
             } else if let Some(item) = task::ready!(iter.as_mut().poll_next(cx)) {
                 fut.set(Some(f.call_mut(*acc, item)));
             } else {
-                break;
+                break Self::Output::from_output(*acc);
             }
-        }
-
-        Poll::Ready(Self::Output::from_output(*acc))
+        })
     }
 }
 

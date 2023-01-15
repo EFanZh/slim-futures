@@ -50,14 +50,16 @@ where
         let acc = this.acc;
         let f = this.f;
 
-        while let Some(item) = task::ready!(iter.as_mut().poll_next(cx)) {
-            match f.call_mut(*acc, item).branch() {
-                ControlFlow::Continue(result) => *acc = result,
-                ControlFlow::Break(residual) => return Poll::Ready(Self::Output::from_residual(residual)),
+        Poll::Ready(loop {
+            if let Some(item) = task::ready!(iter.as_mut().poll_next(cx)) {
+                match f.call_mut(*acc, item).branch() {
+                    ControlFlow::Continue(result) => *acc = result,
+                    ControlFlow::Break(residual) => break Self::Output::from_residual(residual),
+                }
+            } else {
+                break <Self::Output>::from_output(*acc);
             }
-        }
-
-        Poll::Ready(<Self::Output>::from_output(*acc))
+        })
     }
 }
 
