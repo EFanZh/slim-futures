@@ -50,12 +50,12 @@ where
     type Output = <<Fut::Error as IntoFuture>::IntoFuture as Future>::Output;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
-        fn dispatch<T, Fut2>(
-            result: Result<T, Fut2>,
-        ) -> ControlFlow<Result<T, <Fut2::IntoFuture as ResultFuture>::Error>, Fut2::IntoFuture>
+        fn dispatch<T, E>(
+            result: Result<T, E>,
+        ) -> ControlFlow<Result<T, <E::IntoFuture as ResultFuture>::Error>, E::IntoFuture>
         where
-            Fut2: IntoFuture,
-            Fut2::IntoFuture: ResultFuture<Ok = T>,
+            E: IntoFuture,
+            E::IntoFuture: ResultFuture<Ok = T>,
         {
             match result {
                 Ok(value) => ControlFlow::Break(Ok(value)),
