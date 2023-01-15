@@ -1,18 +1,36 @@
+use crate::async_iter::filter_map::FilterMap;
 use crate::support::{AsyncIterator, FnMut1, FusedAsyncIterator};
 use core::pin::Pin;
-use core::task::{self, Context, Poll};
+use core::task::{Context, Poll};
+
+#[derive(Clone)]
+struct FilterFn<P> {
+    predicate: P,
+}
+
+impl<T, P> FnMut1<T> for FilterFn<P>
+where
+    P: for<'a> FnMut1<&'a T, Output = bool>,
+{
+    type Output = Option<T>;
+
+    fn call_mut(&mut self, arg: T) -> Self::Output {
+        self.predicate.call_mut(&arg).then_some(arg)
+    }
+}
 
 pin_project_lite::pin_project! {
     pub struct Filter<I, P> {
         #[pin]
-        iter: I,
-        predicate: P,
+        inner: FilterMap<I, FilterFn<P>>,
     }
 }
 
 impl<I, P> Filter<I, P> {
     pub(crate) fn new(iter: I, predicate: P) -> Self {
-        Self { iter, predicate }
+        Self {
+            inner: FilterMap::new(iter, FilterFn { predicate }),
+        }
     }
 }
 
@@ -23,8 +41,7 @@ where
 {
     fn clone(&self) -> Self {
         Self {
-            iter: self.iter.clone(),
-            predicate: self.predicate.clone(),
+            inner: self.inner.clone(),
         }
     }
 }
@@ -37,21 +54,11 @@ where
     type Item = I::Item;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
-        let this = self.project();
-        let mut iter = this.iter;
-        let predicate = this.predicate;
-
-        while let Some(item) = task::ready!(iter.as_mut().poll_next(cx)) {
-            if predicate.call_mut(&item) {
-                return Poll::Ready(Some(item));
-            }
-        }
-
-        Poll::Ready(None)
+        self.project().inner.poll_next(cx)
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        (0, self.iter.size_hint().1)
+        self.inner.size_hint()
     }
 }
 
@@ -61,7 +68,7 @@ where
     P: for<'a> FnMut1<&'a I::Item, Output = bool>,
 {
     fn is_terminated(&self) -> bool {
-        self.iter.is_terminated()
+        self.inner.is_terminated()
     }
 }
 
