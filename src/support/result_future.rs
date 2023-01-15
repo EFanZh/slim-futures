@@ -7,7 +7,7 @@ pub trait ResultFuture: Future<Output = Result<Self::Ok, Self::Error>> {
 
 impl<Fut, T, E> ResultFuture for Fut
 where
-    Fut: Future<Output = Result<T, E>>,
+    Fut: Future<Output = Result<T, E>> + ?Sized,
 {
     type Ok = T;
     type Error = E;
