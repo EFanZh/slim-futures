@@ -1,4 +1,5 @@
 use crate::support::{AsyncIterator, FnMut1, FusedAsyncIterator};
+use core::future::IntoFuture;
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
 use futures_core::{FusedFuture, Future};
@@ -8,12 +9,13 @@ pin_project_lite::pin_project! {
     where
         I: AsyncIterator,
         F: FnMut1<I::Item>,
+        F::Output: IntoFuture,
     {
         #[pin]
         iter: I,
         f: F,
         #[pin]
-        fut: Option<F::Output>,
+        fut: Option<<F::Output as IntoFuture>::IntoFuture>,
     }
 }
 
@@ -21,6 +23,7 @@ impl<I, F> FilterMapAsync<I, F>
 where
     I: AsyncIterator,
     F: FnMut1<I::Item>,
+    F::Output: IntoFuture,
 {
     pub(crate) fn new(iter: I, f: F) -> Self {
         Self { iter, f, fut: None }
@@ -30,13 +33,15 @@ where
 impl<I, F> Clone for FilterMapAsync<I, F>
 where
     I: AsyncIterator + Clone,
-    F: Clone + FnMut1<I::Item>,
+    F: FnMut1<I::Item> + Clone,
+    F::Output: IntoFuture,
+    <F::Output as IntoFuture>::IntoFuture: Clone,
 {
     fn clone(&self) -> Self {
         Self {
             iter: self.iter.clone(),
             f: self.f.clone(),
-            fut: None,
+            fut: self.fut.clone(),
         }
     }
 }
@@ -45,7 +50,7 @@ impl<I, F, B> AsyncIterator for FilterMapAsync<I, F>
 where
     I: AsyncIterator,
     F: FnMut1<I::Item>,
-    F::Output: Future<Output = Option<B>>,
+    F::Output: IntoFuture<Output = Option<B>>,
 {
     type Item = B;
 
@@ -71,7 +76,7 @@ where
 
             match task::ready!(iter.as_mut().poll_next(cx)) {
                 None => break None,
-                Some(item) => fut_slot.set(Some(f.call_mut(item))),
+                Some(item) => fut_slot.set(Some(f.call_mut(item).into_future())),
             }
         })
     }
@@ -92,7 +97,8 @@ impl<I, F, B> FusedAsyncIterator for FilterMapAsync<I, F>
 where
     I: FusedAsyncIterator,
     F: FnMut1<I::Item>,
-    F::Output: FusedFuture<Output = Option<B>>,
+    F::Output: IntoFuture<Output = Option<B>>,
+    <F::Output as IntoFuture>::IntoFuture: FusedFuture,
 {
     fn is_terminated(&self) -> bool {
         match &self.fut {

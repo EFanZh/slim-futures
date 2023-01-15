@@ -1,5 +1,5 @@
 use crate::support::{AsyncIterator, FnMut2, FusedAsyncIterator};
-use core::future::Future;
+use core::future::{Future, IntoFuture};
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
 use futures_core::FusedFuture;
@@ -9,13 +9,14 @@ pin_project_lite::pin_project! {
     where
         I: AsyncIterator,
         F: FnMut2<B, I::Item>,
+        F::Output: IntoFuture,
     {
         #[pin]
         iter: I,
         acc: B,
         f: F,
         #[pin]
-        fut: Option<F::Output>,
+        fut: Option<<F::Output as IntoFuture>::IntoFuture>,
     }
 }
 
@@ -23,6 +24,7 @@ impl<I, B, F> FoldAsync<I, B, F>
 where
     I: AsyncIterator,
     F: FnMut2<B, I::Item>,
+    F::Output: IntoFuture,
 {
     pub(crate) fn new(iter: I, acc: B, f: F) -> Self {
         Self {
@@ -39,7 +41,8 @@ where
     I: AsyncIterator + Clone,
     B: Clone,
     F: FnMut2<B, I::Item> + Clone,
-    F::Output: Clone,
+    F::Output: IntoFuture,
+    <F::Output as IntoFuture>::IntoFuture: Clone,
 {
     fn clone(&self) -> Self {
         Self {
@@ -56,7 +59,7 @@ where
     I: AsyncIterator,
     B: Copy,
     F: FnMut2<B, I::Item>,
-    F::Output: Future<Output = B>,
+    F::Output: IntoFuture<Output = B>,
 {
     type Output = B;
 
@@ -73,7 +76,7 @@ where
 
                 fut.set(None);
             } else if let Some(item) = task::ready!(iter.as_mut().poll_next(cx)) {
-                fut.set(Some(f.call_mut(*acc, item)));
+                fut.set(Some(f.call_mut(*acc, item).into_future()));
             } else {
                 break;
             }

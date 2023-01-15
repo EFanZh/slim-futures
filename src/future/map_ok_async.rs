@@ -2,7 +2,7 @@ use crate::future::and_then_async::AndThenAsync;
 use crate::future::map::Map;
 use crate::support::fns::OkFn;
 use crate::support::{FnMut1, ResultFuture};
-use core::future::Future;
+use core::future::{Future, IntoFuture};
 use core::marker::PhantomData;
 use core::pin::Pin;
 use core::task::{Context, Poll};
@@ -28,12 +28,12 @@ where
 impl<T, F, E> FnMut1<T> for MapOkAsyncFn<F, E>
 where
     F: FnMut1<T>,
-    F::Output: Future,
+    F::Output: IntoFuture,
 {
-    type Output = Map<F::Output, OkFn<<F::Output as Future>::Output, E>>;
+    type Output = Map<<F::Output as IntoFuture>::IntoFuture, OkFn<<F::Output as IntoFuture>::Output, E>>;
 
     fn call_mut(&mut self, arg: T) -> Self::Output {
-        Map::new(self.inner.call_mut(arg), OkFn::default())
+        Map::new(self.inner.call_mut(arg).into_future(), OkFn::default())
     }
 }
 
@@ -42,7 +42,7 @@ pin_project_lite::pin_project! {
     where
         Fut: ResultFuture,
         F: FnMut1<Fut::Ok>,
-        F::Output: Future,
+        F::Output: IntoFuture,
     {
         #[pin]
         inner: AndThenAsync<Fut, MapOkAsyncFn<F, Fut::Error>>,
@@ -53,7 +53,7 @@ impl<Fut, F, T, E> MapOkAsync<Fut, F>
 where
     Fut: Future<Output = Result<T, E>>,
     F: FnMut1<T>,
-    F::Output: Future,
+    F::Output: IntoFuture,
 {
     pub(crate) fn new(fut: Fut, f: F) -> Self {
         Self {
@@ -70,9 +70,10 @@ where
 
 impl<Fut, F, T, E> Clone for MapOkAsync<Fut, F>
 where
-    Fut: Clone + Future<Output = Result<T, E>>,
-    F: Clone + FnMut1<T>,
-    F::Output: Clone + Future,
+    Fut: Future<Output = Result<T, E>> + Clone,
+    F: FnMut1<T> + Clone,
+    F::Output: IntoFuture,
+    <F::Output as IntoFuture>::IntoFuture: Clone,
 {
     fn clone(&self) -> Self {
         Self {
@@ -85,9 +86,9 @@ impl<Fut, F, T, E> Future for MapOkAsync<Fut, F>
 where
     Fut: Future<Output = Result<T, E>>,
     F: FnMut1<T>,
-    F::Output: Future,
+    F::Output: IntoFuture,
 {
-    type Output = Result<<F::Output as Future>::Output, E>;
+    type Output = Result<<F::Output as IntoFuture>::Output, E>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         self.project().inner.poll(cx)

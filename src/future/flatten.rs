@@ -1,5 +1,5 @@
-use crate::support::{AsyncIterator, FusedAsyncIterator, TwoPhases};
-use core::future::Future;
+use crate::support::TwoPhases;
+use core::future::{Future, IntoFuture};
 use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{Context, Poll};
@@ -9,35 +9,30 @@ pin_project_lite::pin_project! {
     pub struct Flatten<Fut>
     where
         Fut: Future,
+        Fut::Output: IntoFuture,
     {
         #[pin]
-        inner: TwoPhases<Fut, Fut::Output>,
+        inner: TwoPhases<Fut, <Fut::Output as IntoFuture>::IntoFuture>,
     }
 }
 
 impl<Fut> Flatten<Fut>
 where
     Fut: Future,
+    Fut::Output: IntoFuture,
 {
     pub(crate) fn new(fut: Fut) -> Self {
         Self {
             inner: TwoPhases::First { state: fut },
         }
     }
-
-    fn poll_with<T>(
-        self: Pin<&mut Self>,
-        cx: &mut Context,
-        f: impl FnOnce(Pin<&mut Fut::Output>, &mut Context) -> Poll<T>,
-    ) -> Poll<T> {
-        self.project().inner.poll_with(cx, ControlFlow::Continue, f)
-    }
 }
 
 impl<Fut> Clone for Flatten<Fut>
 where
     Fut: Future + Clone,
-    Fut::Output: Clone,
+    Fut::Output: IntoFuture,
+    <Fut::Output as IntoFuture>::IntoFuture: Clone,
 {
     fn clone(&self) -> Self {
         Self {
@@ -49,63 +44,46 @@ where
 impl<Fut> Future for Flatten<Fut>
 where
     Fut: Future,
-    Fut::Output: Future,
+    Fut::Output: IntoFuture,
 {
-    type Output = <Fut::Output as Future>::Output;
+    type Output = <Fut::Output as IntoFuture>::Output;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
-        self.poll_with(cx, Fut::Output::poll)
+        fn dispatch<Fut>(fut: Fut) -> ControlFlow<Fut::Output, Fut::IntoFuture>
+        where
+            Fut: IntoFuture,
+        {
+            ControlFlow::Continue(fut.into_future())
+        }
+
+        self.project()
+            .inner
+            .poll_with(cx, dispatch, <Fut::Output as IntoFuture>::IntoFuture::poll)
     }
 }
 
 impl<Fut> FusedFuture for Flatten<Fut>
 where
     Fut: FusedFuture,
-    Fut::Output: FusedFuture,
+    Fut::Output: IntoFuture,
+    <Fut::Output as IntoFuture>::IntoFuture: FusedFuture,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_future_terminated()
     }
 }
 
-impl<Fut> AsyncIterator for Flatten<Fut>
-where
-    Fut: Future,
-    Fut::Output: AsyncIterator,
-{
-    type Item = <Fut::Output as AsyncIterator>::Item;
-
-    fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
-        self.poll_with(cx, Fut::Output::poll_next)
-    }
-}
-
-impl<Fut> FusedAsyncIterator for Flatten<Fut>
-where
-    Fut: FusedFuture,
-    Fut::Output: FusedAsyncIterator,
-{
-    fn is_terminated(&self) -> bool {
-        self.inner.is_async_iter_terminated()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use crate::future::future_ext::FutureExt;
-    use crate::support::FusedAsyncIterator;
     use crate::test_utilities::Yield;
     use futures_core::FusedFuture;
-    use futures_util::{future, stream, FutureExt as _, StreamExt};
+    use futures_util::{future, FutureExt as _};
     use std::mem;
     use std::num::NonZeroU32;
 
     fn make_flatten_future() -> impl FusedFuture<Output = u32> + Clone {
         Yield::new(1).slim_map(|()| future::ready(2)).slim_flatten()
-    }
-
-    fn make_flatten_async_iter() -> impl FusedAsyncIterator<Item = u32> {
-        future::ready(stream::once(future::ready(2))).slim_flatten_async_iter()
     }
 
     #[tokio::test]
@@ -129,25 +107,6 @@ mod tests {
         assert!(!future.is_terminated());
         assert_eq!(future.by_ref().await, 2);
         assert!(future.is_terminated());
-    }
-
-    #[tokio::test]
-    async fn test_flatten_async_iter() {
-        let mut iter = make_flatten_async_iter();
-
-        assert_eq!(iter.next().await, Some(2));
-        assert_eq!(iter.next().await, None);
-    }
-
-    #[tokio::test]
-    async fn test_flatten_fused_async_iter() {
-        let mut iter = make_flatten_async_iter();
-
-        assert!(!iter.is_terminated());
-        assert_eq!(iter.next().await, Some(2));
-        assert!(iter.is_terminated());
-        assert_eq!(iter.next().await, None);
-        assert!(iter.is_terminated());
     }
 
     #[tokio::test]

@@ -1,11 +1,19 @@
 use crate::support::{AsyncIterator, FnMut1, FusedAsyncIterator};
+use core::future::IntoFuture;
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
 use futures_core::{FusedFuture, Future};
 
-trait PredicateFn<T>: for<'a> FnMut1<&'a T> {}
+pub trait PredicateFn<T>: for<'a> FnMut1<&'a T, Output = <Self as PredicateFn<T>>::Output> {
+    type Output;
+}
 
-impl<T, F> PredicateFn<T> for F where F: for<'a> FnMut1<&'a T> {}
+impl<T, F, R> PredicateFn<T> for F
+where
+    F: for<'a> FnMut1<&'a T, Output = R>,
+{
+    type Output = R;
+}
 
 pin_project_lite::pin_project! {
     #[derive(Clone)]
@@ -22,21 +30,25 @@ pin_project_lite::pin_project! {
 }
 
 pin_project_lite::pin_project! {
-    pub struct FilterAsync<I, P, Fut>
+    pub struct FilterAsync<I, P>
     where
         I: AsyncIterator,
+        P: PredicateFn<I::Item>,
+        <P as PredicateFn<I::Item>>::Output: IntoFuture,
     {
         #[pin]
         iter: I,
         predicate: P,
         #[pin]
-        state: PredicateState<I::Item, Fut>,
+        state: PredicateState<I::Item, <<P as PredicateFn<I::Item>>::Output as IntoFuture>::IntoFuture>,
     }
 }
 
-impl<I, P, Fut> FilterAsync<I, P, Fut>
+impl<I, P> FilterAsync<I, P>
 where
     I: AsyncIterator,
+    P: PredicateFn<I::Item>,
+    <P as PredicateFn<I::Item>>::Output: IntoFuture,
 {
     pub(crate) fn new(iter: I, predicate: P) -> Self {
         Self {
@@ -47,12 +59,13 @@ where
     }
 }
 
-impl<I, P, Fut> Clone for FilterAsync<I, P, Fut>
+impl<I, P> Clone for FilterAsync<I, P>
 where
     I: AsyncIterator + Clone,
-    P: Clone,
     I::Item: Clone,
-    Fut: Clone,
+    P: PredicateFn<I::Item> + Clone,
+    <P as PredicateFn<I::Item>>::Output: IntoFuture,
+    <<P as PredicateFn<I::Item>>::Output as IntoFuture>::IntoFuture: Clone,
 {
     fn clone(&self) -> Self {
         Self {
@@ -63,11 +76,11 @@ where
     }
 }
 
-impl<I, P, Fut> AsyncIterator for FilterAsync<I, P, Fut>
+impl<I, P> AsyncIterator for FilterAsync<I, P>
 where
     I: AsyncIterator,
-    P: for<'a> FnMut1<&'a I::Item, Output = Fut>,
-    Fut: Future<Output = bool>,
+    P: PredicateFn<I::Item>,
+    <P as PredicateFn<I::Item>>::Output: IntoFuture<Output = bool>,
 {
     type Item = I::Item;
 
@@ -97,7 +110,7 @@ where
             match task::ready!(iter.as_mut().poll_next(cx)) {
                 None => break None,
                 Some(item) => {
-                    let fut = predicate.call_mut(&item);
+                    let fut = predicate.call_mut(&item).into_future();
 
                     state_slot.set(PredicateState::Polling { item, fut });
                 }
@@ -117,11 +130,12 @@ where
     }
 }
 
-impl<I, P, Fut> FusedAsyncIterator for FilterAsync<I, P, Fut>
+impl<I, P> FusedAsyncIterator for FilterAsync<I, P>
 where
     I: FusedAsyncIterator,
-    P: for<'a> FnMut1<&'a I::Item, Output = Fut>,
-    Fut: FusedFuture<Output = bool>,
+    P: PredicateFn<I::Item>,
+    <P as PredicateFn<I::Item>>::Output: IntoFuture<Output = bool>,
+    <<P as PredicateFn<I::Item>>::Output as IntoFuture>::IntoFuture: FusedFuture,
 {
     fn is_terminated(&self) -> bool {
         match &self.state {

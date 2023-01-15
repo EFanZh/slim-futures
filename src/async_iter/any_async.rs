@@ -2,7 +2,7 @@ use crate::async_iter::try_fold_async::TryFoldAsync;
 use crate::future::Map;
 use crate::support::fns::ControlFlowIsBreakFn;
 use crate::support::{AsyncIterator, FnMut1, FnMut2, FusedAsyncIterator};
-use core::future::Future;
+use core::future::{Future, IntoFuture};
 use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{Context, Poll};
@@ -31,11 +31,12 @@ struct AnyAsyncFn<P> {
 impl<T, P> FnMut2<(), T> for AnyAsyncFn<P>
 where
     P: FnMut1<T>,
+    P::Output: IntoFuture,
 {
-    type Output = Map<P::Output, BreakIfTrue>;
+    type Output = Map<<P::Output as IntoFuture>::IntoFuture, BreakIfTrue>;
 
     fn call_mut(&mut self, (): (), arg_2: T) -> Self::Output {
-        Map::new(self.predicate.call_mut(arg_2), BreakIfTrue)
+        Map::new(self.predicate.call_mut(arg_2).into_future(), BreakIfTrue)
     }
 }
 
@@ -44,6 +45,7 @@ pin_project_lite::pin_project! {
     where
         I: AsyncIterator,
         P: FnMut1<I::Item>,
+        P::Output: IntoFuture<Output = bool>,
     {
         #[pin]
         predicate: Map<TryFoldAsync<I, (), AnyAsyncFn<P>>, ControlFlowIsBreakFn>
@@ -54,6 +56,7 @@ impl<I, P> AnyAsync<I, P>
 where
     I: AsyncIterator,
     P: FnMut1<I::Item>,
+    P::Output: IntoFuture<Output = bool>,
 {
     pub(crate) fn new(iter: I, predicate: P) -> Self {
         Self {
@@ -69,7 +72,8 @@ impl<I, P> Clone for AnyAsync<I, P>
 where
     I: AsyncIterator + Clone,
     P: FnMut1<I::Item> + Clone,
-    P::Output: Clone,
+    P::Output: IntoFuture<Output = bool>,
+    <P::Output as IntoFuture>::IntoFuture: Clone,
 {
     fn clone(&self) -> Self {
         Self {
@@ -82,7 +86,7 @@ impl<I, P> Future for AnyAsync<I, P>
 where
     I: AsyncIterator,
     P: FnMut1<I::Item>,
-    P::Output: Future<Output = bool>,
+    P::Output: IntoFuture<Output = bool>,
 {
     type Output = bool;
 
@@ -95,7 +99,8 @@ impl<I, P> FusedFuture for AnyAsync<I, P>
 where
     I: FusedAsyncIterator,
     P: FnMut1<I::Item>,
-    P::Output: FusedFuture<Output = bool>,
+    P::Output: IntoFuture<Output = bool>,
+    <P::Output as IntoFuture>::IntoFuture: FusedFuture,
 {
     fn is_terminated(&self) -> bool {
         self.predicate.is_terminated()

@@ -17,7 +17,7 @@ pin_project_lite::pin_project! {
 
 impl<Fut, T> Clone for MapInto<Fut, T>
 where
-    Fut: Clone + Future,
+    Fut: Future + Clone,
 {
     fn clone(&self) -> Self {
         Self {

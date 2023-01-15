@@ -28,7 +28,7 @@ where
 
 impl<Fut, E> Clone for IntoResultFuture<Fut, E>
 where
-    Fut: Clone + Future,
+    Fut: Future + Clone,
 {
     fn clone(&self) -> Self {
         Self {

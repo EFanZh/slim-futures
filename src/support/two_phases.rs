@@ -7,8 +7,7 @@ use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
     #[project = TwoPhasesProject]
-    pub enum TwoPhases<A, B>
-    {
+    pub enum TwoPhases<A, B> {
         First {
             #[pin]
             state: A,

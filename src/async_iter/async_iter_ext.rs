@@ -14,7 +14,7 @@ use crate::async_iter::fold_async::FoldAsync;
 use crate::async_iter::try_fold::TryFold;
 use crate::async_iter::try_fold_async::TryFoldAsync;
 use crate::support::{AsyncIterator, IntoAsyncIterator, Try};
-use core::future::Future;
+use core::future::IntoFuture;
 
 pub trait AsyncIteratorExt: AsyncIterator {
     fn slim_all<P>(self, predicate: P) -> All<Self, P>
@@ -29,7 +29,7 @@ pub trait AsyncIteratorExt: AsyncIterator {
     where
         Self: Sized,
         P: FnMut(Self::Item) -> Fut,
-        Fut: Future<Output = bool>,
+        Fut: IntoFuture<Output = bool>,
     {
         crate::support::assert_future::<_, bool>(AllAsync::new(self, predicate))
     }
@@ -46,7 +46,7 @@ pub trait AsyncIteratorExt: AsyncIterator {
     where
         Self: Sized,
         P: FnMut(Self::Item) -> Fut,
-        Fut: Future<Output = bool>,
+        Fut: IntoFuture<Output = bool>,
     {
         crate::support::assert_future::<_, bool>(AnyAsync::new(self, predicate))
     }
@@ -59,11 +59,11 @@ pub trait AsyncIteratorExt: AsyncIterator {
         crate::support::assert_async_iter::<_, Self::Item>(Filter::new(self, predicate))
     }
 
-    fn slim_filter_async<P, Fut>(self, predicate: P) -> FilterAsync<Self, P, Fut>
+    fn slim_filter_async<P, Fut>(self, predicate: P) -> FilterAsync<Self, P>
     where
         Self: Sized,
         P: FnMut(&Self::Item) -> Fut,
-        Fut: Future<Output = bool>,
+        Fut: IntoFuture<Output = bool>,
     {
         crate::support::assert_async_iter::<_, Self::Item>(FilterAsync::new(self, predicate))
     }
@@ -80,7 +80,7 @@ pub trait AsyncIteratorExt: AsyncIterator {
     where
         Self: Sized,
         F: FnMut(Self::Item) -> Fut,
-        Fut: Future<Output = Option<B>>,
+        Fut: IntoFuture<Output = Option<B>>,
     {
         crate::support::assert_async_iter::<_, B>(FilterMapAsync::new(self, f))
     }
@@ -97,7 +97,7 @@ pub trait AsyncIteratorExt: AsyncIterator {
     where
         Self: Sized,
         F: FnMut(Self::Item) -> Fut,
-        Fut: Future<Output = Option<B>>,
+        Fut: IntoFuture<Output = Option<B>>,
     {
         crate::support::assert_future::<_, Option<B>>(FindMapAsync::new(self, f))
     }
@@ -124,7 +124,7 @@ pub trait AsyncIteratorExt: AsyncIterator {
         Self: Sized,
         B: Copy,
         F: FnMut(B, Self::Item) -> Fut,
-        Fut: Future<Output = B>,
+        Fut: IntoFuture<Output = B>,
     {
         crate::support::assert_future::<_, B>(FoldAsync::new(self, init, f))
     }
@@ -144,7 +144,7 @@ pub trait AsyncIteratorExt: AsyncIterator {
         Self: Sized,
         B: Copy,
         F: FnMut(B, Self::Item) -> Fut,
-        Fut: Future,
+        Fut: IntoFuture,
         Fut::Output: Try<Output = B>,
     {
         crate::support::assert_future::<_, Fut::Output>(TryFoldAsync::new(self, init, f))

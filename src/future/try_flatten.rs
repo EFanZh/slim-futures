@@ -1,5 +1,5 @@
 use crate::support::{FromResidual, Try, TwoPhases};
-use core::future::Future;
+use core::future::{Future, IntoFuture};
 use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{Context, Poll};
@@ -9,10 +9,11 @@ pin_project_lite::pin_project! {
     pub struct TryFlatten<Fut>
     where
         Fut: Future,
-        Fut::Output: Try
+        Fut::Output: Try,
+        <Fut::Output as Try>::Output: IntoFuture,
     {
         #[pin]
-        inner: TwoPhases<Fut, <Fut::Output as Try>::Output>,
+        inner: TwoPhases<Fut, <<Fut::Output as Try>::Output as IntoFuture>::IntoFuture>,
     }
 }
 
@@ -20,6 +21,7 @@ impl<Fut> TryFlatten<Fut>
 where
     Fut: Future,
     Fut::Output: Try,
+    <Fut::Output as Try>::Output: IntoFuture,
 {
     pub(crate) fn new(fut: Fut) -> Self {
         Self {
@@ -30,9 +32,10 @@ where
 
 impl<Fut> Clone for TryFlatten<Fut>
 where
-    Fut: Clone + Future,
+    Fut: Future + Clone,
     Fut::Output: Try,
-    <Fut::Output as Try>::Output: Clone,
+    <Fut::Output as Try>::Output: IntoFuture,
+    <<Fut::Output as Try>::Output as IntoFuture>::IntoFuture: Clone,
 {
     fn clone(&self) -> Self {
         Self {
@@ -45,26 +48,29 @@ impl<Fut> Future for TryFlatten<Fut>
 where
     Fut: Future,
     Fut::Output: Try,
-    <Fut::Output as Try>::Output: Future,
-    <<Fut::Output as Try>::Output as Future>::Output: FromResidual<<Fut::Output as Try>::Residual> + Try,
+    <Fut::Output as Try>::Output: IntoFuture,
+    <<Fut::Output as Try>::Output as IntoFuture>::Output: FromResidual<<Fut::Output as Try>::Residual> + Try,
 {
-    type Output = <<Fut::Output as Try>::Output as Future>::Output;
+    type Output = <<Fut::Output as Try>::Output as IntoFuture>::Output;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
-        fn dispatch<T1, T2>(result: T1) -> ControlFlow<T2, T1::Output>
+        fn dispatch<T1, T2>(result: T1) -> ControlFlow<T2, <T1::Output as IntoFuture>::IntoFuture>
         where
             T1: Try,
+            <T1 as Try>::Output: IntoFuture,
             T2: FromResidual<T1::Residual> + Try,
         {
             match result.branch() {
-                ControlFlow::Continue(output) => ControlFlow::Continue(output),
+                ControlFlow::Continue(output) => ControlFlow::Continue(output.into_future()),
                 ControlFlow::Break(residual) => ControlFlow::Break(T2::from_residual(residual)),
             }
         }
 
-        self.project()
-            .inner
-            .poll_with(cx, dispatch, <Fut::Output as Try>::Output::poll)
+        self.project().inner.poll_with(
+            cx,
+            dispatch,
+            <<Fut::Output as Try>::Output as IntoFuture>::IntoFuture::poll,
+        )
     }
 }
 
@@ -72,8 +78,9 @@ impl<Fut> FusedFuture for TryFlatten<Fut>
 where
     Fut: FusedFuture,
     Fut::Output: Try,
-    <Fut::Output as Try>::Output: FusedFuture,
-    <<Fut::Output as Try>::Output as Future>::Output: FromResidual<<Fut::Output as Try>::Residual> + Try,
+    <Fut::Output as Try>::Output: IntoFuture,
+    <<Fut::Output as Try>::Output as IntoFuture>::Output: FromResidual<<Fut::Output as Try>::Residual> + Try,
+    <<Fut::Output as Try>::Output as IntoFuture>::IntoFuture: FusedFuture,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_future_terminated()

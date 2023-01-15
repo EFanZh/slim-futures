@@ -1,7 +1,7 @@
 use crate::future::map::Map;
 use crate::future::try_flatten::TryFlatten;
 use crate::support::{FnMut1, FromResidual, RawResidual, Try};
-use core::future::Future;
+use core::future::{Future, IntoFuture};
 use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{Context, Poll};
@@ -16,8 +16,8 @@ impl<T, F> FnMut1<T> for AndThenAsyncFn<F>
 where
     T: Try,
     F: FnMut1<T::Output>,
-    F::Output: Future,
-    <F::Output as Future>::Output: FromResidual<T::Residual>,
+    F::Output: IntoFuture,
+    <F::Output as IntoFuture>::Output: FromResidual<T::Residual>,
 {
     type Output = RawResidual<T::Residual, F::Output>;
 
@@ -35,9 +35,9 @@ pin_project_lite::pin_project! {
         Fut: Future,
         Fut::Output: Try,
         F: FnMut1<<Fut::Output as Try>::Output>,
-        F::Output: Future,
-        <F::Output as Future>::Output: FromResidual<<Fut::Output as Try>::Residual>,
-        <F::Output as Future>::Output: Try,
+        F::Output: IntoFuture,
+        <F::Output as IntoFuture>::Output: FromResidual<<Fut::Output as Try>::Residual>,
+        <F::Output as IntoFuture>::Output: Try,
     {
         #[pin]
         inner: TryFlatten<Map<Fut, AndThenAsyncFn<F>>>
@@ -49,8 +49,8 @@ where
     Fut: Future,
     Fut::Output: Try,
     F: FnMut1<<Fut::Output as Try>::Output>,
-    F::Output: Future,
-    <F::Output as Future>::Output: FromResidual<<Fut::Output as Try>::Residual> + Try,
+    F::Output: IntoFuture,
+    <F::Output as IntoFuture>::Output: FromResidual<<Fut::Output as Try>::Residual> + Try,
 {
     pub(crate) fn new(fut: Fut, f: F) -> Self {
         Self {
@@ -61,11 +61,12 @@ where
 
 impl<Fut, F> Clone for AndThenAsync<Fut, F>
 where
-    Fut: Clone + Future,
+    Fut: Future + Clone,
     Fut::Output: Try,
-    F: Clone + FnMut1<<Fut::Output as Try>::Output>,
-    F::Output: Clone + Future,
-    <F::Output as Future>::Output: FromResidual<<Fut::Output as Try>::Residual> + Try,
+    F: FnMut1<<Fut::Output as Try>::Output> + Clone,
+    F::Output: IntoFuture,
+    <F::Output as IntoFuture>::Output: FromResidual<<Fut::Output as Try>::Residual> + Try,
+    <F::Output as IntoFuture>::IntoFuture: Clone,
 {
     fn clone(&self) -> Self {
         Self {
@@ -79,10 +80,10 @@ where
     Fut: Future,
     Fut::Output: Try,
     F: FnMut1<<Fut::Output as Try>::Output>,
-    F::Output: Future,
-    <F::Output as Future>::Output: FromResidual<<Fut::Output as Try>::Residual> + Try,
+    F::Output: IntoFuture,
+    <F::Output as IntoFuture>::Output: FromResidual<<Fut::Output as Try>::Residual> + Try,
 {
-    type Output = <F::Output as Future>::Output;
+    type Output = <F::Output as IntoFuture>::Output;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         self.project().inner.poll(cx)
@@ -94,8 +95,9 @@ where
     Fut: FusedFuture,
     Fut::Output: Try,
     F: FnMut1<<Fut::Output as Try>::Output>,
-    F::Output: FusedFuture,
-    <F::Output as Future>::Output: FromResidual<<Fut::Output as Try>::Residual> + Try,
+    F::Output: IntoFuture,
+    <F::Output as IntoFuture>::Output: FromResidual<<Fut::Output as Try>::Residual> + Try,
+    <F::Output as IntoFuture>::IntoFuture: FusedFuture,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

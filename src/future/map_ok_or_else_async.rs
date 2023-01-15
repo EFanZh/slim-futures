@@ -1,39 +1,136 @@
+#![allow(clippy::type_complexity)]
+
 use crate::future::raw_map_ok_or_else_async::RawMapOkOrElseAsync;
-use crate::support::fns::{ComposeFn, EitherLeftFn, EitherRightFn};
 use crate::support::{FnMut1, ResultFuture};
-use core::future::Future;
+use core::future::{Future, IntoFuture};
+use core::marker::PhantomData;
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use futures_core::FusedFuture;
+use futures_util::future::Either;
 
-type ExtractOk<Fut> = <Fut as ResultFuture>::Ok;
-type ExtractError<Fut> = <Fut as ResultFuture>::Error;
+struct MapOkOrElseAsyncLeftFn<F, R> {
+    f: F,
+    phantom: PhantomData<R>,
+}
 
-type MapOkOrElseOkFn<Fut, D, F> =
-    ComposeFn<F, EitherLeftFn<<F as FnMut1<ExtractOk<Fut>>>::Output, <D as FnMut1<ExtractError<Fut>>>::Output>>;
+impl<F, R> MapOkOrElseAsyncLeftFn<F, R> {
+    fn new(f: F) -> Self {
+        Self {
+            f,
+            phantom: PhantomData,
+        }
+    }
+}
 
-type MapOkOrElseErrFn<Fut, D, F> =
-    ComposeFn<D, EitherRightFn<<F as FnMut1<ExtractOk<Fut>>>::Output, <D as FnMut1<ExtractError<Fut>>>::Output>>;
+impl<F, R> Clone for MapOkOrElseAsyncLeftFn<F, R>
+where
+    F: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            f: self.f.clone(),
+            phantom: self.phantom,
+        }
+    }
+}
+
+impl<T, F, R> FnMut1<T> for MapOkOrElseAsyncLeftFn<F, R>
+where
+    F: FnMut1<T>,
+    F::Output: IntoFuture,
+{
+    type Output = Either<<F::Output as IntoFuture>::IntoFuture, R>;
+
+    fn call_mut(&mut self, arg: T) -> Self::Output {
+        Either::Left(self.f.call_mut(arg).into_future())
+    }
+}
+
+struct MapOkOrElseAsyncRightFn<F, L> {
+    f: F,
+    phantom: PhantomData<L>,
+}
+
+impl<F, L> MapOkOrElseAsyncRightFn<F, L> {
+    fn new(f: F) -> Self {
+        Self {
+            f,
+            phantom: PhantomData,
+        }
+    }
+}
+
+impl<F, L> Clone for MapOkOrElseAsyncRightFn<F, L>
+where
+    F: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            f: self.f.clone(),
+            phantom: self.phantom,
+        }
+    }
+}
+
+impl<T, F, L> FnMut1<T> for MapOkOrElseAsyncRightFn<F, L>
+where
+    F: FnMut1<T>,
+    F::Output: IntoFuture,
+{
+    type Output = Either<L, <F::Output as IntoFuture>::IntoFuture>;
+
+    fn call_mut(&mut self, arg: T) -> Self::Output {
+        Either::Right(self.f.call_mut(arg).into_future())
+    }
+}
 
 pin_project_lite::pin_project! {
     pub struct MapOkOrElseAsync<Fut, D, F>
     where
         Fut: ResultFuture,
         D: FnMut1<Fut::Error>,
+        D::Output: IntoFuture,
         F: FnMut1<Fut::Ok>,
+        F::Output: IntoFuture<Output = <D::Output as IntoFuture>::Output>,
     {
         #[pin]
-        inner: RawMapOkOrElseAsync<Fut, MapOkOrElseErrFn<Fut, D, F>, MapOkOrElseOkFn<Fut, D, F>>,
+        inner: RawMapOkOrElseAsync<
+            Fut,
+            MapOkOrElseAsyncRightFn<D, <F::Output as IntoFuture>::IntoFuture>,
+            MapOkOrElseAsyncLeftFn<F, <D::Output as IntoFuture>::IntoFuture>,
+        >,
     }
 }
 
-impl<Fut, D, F, T, E> Clone for MapOkOrElseAsync<Fut, D, F>
+impl<Fut, D, F> MapOkOrElseAsync<Fut, D, F>
 where
-    Fut: Future<Output = Result<T, E>> + Clone,
-    D: FnMut1<E> + Clone,
-    F: FnMut1<T> + Clone,
-    D::Output: Clone,
-    F::Output: Clone,
+    Fut: ResultFuture,
+    D: FnMut1<Fut::Error>,
+    D::Output: IntoFuture,
+    F: FnMut1<Fut::Ok>,
+    F::Output: IntoFuture<Output = <D::Output as IntoFuture>::Output>,
+{
+    pub(crate) fn new(fut: Fut, default: D, f: F) -> Self {
+        Self {
+            inner: RawMapOkOrElseAsync::new(
+                fut,
+                MapOkOrElseAsyncRightFn::new(default),
+                MapOkOrElseAsyncLeftFn::new(f),
+            ),
+        }
+    }
+}
+
+impl<Fut, D, F> Clone for MapOkOrElseAsync<Fut, D, F>
+where
+    Fut: ResultFuture + Clone,
+    D: FnMut1<Fut::Error> + Clone,
+    D::Output: IntoFuture,
+    <D::Output as IntoFuture>::IntoFuture: Clone,
+    F: FnMut1<Fut::Ok> + Clone,
+    F::Output: IntoFuture<Output = <D::Output as IntoFuture>::Output>,
+    <F::Output as IntoFuture>::IntoFuture: Clone,
 {
     fn clone(&self) -> Self {
         Self {
@@ -42,45 +139,30 @@ where
     }
 }
 
-impl<Fut, D, F, T, E> MapOkOrElseAsync<Fut, D, F>
+impl<Fut, D, F> Future for MapOkOrElseAsync<Fut, D, F>
 where
-    Fut: Future<Output = Result<T, E>>,
-    D: FnMut1<E>,
-    F: FnMut1<T>,
+    Fut: ResultFuture,
+    D: FnMut1<Fut::Error>,
+    D::Output: IntoFuture,
+    F: FnMut1<Fut::Ok>,
+    F::Output: IntoFuture<Output = <D::Output as IntoFuture>::Output>,
 {
-    pub(crate) fn new(fut: Fut, default: D, f: F) -> Self {
-        Self {
-            inner: RawMapOkOrElseAsync::new(
-                fut,
-                ComposeFn::new(default, EitherRightFn::default()),
-                ComposeFn::new(f, EitherLeftFn::default()),
-            ),
-        }
-    }
-}
-
-impl<Fut, D, F, T, E> Future for MapOkOrElseAsync<Fut, D, F>
-where
-    Fut: Future<Output = Result<T, E>>,
-    D: FnMut1<E>,
-    F: FnMut1<T>,
-    D::Output: Future,
-    F::Output: Future<Output = <D::Output as Future>::Output>,
-{
-    type Output = <D::Output as Future>::Output;
+    type Output = <D::Output as IntoFuture>::Output;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         self.project().inner.poll(cx)
     }
 }
 
-impl<Fut, D, F, T, E> FusedFuture for MapOkOrElseAsync<Fut, D, F>
+impl<Fut, D, F> FusedFuture for MapOkOrElseAsync<Fut, D, F>
 where
-    Fut: FusedFuture<Output = Result<T, E>>,
-    D: FnMut1<E>,
-    F: FnMut1<T>,
-    D::Output: FusedFuture,
-    F::Output: FusedFuture<Output = <D::Output as Future>::Output>,
+    Fut: ResultFuture + FusedFuture,
+    D: FnMut1<Fut::Error>,
+    D::Output: IntoFuture,
+    <D::Output as IntoFuture>::IntoFuture: FusedFuture,
+    F: FnMut1<Fut::Ok>,
+    F::Output: IntoFuture<Output = <D::Output as IntoFuture>::Output>,
+    <F::Output as IntoFuture>::IntoFuture: FusedFuture,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

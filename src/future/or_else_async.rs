@@ -1,7 +1,7 @@
 use crate::future::map_err::MapErr;
 use crate::future::try_flatten_err::TryFlattenErr;
 use crate::support::{FnMut1, ResultFuture};
-use core::future::Future;
+use core::future::{Future, IntoFuture};
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use futures_core::FusedFuture;
@@ -11,16 +11,18 @@ pin_project_lite::pin_project! {
     where
         Fut: ResultFuture,
         F: FnMut1<Fut::Error>,
+        F::Output: IntoFuture,
     {
         #[pin]
         inner: TryFlattenErr<MapErr<Fut, F>>
     }
 }
 
-impl<Fut, F, T, E> OrElseAsync<Fut, F>
+impl<Fut, F> OrElseAsync<Fut, F>
 where
-    Fut: Future<Output = Result<T, E>>,
-    F: FnMut1<E>,
+    Fut: ResultFuture,
+    F: FnMut1<Fut::Error>,
+    F::Output: IntoFuture,
 {
     pub(crate) fn new(fut: Fut, f: F) -> Self {
         Self {
@@ -29,11 +31,12 @@ where
     }
 }
 
-impl<Fut, F, T, E> Clone for OrElseAsync<Fut, F>
+impl<Fut, F> Clone for OrElseAsync<Fut, F>
 where
-    Fut: Clone + Future<Output = Result<T, E>>,
-    F: Clone + FnMut1<E>,
-    F::Output: Clone,
+    Fut: ResultFuture + Clone,
+    F: FnMut1<Fut::Error> + Clone,
+    F::Output: IntoFuture,
+    <F::Output as IntoFuture>::IntoFuture: Clone,
 {
     fn clone(&self) -> Self {
         Self {
@@ -42,24 +45,26 @@ where
     }
 }
 
-impl<Fut, F, T, E, U> Future for OrElseAsync<Fut, F>
+impl<Fut, F> Future for OrElseAsync<Fut, F>
 where
-    Fut: Future<Output = Result<T, E>>,
-    F: FnMut1<E>,
-    F::Output: Future<Output = Result<T, U>>,
+    Fut: ResultFuture,
+    F: FnMut1<Fut::Error>,
+    F::Output: IntoFuture,
+    <F::Output as IntoFuture>::IntoFuture: ResultFuture<Ok = Fut::Ok>,
 {
-    type Output = Result<T, U>;
+    type Output = <<F::Output as IntoFuture>::IntoFuture as Future>::Output;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         self.project().inner.poll(cx)
     }
 }
 
-impl<Fut, F, T, E, U> FusedFuture for OrElseAsync<Fut, F>
+impl<Fut, F> FusedFuture for OrElseAsync<Fut, F>
 where
-    Fut: FusedFuture<Output = Result<T, E>>,
-    F: FnMut1<E>,
-    F::Output: FusedFuture<Output = Result<T, U>>,
+    Fut: ResultFuture + FusedFuture,
+    F: FnMut1<Fut::Error>,
+    F::Output: IntoFuture,
+    <F::Output as IntoFuture>::IntoFuture: ResultFuture<Ok = Fut::Ok> + FusedFuture,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

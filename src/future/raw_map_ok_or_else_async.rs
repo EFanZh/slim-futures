@@ -1,7 +1,7 @@
 use crate::future::map_async::MapAsync;
 use crate::support::fns::MapOkOrElseFn;
 use crate::support::{FnMut1, ResultFuture};
-use core::future::Future;
+use core::future::{Future, IntoFuture};
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use futures_core::FusedFuture;
@@ -11,6 +11,7 @@ pin_project_lite::pin_project! {
     where
         Fut: ResultFuture,
         D: FnMut1<Fut::Error>,
+        D::Output: IntoFuture,
         F: FnMut1<Fut::Ok, Output = D::Output>,
     {
         #[pin]
@@ -18,12 +19,13 @@ pin_project_lite::pin_project! {
     }
 }
 
-impl<Fut, D, F, T, E> Clone for RawMapOkOrElseAsync<Fut, D, F>
+impl<Fut, D, F> Clone for RawMapOkOrElseAsync<Fut, D, F>
 where
-    Fut: Future<Output = Result<T, E>> + Clone,
-    D: FnMut1<E> + Clone,
-    F: FnMut1<T, Output = D::Output> + Clone,
-    D::Output: Clone,
+    Fut: ResultFuture + Clone,
+    D: FnMut1<Fut::Error> + Clone,
+    D::Output: IntoFuture,
+    <D::Output as IntoFuture>::IntoFuture: Clone,
+    F: FnMut1<Fut::Ok, Output = D::Output> + Clone,
 {
     fn clone(&self) -> Self {
         Self {
@@ -32,11 +34,12 @@ where
     }
 }
 
-impl<Fut, D, F, T, E> RawMapOkOrElseAsync<Fut, D, F>
+impl<Fut, D, F> RawMapOkOrElseAsync<Fut, D, F>
 where
-    Fut: Future<Output = Result<T, E>>,
-    D: FnMut1<E>,
-    F: FnMut1<T, Output = D::Output>,
+    Fut: ResultFuture,
+    D: FnMut1<Fut::Error>,
+    D::Output: IntoFuture,
+    F: FnMut1<Fut::Ok, Output = D::Output>,
 {
     pub(crate) fn new(fut: Fut, default: D, f: F) -> Self {
         Self {
@@ -45,26 +48,27 @@ where
     }
 }
 
-impl<Fut, D, F, T, E> Future for RawMapOkOrElseAsync<Fut, D, F>
+impl<Fut, D, F> Future for RawMapOkOrElseAsync<Fut, D, F>
 where
-    Fut: Future<Output = Result<T, E>>,
-    D: FnMut1<E>,
-    F: FnMut1<T, Output = D::Output>,
-    D::Output: Future,
+    Fut: ResultFuture,
+    D: FnMut1<Fut::Error>,
+    D::Output: IntoFuture,
+    F: FnMut1<Fut::Ok, Output = D::Output>,
 {
-    type Output = <D::Output as Future>::Output;
+    type Output = <D::Output as IntoFuture>::Output;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         self.project().inner.poll(cx)
     }
 }
 
-impl<Fut, D, F, T, E> FusedFuture for RawMapOkOrElseAsync<Fut, D, F>
+impl<Fut, D, F> FusedFuture for RawMapOkOrElseAsync<Fut, D, F>
 where
-    Fut: FusedFuture<Output = Result<T, E>>,
-    D: FnMut1<E>,
-    F: FnMut1<T, Output = D::Output>,
-    D::Output: FusedFuture,
+    Fut: ResultFuture + FusedFuture,
+    D: FnMut1<Fut::Error>,
+    D::Output: IntoFuture,
+    <D::Output as IntoFuture>::IntoFuture: FusedFuture,
+    F: FnMut1<Fut::Ok, Output = D::Output>,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

@@ -1,8 +1,8 @@
 use crate::async_iter::try_fold_async::TryFoldAsync;
 use crate::future::Map;
 use crate::support::fns::ControlFlowBreakValueFn;
-use crate::support::{AsyncIterator, FnMut1, FnMut2, FusedAsyncIterator};
-use core::future::Future;
+use crate::support::{AsyncIterator, FnMut1, FnMut2, FusedAsyncIterator, OptionFuture};
+use core::future::{Future, IntoFuture};
 use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{Context, Poll};
@@ -30,11 +30,12 @@ struct FindMapAsyncFn<F> {
 impl<T, F> FnMut2<(), T> for FindMapAsyncFn<F>
 where
     F: FnMut1<T>,
+    F::Output: IntoFuture,
 {
-    type Output = Map<F::Output, BreakIfSome>;
+    type Output = Map<<F::Output as IntoFuture>::IntoFuture, BreakIfSome>;
 
     fn call_mut(&mut self, (): (), arg_2: T) -> Self::Output {
-        Map::new(self.f.call_mut(arg_2), BreakIfSome)
+        Map::new(self.f.call_mut(arg_2).into_future(), BreakIfSome)
     }
 }
 
@@ -43,6 +44,8 @@ pin_project_lite::pin_project! {
     where
         I: AsyncIterator,
         F: FnMut1<I::Item>,
+        F::Output: IntoFuture,
+        <F::Output as IntoFuture>::IntoFuture: OptionFuture,
     {
         #[pin]
         inner: Map<TryFoldAsync<I, (), FindMapAsyncFn<F>>, ControlFlowBreakValueFn>
@@ -53,6 +56,8 @@ impl<I, F> FindMapAsync<I, F>
 where
     I: AsyncIterator,
     F: FnMut1<I::Item>,
+    F::Output: IntoFuture,
+    <F::Output as IntoFuture>::IntoFuture: OptionFuture,
 {
     pub(crate) fn new(iter: I, f: F) -> Self {
         Self {
@@ -68,7 +73,8 @@ impl<I, F> Clone for FindMapAsync<I, F>
 where
     I: AsyncIterator + Clone,
     F: FnMut1<I::Item> + Clone,
-    F::Output: Clone,
+    F::Output: IntoFuture,
+    <F::Output as IntoFuture>::IntoFuture: OptionFuture + Clone,
 {
     fn clone(&self) -> Self {
         Self {
@@ -81,7 +87,7 @@ impl<I, F, B> Future for FindMapAsync<I, F>
 where
     I: AsyncIterator,
     F: FnMut1<I::Item>,
-    F::Output: Future<Output = Option<B>>,
+    F::Output: IntoFuture<Output = Option<B>>,
 {
     type Output = Option<B>;
 

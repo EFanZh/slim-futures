@@ -1,7 +1,6 @@
 use crate::future::map::Map;
 use crate::support::{FnMut1, ResultFuture, TwoPhases};
-use core::convert;
-use core::future::Future;
+use core::future::{Future, IntoFuture};
 use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{Context, Poll};
@@ -27,14 +26,14 @@ where
 }
 
 pin_project_lite::pin_project! {
-    #[derive(Clone)]
     pub struct UnwrapOrElseAsync<Fut, F>
     where
         Fut: ResultFuture,
-        F: FnMut1<Fut::Error>
+        F: FnMut1<Fut::Error>,
+        F::Output: IntoFuture,
     {
         #[pin]
-        inner: TwoPhases<Map<Fut, UnwrapOrElseAsyncFn<F>>, F::Output>,
+        inner: TwoPhases<Map<Fut, UnwrapOrElseAsyncFn<F>>, <F::Output as IntoFuture>::IntoFuture>,
     }
 }
 
@@ -42,6 +41,7 @@ impl<Fut, F> UnwrapOrElseAsync<Fut, F>
 where
     Fut: ResultFuture,
     F: FnMut1<Fut::Error>,
+    F::Output: IntoFuture,
 {
     pub(crate) fn new(fut: Fut, f: F) -> Self {
         Self {
@@ -52,16 +52,42 @@ where
     }
 }
 
+impl<Fut, F> Clone for UnwrapOrElseAsync<Fut, F>
+where
+    Fut: ResultFuture + Clone,
+    F: FnMut1<Fut::Error> + Clone,
+    F::Output: IntoFuture,
+    <F::Output as IntoFuture>::IntoFuture: Clone,
+{
+    fn clone(&self) -> Self {
+        Self {
+            inner: self.inner.clone(),
+        }
+    }
+}
+
 impl<Fut, F, T, E> Future for UnwrapOrElseAsync<Fut, F>
 where
     Fut: Future<Output = Result<T, E>>,
     F: FnMut1<E>,
-    F::Output: Future<Output = T>,
+    F::Output: IntoFuture<Output = T>,
 {
     type Output = T;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
-        self.project().inner.poll_with(cx, convert::identity, F::Output::poll)
+        fn dispatch<B, C>(result: ControlFlow<B, C>) -> ControlFlow<B, C::IntoFuture>
+        where
+            C: IntoFuture,
+        {
+            match result {
+                ControlFlow::Continue(output) => ControlFlow::Continue(output.into_future()),
+                ControlFlow::Break(residual) => ControlFlow::Break(residual),
+            }
+        }
+
+        self.project()
+            .inner
+            .poll_with(cx, dispatch, <F::Output as IntoFuture>::IntoFuture::poll)
     }
 }
 

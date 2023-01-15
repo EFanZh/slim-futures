@@ -2,6 +2,7 @@ use crate::future::and_then::AndThen;
 use crate::future::and_then_async::AndThenAsync;
 use crate::future::err_into::ErrInto;
 use crate::future::flatten::Flatten;
+use crate::future::flatten_async_iterator::FlattenAsyncIterator;
 use crate::future::inspect::Inspect;
 use crate::future::inspect_err::InspectErr;
 use crate::future::inspect_ok::InspectOk;
@@ -23,8 +24,8 @@ use crate::future::try_flatten::TryFlatten;
 use crate::future::try_flatten_err::TryFlattenErr;
 use crate::future::unwrap_or_else::UnwrapOrElse;
 use crate::future::unwrap_or_else_async::UnwrapOrElseAsync;
-use crate::support::{self, AsyncIterator, FromResidual, Never, ResultFuture, Try};
-use core::future::Future;
+use crate::support::{self, FromResidual, IntoAsyncIterator, Never, ResultFuture, Try};
+use core::future::{Future, IntoFuture};
 
 pub trait FutureExt: Future {
     fn by_ref(&mut self) -> &mut Self {
@@ -46,7 +47,7 @@ pub trait FutureExt: Future {
         Self: Sized,
         Self::Output: Try,
         F: FnMut(<Self::Output as Try>::Output) -> Fut2,
-        Fut2: Future,
+        Fut2: IntoFuture,
         Fut2::Output: FromResidual<<Self::Output as Try>::Residual> + Try,
     {
         support::assert_future::<_, Fut2::Output>(AndThenAsync::new(self, f))
@@ -63,17 +64,17 @@ pub trait FutureExt: Future {
     fn slim_flatten(self) -> Flatten<Self>
     where
         Self: Sized,
-        Self::Output: Future,
+        Self::Output: IntoFuture,
     {
-        support::assert_future::<_, <Self::Output as Future>::Output>(Flatten::new(self))
+        support::assert_future::<_, <Self::Output as IntoFuture>::Output>(Flatten::new(self))
     }
 
-    fn slim_flatten_async_iter(self) -> Flatten<Self>
+    fn slim_flatten_async_iterator(self) -> FlattenAsyncIterator<Self>
     where
         Self: Sized,
-        Self::Output: AsyncIterator,
+        Self::Output: IntoAsyncIterator,
     {
-        support::assert_async_iter::<_, <Self::Output as AsyncIterator>::Item>(Flatten::new(self))
+        support::assert_async_iter::<_, <Self::Output as IntoAsyncIterator>::Item>(FlattenAsyncIterator::new(self))
     }
 
     fn slim_inspect<F>(self, f: F) -> Inspect<Self, F>
@@ -119,7 +120,7 @@ pub trait FutureExt: Future {
     where
         Self: Sized,
         F: FnMut(Self::Output) -> Fut2,
-        Fut2: Future,
+        Fut2: IntoFuture,
     {
         support::assert_future::<_, Fut2::Output>(MapAsync::new(self, f))
     }
@@ -136,7 +137,7 @@ pub trait FutureExt: Future {
     where
         Self: ResultFuture + Sized,
         F: FnMut(Self::Error) -> Fut2,
-        Fut2: Future,
+        Fut2: IntoFuture,
     {
         support::assert_future::<_, Result<Self::Ok, Fut2::Output>>(MapErrAsync::new(self, f))
     }
@@ -161,7 +162,7 @@ pub trait FutureExt: Future {
     where
         Self: ResultFuture + Sized,
         F: FnMut(Self::Ok) -> Fut2,
-        Fut2: Future,
+        Fut2: IntoFuture,
     {
         support::assert_future::<_, Result<Fut2::Output, Self::Error>>(MapOkAsync::new(self, f))
     }
@@ -180,8 +181,8 @@ pub trait FutureExt: Future {
         Self: ResultFuture + Sized,
         D: FnMut(Self::Error) -> Fut1,
         F: FnMut(Self::Ok) -> Fut2,
-        Fut1: Future,
-        Fut2: Future<Output = Fut1::Output>,
+        Fut1: IntoFuture,
+        Fut2: IntoFuture<Output = Fut1::Output>,
     {
         support::assert_future::<_, Fut1::Output>(MapOkOrElseAsync::new(self, default, f))
     }
@@ -213,9 +214,10 @@ pub trait FutureExt: Future {
     where
         Self: ResultFuture + Sized,
         F: FnMut(Self::Error) -> Fut2,
-        Fut2: ResultFuture<Ok = Self::Ok>,
+        Fut2: IntoFuture,
+        <Fut2 as IntoFuture>::IntoFuture: ResultFuture<Ok = Self::Ok>,
     {
-        support::assert_future::<_, Result<Self::Ok, Fut2::Error>>(OrElseAsync::new(self, f))
+        support::assert_future::<_, <<Fut2 as IntoFuture>::IntoFuture as Future>::Output>(OrElseAsync::new(self, f))
     }
 
     fn slim_raw_map_ok_or_else_async<D, F, Fut>(self, default: D, f: F) -> RawMapOkOrElseAsync<Self, D, F>
@@ -223,7 +225,7 @@ pub trait FutureExt: Future {
         Self: ResultFuture + Sized,
         D: FnMut(Self::Error) -> Fut,
         F: FnMut(Self::Ok) -> Fut,
-        Fut: Future,
+        Fut: IntoFuture,
     {
         support::assert_future::<_, Fut::Output>(RawMapOkOrElseAsync::new(self, default, f))
     }
@@ -232,18 +234,21 @@ pub trait FutureExt: Future {
     where
         Self: Sized,
         Self::Output: Try,
-        <Self::Output as Try>::Output: Future,
-        <<Self::Output as Try>::Output as Future>::Output: FromResidual<<Self::Output as Try>::Residual> + Try,
+        <Self::Output as Try>::Output: IntoFuture,
+        <<Self::Output as Try>::Output as IntoFuture>::Output: FromResidual<<Self::Output as Try>::Residual> + Try,
     {
-        support::assert_future::<_, <<Self::Output as Try>::Output as Future>::Output>(TryFlatten::new(self))
+        support::assert_future::<_, <<Self::Output as Try>::Output as IntoFuture>::Output>(TryFlatten::new(self))
     }
 
     fn slim_try_flatten_err(self) -> TryFlattenErr<Self>
     where
         Self: ResultFuture + Sized,
-        Self::Error: ResultFuture<Ok = Self::Ok> + Sized,
+        Self::Error: IntoFuture,
+        <Self::Error as IntoFuture>::IntoFuture: ResultFuture<Ok = Self::Ok>,
     {
-        support::assert_future::<_, Result<Self::Ok, <Self::Error as ResultFuture>::Error>>(TryFlattenErr::new(self))
+        support::assert_future::<_, <<Self::Error as IntoFuture>::IntoFuture as Future>::Output>(TryFlattenErr::new(
+            self,
+        ))
     }
 
     fn slim_unit_error(self) -> IntoResultFuture<Self, ()>
@@ -265,7 +270,7 @@ pub trait FutureExt: Future {
     where
         Self: ResultFuture + Sized,
         F: FnMut(Self::Error) -> Fut2,
-        Fut2: Future<Output = Self::Ok>,
+        Fut2: IntoFuture<Output = Self::Ok>,
     {
         support::assert_future::<_, Self::Ok>(UnwrapOrElseAsync::new(self, f))
     }

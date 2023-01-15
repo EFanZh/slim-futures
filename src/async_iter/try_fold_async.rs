@@ -1,5 +1,5 @@
 use crate::support::{AsyncIterator, FnMut2, FromResidual, FusedAsyncIterator, Try};
-use core::future::Future;
+use core::future::{Future, IntoFuture};
 use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
@@ -10,13 +10,14 @@ pin_project_lite::pin_project! {
     where
         I: AsyncIterator,
         F: FnMut2<B, I::Item>,
+        F::Output: IntoFuture,
     {
         #[pin]
         iter: I,
         acc: B,
         f: F,
         #[pin]
-        fut: Option<F::Output>,
+        fut: Option<<F::Output as IntoFuture>::IntoFuture>,
     }
 }
 
@@ -24,6 +25,7 @@ impl<I, B, F> TryFoldAsync<I, B, F>
 where
     I: AsyncIterator,
     F: FnMut2<B, I::Item>,
+    F::Output: IntoFuture,
 {
     pub(crate) fn new(iter: I, acc: B, f: F) -> Self {
         Self {
@@ -40,7 +42,8 @@ where
     I: AsyncIterator + Clone,
     B: Clone,
     F: FnMut2<B, I::Item> + Clone,
-    F::Output: Clone,
+    F::Output: IntoFuture,
+    <F::Output as IntoFuture>::IntoFuture: Clone,
 {
     fn clone(&self) -> Self {
         Self {
@@ -57,10 +60,10 @@ where
     I: AsyncIterator,
     B: Copy,
     F: FnMut2<B, I::Item>,
-    F::Output: Future,
-    <F::Output as Future>::Output: Try<Output = B>,
+    F::Output: IntoFuture,
+    <F::Output as IntoFuture>::Output: Try<Output = B>,
 {
-    type Output = <F::Output as Future>::Output;
+    type Output = <F::Output as IntoFuture>::Output;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         let this = self.project();
@@ -78,7 +81,7 @@ where
 
                 fut.set(None);
             } else if let Some(item) = task::ready!(iter.as_mut().poll_next(cx)) {
-                fut.set(Some(f.call_mut(*acc, item)));
+                fut.set(Some(f.call_mut(*acc, item).into_future()));
             } else {
                 break Self::Output::from_output(*acc);
             }
@@ -91,8 +94,9 @@ where
     I: FusedAsyncIterator,
     B: Copy,
     F: FnMut2<B, I::Item>,
-    F::Output: FusedFuture,
-    <F::Output as Future>::Output: Try<Output = B>,
+    F::Output: IntoFuture,
+    <F::Output as IntoFuture>::Output: Try<Output = B>,
+    <F::Output as IntoFuture>::IntoFuture: FusedFuture,
 {
     fn is_terminated(&self) -> bool {
         if let Some(fut) = &self.fut {
