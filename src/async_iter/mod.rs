@@ -13,6 +13,7 @@ pub use self::flatten::Flatten;
 pub use self::fold::Fold;
 pub use self::fold_async::FoldAsync;
 pub use self::map::Map;
+pub use self::map_async::MapAsync;
 pub use self::try_fold::TryFold;
 pub use self::try_fold_async::TryFoldAsync;
 
@@ -31,5 +32,6 @@ mod flatten;
 mod fold;
 mod fold_async;
 mod map;
+mod map_async;
 mod try_fold;
 mod try_fold_async;
