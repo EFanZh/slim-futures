@@ -214,10 +214,9 @@ pub trait FutureExt: Future {
     where
         Self: ResultFuture + Sized,
         F: FnMut(Self::Error) -> Fut2,
-        Fut2: IntoFuture,
-        <Fut2 as IntoFuture>::IntoFuture: ResultFuture<Ok = Self::Ok>,
+        Fut2: support::IntoResultFuture<Ok = Self::Ok>,
     {
-        support::assert_future::<_, <<Fut2 as IntoFuture>::IntoFuture as Future>::Output>(OrElseAsync::new(self, f))
+        support::assert_future::<_, Fut2::Output>(OrElseAsync::new(self, f))
     }
 
     fn slim_raw_map_ok_or_else_async<D, F, Fut>(self, default: D, f: F) -> RawMapOkOrElseAsync<Self, D, F>
@@ -243,8 +242,7 @@ pub trait FutureExt: Future {
     fn slim_try_flatten_err(self) -> TryFlattenErr<Self>
     where
         Self: ResultFuture + Sized,
-        Self::Error: IntoFuture,
-        <Self::Error as IntoFuture>::IntoFuture: ResultFuture<Ok = Self::Ok>,
+        Self::Error: support::IntoResultFuture<Ok = Self::Ok>,
     {
         support::assert_future::<_, <<Self::Error as IntoFuture>::IntoFuture as Future>::Output>(TryFlattenErr::new(
             self,

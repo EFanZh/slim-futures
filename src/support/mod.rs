@@ -1,6 +1,7 @@
 pub use self::fn_mut_1::FnMut1;
 pub use self::fn_mut_2::FnMut2;
 pub use self::into_async_iterator::IntoAsyncIterator;
+pub use self::into_result_future::IntoResultFuture;
 pub use self::option_future::OptionFuture;
 pub use self::raw_residual::RawResidual;
 pub use self::result_future::ResultFuture;
@@ -14,6 +15,7 @@ mod fn_mut_1;
 mod fn_mut_2;
 pub mod fns;
 mod into_async_iterator;
+mod into_result_future;
 mod option_future;
 mod raw_residual;
 mod result_future;

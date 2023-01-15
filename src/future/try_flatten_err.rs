@@ -1,4 +1,4 @@
-use crate::support::{ResultFuture, TwoPhases};
+use crate::support::{IntoResultFuture, ResultFuture, TwoPhases};
 use core::future::{Future, IntoFuture};
 use core::ops::ControlFlow;
 use core::pin::Pin;
@@ -44,17 +44,14 @@ where
 impl<Fut> Future for TryFlattenErr<Fut>
 where
     Fut: ResultFuture,
-    Fut::Error: IntoFuture,
-    <Fut::Error as IntoFuture>::IntoFuture: ResultFuture<Ok = Fut::Ok>,
+    Fut::Error: IntoResultFuture<Ok = Fut::Ok>,
 {
-    type Output = <<Fut::Error as IntoFuture>::IntoFuture as Future>::Output;
+    type Output = <Fut::Error as IntoFuture>::Output;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
-        fn dispatch<T, E>(
-            result: Result<T, E>,
-        ) -> ControlFlow<Result<T, <E::IntoFuture as ResultFuture>::Error>, E::IntoFuture>
+        fn dispatch<T, E, E2>(result: Result<T, E>) -> ControlFlow<E::Output, E::IntoFuture>
         where
-            E: IntoFuture,
+            E: IntoFuture<Output = Result<T, E2>>,
             E::IntoFuture: ResultFuture<Ok = T>,
         {
             match result {
@@ -63,17 +60,22 @@ where
             }
         }
 
-        self.project()
-            .inner
-            .poll_with(cx, dispatch, <Fut::Error as IntoFuture>::IntoFuture::poll)
+        fn poll<E>(future: Pin<&mut E::IntoFuture>, cx: &mut Context) -> Poll<E::Output>
+        where
+            E: IntoFuture,
+        {
+            future.poll(cx)
+        }
+
+        self.project().inner.poll_with(cx, dispatch, poll::<Fut::Error>)
     }
 }
 
 impl<Fut> FusedFuture for TryFlattenErr<Fut>
 where
     Fut: ResultFuture + FusedFuture,
-    Fut::Error: IntoFuture,
-    <Fut::Error as IntoFuture>::IntoFuture: ResultFuture<Ok = Fut::Ok> + FusedFuture,
+    Fut::Error: IntoResultFuture<Ok = Fut::Ok>,
+    <Fut::Error as IntoFuture>::IntoFuture: FusedFuture,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_future_terminated()
