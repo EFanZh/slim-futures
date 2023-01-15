@@ -9,18 +9,18 @@ use core::task::{Context, Poll};
 use futures_core::FusedFuture;
 
 #[derive(Clone)]
-struct AllFn<F> {
-    inner: F,
+struct AllFn<P> {
+    predicate: P,
 }
 
-impl<T, F> FnMut2<(), T> for AllFn<F>
+impl<T, P> FnMut2<(), T> for AllFn<P>
 where
-    F: FnMut1<T, Output = bool>,
+    P: FnMut1<T, Output = bool>,
 {
     type Output = ControlFlow<()>;
 
     fn call_mut(&mut self, (): (), arg_2: T) -> Self::Output {
-        if self.inner.call_mut(arg_2) {
+        if self.predicate.call_mut(arg_2) {
             ControlFlow::Continue(())
         } else {
             ControlFlow::Break(())
@@ -29,54 +29,54 @@ where
 }
 
 pin_project_lite::pin_project! {
-    pub struct All<I, F> {
+    pub struct All<I, P> {
         #[pin]
-        inner: Map<TryFold<I, (), AllFn<F>>, ControlFlowIsContinueFn>
+        predicate: Map<TryFold<I, (), AllFn<P>>, ControlFlowIsContinueFn>
     }
 }
 
-impl<I, F> All<I, F> {
-    pub(crate) fn new(iter: I, f: F) -> Self {
+impl<I, P> All<I, P> {
+    pub(crate) fn new(iter: I, predicate: P) -> Self {
         Self {
-            inner: Map::new(
-                TryFold::new(iter, (), AllFn { inner: f }),
+            predicate: Map::new(
+                TryFold::new(iter, (), AllFn { predicate }),
                 ControlFlowIsContinueFn::default(),
             ),
         }
     }
 }
 
-impl<I, F> Clone for All<I, F>
+impl<I, P> Clone for All<I, P>
 where
     I: Clone,
-    F: Clone,
+    P: Clone,
 {
     fn clone(&self) -> Self {
         Self {
-            inner: self.inner.clone(),
+            predicate: self.predicate.clone(),
         }
     }
 }
 
-impl<I, F> Future for All<I, F>
+impl<I, P> Future for All<I, P>
 where
     I: AsyncIterator,
-    F: FnMut1<I::Item, Output = bool>,
+    P: FnMut1<I::Item, Output = bool>,
 {
     type Output = bool;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
-        self.project().inner.poll(cx)
+        self.project().predicate.poll(cx)
     }
 }
 
-impl<I, F> FusedFuture for All<I, F>
+impl<I, P> FusedFuture for All<I, P>
 where
     I: FusedAsyncIterator,
-    F: FnMut1<I::Item, Output = bool>,
+    P: FnMut1<I::Item, Output = bool>,
 {
     fn is_terminated(&self) -> bool {
-        self.inner.is_terminated()
+        self.predicate.is_terminated()
     }
 }
 

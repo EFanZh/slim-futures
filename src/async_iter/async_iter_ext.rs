@@ -15,38 +15,38 @@ use crate::support::{AsyncIterator, Try};
 use core::future::Future;
 
 pub trait AsyncIteratorExt: AsyncIterator {
-    fn slim_all<F>(self, f: F) -> All<Self, F>
+    fn slim_all<P>(self, predicate: P) -> All<Self, P>
     where
         Self: Sized,
-        F: FnMut(Self::Item) -> bool,
+        P: FnMut(Self::Item) -> bool,
     {
-        crate::support::assert_future::<_, bool>(All::new(self, f))
+        crate::support::assert_future::<_, bool>(All::new(self, predicate))
     }
 
-    fn slim_all_async<F, Fut>(self, f: F) -> AllAsync<Self, F>
+    fn slim_all_async<P, Fut>(self, predicate: P) -> AllAsync<Self, P>
     where
         Self: Sized,
-        F: FnMut(Self::Item) -> Fut,
+        P: FnMut(Self::Item) -> Fut,
         Fut: Future<Output = bool>,
     {
-        crate::support::assert_future::<_, bool>(AllAsync::new(self, f))
+        crate::support::assert_future::<_, bool>(AllAsync::new(self, predicate))
     }
 
-    fn slim_any<F>(self, f: F) -> Any<Self, F>
+    fn slim_any<P>(self, predicate: P) -> Any<Self, P>
     where
         Self: Sized,
-        F: FnMut(Self::Item) -> bool,
+        P: FnMut(Self::Item) -> bool,
     {
-        crate::support::assert_future::<_, bool>(Any::new(self, f))
+        crate::support::assert_future::<_, bool>(Any::new(self, predicate))
     }
 
-    fn slim_any_async<F, Fut>(self, f: F) -> AnyAsync<Self, F>
+    fn slim_any_async<P, Fut>(self, predicate: P) -> AnyAsync<Self, P>
     where
         Self: Sized,
-        F: FnMut(Self::Item) -> Fut,
+        P: FnMut(Self::Item) -> Fut,
         Fut: Future<Output = bool>,
     {
-        crate::support::assert_future::<_, bool>(AnyAsync::new(self, f))
+        crate::support::assert_future::<_, bool>(AnyAsync::new(self, predicate))
     }
 
     fn slim_filter<P>(self, predicate: P) -> Filter<Self, P>
