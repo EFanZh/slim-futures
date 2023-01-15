@@ -48,15 +48,6 @@ pub trait AsyncIteratorExt: AsyncIterator {
         crate::support::assert_future::<_, bool>(AnyAsync::new(self, f))
     }
 
-    fn slim_fold<B, F>(self, init: B, f: F) -> Fold<Self, B, F>
-    where
-        Self: Sized,
-        B: Copy,
-        F: FnMut(B, Self::Item) -> B,
-    {
-        crate::support::assert_future::<_, B>(Fold::new(self, init, f))
-    }
-
     fn slim_filter<P>(self, predicate: P) -> Filter<Self, P>
     where
         Self: Sized,
@@ -89,6 +80,15 @@ pub trait AsyncIteratorExt: AsyncIterator {
         Fut: Future<Output = Option<B>>,
     {
         crate::support::assert_async_iter::<_, B>(FilterMapAsync::new(self, f))
+    }
+
+    fn slim_fold<B, F>(self, init: B, f: F) -> Fold<Self, B, F>
+    where
+        Self: Sized,
+        B: Copy,
+        F: FnMut(B, Self::Item) -> B,
+    {
+        crate::support::assert_future::<_, B>(Fold::new(self, init, f))
     }
 
     fn slim_fold_async<B, F, Fut>(self, init: B, f: F) -> FoldAsync<Self, B, F>
