@@ -91,7 +91,8 @@ where
     I: FusedAsyncIterator,
     B: Copy,
     F: FnMut2<B, I::Item>,
-    F::Output: FusedFuture<Output = B>,
+    F::Output: IntoFuture<Output = B>,
+    <F::Output as IntoFuture>::IntoFuture: FusedFuture,
 {
     fn is_terminated(&self) -> bool {
         if let Some(fut) = &self.fut {

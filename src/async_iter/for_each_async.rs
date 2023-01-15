@@ -1,16 +1,16 @@
-use crate::async_iter::Fold;
+use crate::async_iter::fold_async::FoldAsync;
 use crate::support::{AsyncIterator, FnMut1, FnMut2, FusedAsyncIterator};
-use core::future::Future;
+use core::future::{Future, IntoFuture};
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use futures_core::FusedFuture;
 
 #[derive(Clone)]
-struct ForEachFn<F> {
+struct ForEachAsyncFn<F> {
     f: F,
 }
 
-impl<T, F> FnMut2<(), T> for ForEachFn<F>
+impl<T, F> FnMut2<(), T> for ForEachAsyncFn<F>
 where
     F: FnMut1<T>,
 {
@@ -22,24 +22,36 @@ where
 }
 
 pin_project_lite::pin_project! {
-    pub struct ForEach<I, F> {
+    pub struct ForEachAsync<I, F>
+    where
+        I: AsyncIterator,
+        F: FnMut1<I::Item>,
+        F::Output: IntoFuture,
+    {
         #[pin]
-        inner: Fold<I, (), ForEachFn<F>>,
+        inner: FoldAsync<I, (), ForEachAsyncFn<F>>,
     }
 }
 
-impl<I, F> ForEach<I, F> {
+impl<I, F> ForEachAsync<I, F>
+where
+    I: AsyncIterator,
+    F: FnMut1<I::Item>,
+    F::Output: IntoFuture,
+{
     pub(crate) fn new(iter: I, f: F) -> Self {
         Self {
-            inner: Fold::new(iter, (), ForEachFn { f }),
+            inner: FoldAsync::new(iter, (), ForEachAsyncFn { f }),
         }
     }
 }
 
-impl<I, F> Clone for ForEach<I, F>
+impl<I, F> Clone for ForEachAsync<I, F>
 where
-    I: Clone,
-    F: Clone,
+    I: AsyncIterator + Clone,
+    F: FnMut1<I::Item> + Clone,
+    F::Output: IntoFuture,
+    <F::Output as IntoFuture>::IntoFuture: Clone,
 {
     fn clone(&self) -> Self {
         Self {
@@ -48,10 +60,11 @@ where
     }
 }
 
-impl<I, F> Future for ForEach<I, F>
+impl<I, F> Future for ForEachAsync<I, F>
 where
     I: AsyncIterator,
-    F: FnMut1<I::Item, Output = ()>,
+    F: FnMut1<I::Item>,
+    F::Output: IntoFuture<Output = ()>,
 {
     type Output = ();
 
@@ -60,10 +73,12 @@ where
     }
 }
 
-impl<I, F> FusedFuture for ForEach<I, F>
+impl<I, F> FusedFuture for ForEachAsync<I, F>
 where
     I: FusedAsyncIterator,
-    F: FnMut1<I::Item, Output = ()>,
+    F: FnMut1<I::Item>,
+    F::Output: IntoFuture<Output = ()>,
+    <F::Output as IntoFuture>::IntoFuture: FusedFuture,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()
@@ -73,14 +88,19 @@ where
 #[cfg(test)]
 mod tests {
     use crate::async_iter::async_iter_ext::AsyncIteratorExt;
-    use futures_util::stream;
+    use futures_util::{future, stream};
     use std::sync::Mutex;
     use std::vec::Vec;
 
     #[tokio::test]
-    async fn test_for_each() {
+    async fn test_for_each_async() {
         let mut result = Vec::new();
-        let future = stream::iter([2, 3, 5]).slim_for_each(|x| result.push(x));
+
+        let future = stream::iter([2, 3, 5]).slim_for_each_async(|x| {
+            result.push(x);
+
+            future::ready(())
+        });
 
         future.await;
 
@@ -88,9 +108,15 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_for_each_clone() {
+    async fn test_for_each_async_clone() {
         let result = Mutex::new(Vec::new());
-        let future = stream::iter([2, 3, 5]).slim_for_each(|x| result.lock().unwrap().push(x));
+
+        let future = stream::iter([2, 3, 5]).slim_for_each_async(|x| {
+            result.lock().unwrap().push(x);
+
+            future::ready(())
+        });
+
         let future_2 = future.clone();
 
         future.await;
