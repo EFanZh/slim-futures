@@ -11,12 +11,12 @@ pin_project_lite::pin_project! {
     #[derive(Clone)]
     #[project = PredicateStateProject]
     #[project_replace = PredicateStateReplace]
-    enum PredicateState<T, F> {
+    enum PredicateState<T, Fut> {
         Empty,
         Polling {
             item: T,
             #[pin]
-            future: F,
+            fut: Fut,
         }
     }
 }
@@ -80,8 +80,8 @@ where
         Poll::Ready(loop {
             match state_slot.as_mut().project() {
                 PredicateStateProject::Empty => {}
-                PredicateStateProject::Polling { future, .. } => {
-                    let filter_result = task::ready!(future.poll(cx));
+                PredicateStateProject::Polling { fut, .. } => {
+                    let filter_result = task::ready!(fut.poll(cx));
 
                     let item = match state_slot.as_mut().project_replace(PredicateState::Empty) {
                         PredicateStateReplace::Empty => unreachable!(),
@@ -97,9 +97,9 @@ where
             match task::ready!(iter.as_mut().poll_next(cx)) {
                 None => break None,
                 Some(item) => {
-                    let future = predicate.call_mut(&item);
+                    let fut = predicate.call_mut(&item);
 
-                    state_slot.set(PredicateState::Polling { item, future });
+                    state_slot.set(PredicateState::Polling { item, fut });
                 }
             }
         })
@@ -119,7 +119,7 @@ where
     fn is_terminated(&self) -> bool {
         match &self.state {
             PredicateState::Empty => self.iter.is_terminated(),
-            PredicateState::Polling { future, .. } => future.is_terminated(),
+            PredicateState::Polling { fut, .. } => fut.is_terminated(),
         }
     }
 }
