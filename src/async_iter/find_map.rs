@@ -1,5 +1,6 @@
 use crate::async_iter::try_fold::TryFold;
 use crate::future::Map;
+use crate::support::fns::ControlFlowBreakValueFn;
 use crate::support::{AsyncIterator, FnMut1, FnMut2, FusedAsyncIterator};
 use core::future::Future;
 use core::ops::ControlFlow;
@@ -26,31 +27,20 @@ where
     }
 }
 
-#[derive(Clone)]
-pub struct ControlFlowBreakValue;
-
-impl<T> FnMut1<ControlFlow<T>> for ControlFlowBreakValue {
-    type Output = Option<T>;
-
-    fn call_mut(&mut self, arg: ControlFlow<T>) -> Self::Output {
-        match arg {
-            ControlFlow::Continue(()) => None,
-            ControlFlow::Break(value) => Some(value),
-        }
-    }
-}
-
 pin_project_lite::pin_project! {
     pub struct FindMap<I, F> {
         #[pin]
-        inner: Map<TryFold<I, (), FindMapFn<F>>, ControlFlowBreakValue>
+        inner: Map<TryFold<I, (), FindMapFn<F>>, ControlFlowBreakValueFn>
     }
 }
 
 impl<I, F> FindMap<I, F> {
     pub(crate) fn new(iter: I, f: F) -> Self {
         Self {
-            inner: Map::new(TryFold::new(iter, (), FindMapFn { inner: f }), ControlFlowBreakValue),
+            inner: Map::new(
+                TryFold::new(iter, (), FindMapFn { inner: f }),
+                ControlFlowBreakValueFn::default(),
+            ),
         }
     }
 }

@@ -7,6 +7,7 @@ use crate::async_iter::filter_async::FilterAsync;
 use crate::async_iter::filter_map::FilterMap;
 use crate::async_iter::filter_map_async::FilterMapAsync;
 use crate::async_iter::find_map::FindMap;
+use crate::async_iter::find_map_async::FindMapAsync;
 use crate::async_iter::fold::Fold;
 use crate::async_iter::fold_async::FoldAsync;
 use crate::async_iter::try_fold::TryFold;
@@ -66,7 +67,7 @@ pub trait AsyncIteratorExt: AsyncIterator {
         crate::support::assert_async_iter::<_, Self::Item>(FilterAsync::new(self, predicate))
     }
 
-    fn slim_filter_map<B, F>(self, f: F) -> FilterMap<Self, F>
+    fn slim_filter_map<F, B>(self, f: F) -> FilterMap<Self, F>
     where
         Self: Sized,
         F: FnMut(Self::Item) -> Option<B>,
@@ -74,7 +75,7 @@ pub trait AsyncIteratorExt: AsyncIterator {
         crate::support::assert_async_iter::<_, B>(FilterMap::new(self, f))
     }
 
-    fn slim_filter_map_async<B, F, Fut>(self, f: F) -> FilterMapAsync<Self, F>
+    fn slim_filter_map_async<F, Fut, B>(self, f: F) -> FilterMapAsync<Self, F>
     where
         Self: Sized,
         F: FnMut(Self::Item) -> Fut,
@@ -83,12 +84,21 @@ pub trait AsyncIteratorExt: AsyncIterator {
         crate::support::assert_async_iter::<_, B>(FilterMapAsync::new(self, f))
     }
 
-    fn slim_find_map<B, F>(self, f: F) -> FindMap<Self, F>
+    fn slim_find_map<F, B>(self, f: F) -> FindMap<Self, F>
     where
         Self: Sized,
         F: FnMut(Self::Item) -> Option<B>,
     {
         crate::support::assert_future::<_, Option<B>>(FindMap::new(self, f))
+    }
+
+    fn slim_find_map_async<F, Fut, B>(self, f: F) -> FindMapAsync<Self, F>
+    where
+        Self: Sized,
+        F: FnMut(Self::Item) -> Fut,
+        Fut: Future<Output = Option<B>>,
+    {
+        crate::support::assert_future::<_, Option<B>>(FindMapAsync::new(self, f))
     }
 
     fn slim_fold<B, F>(self, init: B, f: F) -> Fold<Self, B, F>
