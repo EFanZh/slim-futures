@@ -81,13 +81,15 @@ where
             match state_slot.as_mut().project() {
                 PredicateStateProject::Empty => {}
                 PredicateStateProject::Polling { future, .. } => {
-                    if task::ready!(future.poll(cx)) {
-                        match state_slot.project_replace(PredicateState::Empty) {
-                            PredicateStateReplace::Empty => unreachable!(),
-                            PredicateStateReplace::Polling { item, .. } => break Some(item),
-                        }
-                    } else {
-                        state_slot.set(PredicateState::Empty);
+                    let filter_result = task::ready!(future.poll(cx));
+
+                    let item = match state_slot.as_mut().project_replace(PredicateState::Empty) {
+                        PredicateStateReplace::Empty => unreachable!(),
+                        PredicateStateReplace::Polling { item, .. } => item,
+                    };
+
+                    if filter_result {
+                        break Some(item);
                     }
                 }
             }
