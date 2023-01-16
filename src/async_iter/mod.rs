@@ -21,6 +21,7 @@ pub use self::map::Map;
 pub use self::map_async::MapAsync;
 pub use self::try_fold::TryFold;
 pub use self::try_fold_async::TryFoldAsync;
+pub use self::try_for_each::TryForEach;
 
 mod all;
 mod all_async;
@@ -45,3 +46,4 @@ mod map;
 mod map_async;
 mod try_fold;
 mod try_fold_async;
+mod try_for_each;
