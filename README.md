@@ -46,6 +46,8 @@ Async combinators that focus on small binary sizes.
 | `FutureExt::slim_raw_map_ok_or_else_async` |                                  |
 | `FutureExt::slim_try_flatten`              | [`TryFutureExt::try_flatten`]    |
 | `FutureExt::slim_try_flatten_err`          |                                  |
+| `FutureExt::slim_try_for_each`             |                                  |
+| `FutureExt::slim_try_for_each_async`       |                                  |
 | `FutureExt::slim_try_select_either`        |                                  |
 | `FutureExt::slim_unit_error`               | [`FutureExt::unit_error`]        |
 | `FutureExt::slim_unwrap_or_else`           | [`TryFutureExt::unwrap_or_else`] |
