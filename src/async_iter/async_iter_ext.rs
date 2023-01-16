@@ -18,6 +18,7 @@ use crate::async_iter::for_each_async::ForEachAsync;
 use crate::async_iter::inspect::Inspect;
 use crate::async_iter::map::Map;
 use crate::async_iter::map_async::MapAsync;
+use crate::async_iter::map_while::MapWhile;
 use crate::async_iter::try_fold::TryFold;
 use crate::async_iter::try_fold_async::TryFoldAsync;
 use crate::async_iter::try_for_each::TryForEach;
@@ -199,6 +200,14 @@ pub trait AsyncIteratorExt: AsyncIterator {
         Fut: IntoFuture,
     {
         crate::support::assert_async_iter::<_, Fut::Output>(MapAsync::new(self, f))
+    }
+
+    fn slim_map_while<F, B>(self, f: F) -> MapWhile<Self, F>
+    where
+        Self: Sized,
+        F: FnMut(Self::Item) -> Option<B>,
+    {
+        crate::support::assert_async_iter::<_, B>(MapWhile::new(self, f))
     }
 
     fn slim_try_fold<T, F, R>(self, init: T, f: F) -> TryFold<Self, T, F>
