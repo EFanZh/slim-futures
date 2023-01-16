@@ -1,7 +1,7 @@
 use crate::future::map_ok_or_else::MapOkOrElse;
 use crate::future::raw_select::RawSelect;
 use crate::support::fns::{ComposeFn, EitherLeftFn, EitherRightFn, ErrFn, OkFn};
-use crate::support::{self, ResultFuture};
+use crate::support::{self, IntoResultFuture, ResultFuture};
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
@@ -39,10 +39,10 @@ pin_project_lite::pin_project! {
     }
 }
 
-impl<Fut1, Fut2, T1, E1, T2, E2> TrySelectEither<Fut1, Fut2>
+impl<Fut1, Fut2> TrySelectEither<Fut1, Fut2>
 where
-    Fut1: Future<Output = Result<T1, E1>>,
-    Fut2: Future<Output = Result<T2, E2>>,
+    Fut1: ResultFuture,
+    Fut2: ResultFuture,
 {
     pub(crate) fn new(fut_1: Fut1, fut_2: Fut2) -> Self {
         Self {
@@ -62,35 +62,35 @@ where
     }
 }
 
-impl<Fut1, Fut2, T1, E1, T2, E2> Future for TrySelectEither<Fut1, Fut2>
+impl<Fut1, Fut2> Future for TrySelectEither<Fut1, Fut2>
 where
-    Fut1: Future<Output = Result<T1, E1>>,
-    Fut2: Future<Output = Result<T2, E2>>,
+    Fut1: ResultFuture,
+    Fut2: ResultFuture,
 {
-    type Output = Result<Either<T1, T2>, Either<E1, E2>>;
+    type Output = Result<Either<Fut1::Ok, Fut2::Ok>, Either<Fut1::Error, Fut2::Error>>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         self.project().inner.poll(cx)
     }
 }
 
-impl<Fut1, Fut2, T1, E1, T2, E2> FusedFuture for TrySelectEither<Fut1, Fut2>
+impl<Fut1, Fut2> FusedFuture for TrySelectEither<Fut1, Fut2>
 where
-    Fut1: FusedFuture<Output = Result<T1, E1>>,
-    Fut2: FusedFuture<Output = Result<T2, E2>>,
+    Fut1: ResultFuture + FusedFuture,
+    Fut2: ResultFuture + FusedFuture,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()
     }
 }
 
-pub fn try_select_either<Fut1, Fut2>(fut_1: Fut1, fut_2: Fut2) -> TrySelectEither<Fut1, Fut2>
+pub fn try_select_either<Fut1, Fut2>(fut_1: Fut1, fut_2: Fut2) -> TrySelectEither<Fut1::IntoFuture, Fut2::IntoFuture>
 where
-    Fut1: ResultFuture,
-    Fut2: ResultFuture,
+    Fut1: IntoResultFuture,
+    Fut2: IntoResultFuture,
 {
     support::assert_future::<_, Result<Either<Fut1::Ok, Fut2::Ok>, Either<Fut1::Error, Fut2::Error>>>(
-        TrySelectEither::new(fut_1, fut_2),
+        TrySelectEither::new(fut_1.into_future(), fut_2.into_future()),
     )
 }
 
