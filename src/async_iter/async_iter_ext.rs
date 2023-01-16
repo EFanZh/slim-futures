@@ -19,6 +19,7 @@ use crate::async_iter::inspect::Inspect;
 use crate::async_iter::map::Map;
 use crate::async_iter::map_async::MapAsync;
 use crate::async_iter::map_while::MapWhile;
+use crate::async_iter::map_while_async::MapWhileAsync;
 use crate::async_iter::try_fold::TryFold;
 use crate::async_iter::try_fold_async::TryFoldAsync;
 use crate::async_iter::try_for_each::TryForEach;
@@ -141,23 +142,23 @@ pub trait AsyncIteratorExt: AsyncIterator {
         crate::support::assert_async_iter::<_, <Self::Item as IntoAsyncIterator>::Item>(Flatten::new(self))
     }
 
-    fn slim_fold<B, F>(self, init: B, f: F) -> Fold<Self, B, F>
+    fn slim_fold<T, F>(self, init: T, f: F) -> Fold<Self, T, F>
     where
         Self: Sized,
-        B: Copy,
-        F: FnMut(B, Self::Item) -> B,
+        T: Copy,
+        F: FnMut(T, Self::Item) -> T,
     {
-        crate::support::assert_future::<_, B>(Fold::new(self, init, f))
+        crate::support::assert_future::<_, T>(Fold::new(self, init, f))
     }
 
-    fn slim_fold_async<B, F, Fut>(self, init: B, f: F) -> FoldAsync<Self, B, F>
+    fn slim_fold_async<T, F, Fut>(self, init: T, f: F) -> FoldAsync<Self, T, F>
     where
         Self: Sized,
-        B: Copy,
-        F: FnMut(B, Self::Item) -> Fut,
-        Fut: IntoFuture<Output = B>,
+        T: Copy,
+        F: FnMut(T, Self::Item) -> Fut,
+        Fut: IntoFuture<Output = T>,
     {
-        crate::support::assert_future::<_, B>(FoldAsync::new(self, init, f))
+        crate::support::assert_future::<_, T>(FoldAsync::new(self, init, f))
     }
 
     fn slim_for_each<F>(self, f: F) -> ForEach<Self, F>
@@ -185,12 +186,12 @@ pub trait AsyncIteratorExt: AsyncIterator {
         crate::support::assert_async_iter::<_, Self::Item>(Inspect::new(self, f))
     }
 
-    fn slim_map<F, B>(self, f: F) -> Map<Self, F>
+    fn slim_map<F, T>(self, f: F) -> Map<Self, F>
     where
         Self: Sized,
-        F: FnMut(Self::Item) -> B,
+        F: FnMut(Self::Item) -> T,
     {
-        crate::support::assert_async_iter::<_, B>(Map::new(self, f))
+        crate::support::assert_async_iter::<_, T>(Map::new(self, f))
     }
 
     fn slim_map_async<F, Fut>(self, f: F) -> MapAsync<Self, F>
@@ -202,12 +203,21 @@ pub trait AsyncIteratorExt: AsyncIterator {
         crate::support::assert_async_iter::<_, Fut::Output>(MapAsync::new(self, f))
     }
 
-    fn slim_map_while<F, B>(self, f: F) -> MapWhile<Self, F>
+    fn slim_map_while<F, T>(self, f: F) -> MapWhile<Self, F>
     where
         Self: Sized,
-        F: FnMut(Self::Item) -> Option<B>,
+        F: FnMut(Self::Item) -> Option<T>,
     {
-        crate::support::assert_async_iter::<_, B>(MapWhile::new(self, f))
+        crate::support::assert_async_iter::<_, T>(MapWhile::new(self, f))
+    }
+
+    fn slim_map_while_async<F, Fut, T>(self, f: F) -> MapWhileAsync<Self, F>
+    where
+        Self: Sized,
+        F: FnMut(Self::Item) -> Fut,
+        Fut: IntoFuture<Output = Option<T>>,
+    {
+        crate::support::assert_async_iter::<_, T>(MapWhileAsync::new(self, f))
     }
 
     fn slim_try_fold<T, F, R>(self, init: T, f: F) -> TryFold<Self, T, F>

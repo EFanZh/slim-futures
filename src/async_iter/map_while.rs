@@ -63,27 +63,23 @@ mod tests {
     use futures_util::{stream, StreamExt};
     use std::vec::Vec;
 
-    fn map_fn(x: u32) -> u64 {
-        u64::from(x) * 10
+    fn map_while_fn(x: u32) -> Option<u32> {
+        (x < 5).then_some(x * 10)
     }
 
     #[tokio::test]
-    async fn test_map() {
-        let iter = stream::iter(0..10).slim_map(map_fn);
+    async fn test_map_while() {
+        let iter = stream::iter(0..10).slim_map_while(map_while_fn);
 
-        assert_eq!(iter.collect::<Vec<_>>().await, [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]);
+        assert_eq!(iter.collect::<Vec<_>>().await, [0, 10, 20, 30, 40]);
     }
 
     #[tokio::test]
-    async fn test_map_clone() {
-        let iter = stream::iter(0..10).slim_map(map_fn);
+    async fn test_map_while_clone() {
+        let iter = stream::iter(0..10).slim_map_while(map_while_fn);
         let iter_2 = iter.clone();
 
-        assert_eq!(iter.collect::<Vec<_>>().await, [0, 10, 20, 30, 40, 50, 60, 70, 80, 90]);
-
-        assert_eq!(
-            iter_2.collect::<Vec<_>>().await,
-            [0, 10, 20, 30, 40, 50, 60, 70, 80, 90],
-        );
+        assert_eq!(iter.collect::<Vec<_>>().await, [0, 10, 20, 30, 40]);
+        assert_eq!(iter_2.collect::<Vec<_>>().await, [0, 10, 20, 30, 40],);
     }
 }
