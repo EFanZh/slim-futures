@@ -18,6 +18,7 @@ Async combinators that focus on small binary sizes.
 | `AsyncIteratorExt::slim_filter_map_async`  | [`StreamExt::filter_map`]        |
 | `AsyncIteratorExt::slim_fold`              |                                  |
 | `AsyncIteratorExt::slim_fold_async`        | [`StreamExt::fold`]              |
+| `AsyncIteratorExt::slim_inspect`           | [`StreamExt::inspect`]           |
 | `AsyncIteratorExt::slim_try_fold`          |                                  |
 | `AsyncIteratorExt::slim_try_fold_async`    | [`TryStreamExt::try_fold`]       |
 | `FutureExt::slim_and_then`                 |                                  |
@@ -52,8 +53,8 @@ Async combinators that focus on small binary sizes.
 | `err`                                      | [`err`]                          |
 | `lazy`                                     | [`lazy`]                         |
 | `ok`                                       | [`ok`]                           |
-| `ready`                                    | [`ready`]                        |
 | `raw_select`                               |                                  |
+| `ready`                                    | [`ready`]                        |
 | `select_either`                            |                                  |
 
 [`futures`]: https://docs.rs/futures/latest/futures/
@@ -70,6 +71,7 @@ Async combinators that focus on small binary sizes.
 [`StreamExt::filter`]: https://docs.rs/futures/latest/futures/stream/trait.StreamExt.html#method.filter
 [`StreamExt::filter_map`]: https://docs.rs/futures/latest/futures/stream/trait.StreamExt.html#method.filter_map
 [`StreamExt::fold`]: https://docs.rs/futures/latest/futures/stream/trait.StreamExt.html#method.fold
+[`StreamExt::inspect`]: https://docs.rs/futures/latest/futures/stream/trait.StreamExt.html#method.inspect
 [`TryFutureExt::and_then`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.and_then
 [`TryFutureExt::err_into`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.err_into
 [`TryFutureExt::inspect_err`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.inspect_err

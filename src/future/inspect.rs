@@ -1,27 +1,10 @@
 use crate::future::map::Map;
+use crate::support::fns::InspectFn;
 use crate::support::FnMut1;
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use futures_core::FusedFuture;
-
-#[derive(Clone)]
-struct InspectFn<F> {
-    inner: F,
-}
-
-impl<T, F> FnMut1<T> for InspectFn<F>
-where
-    F: for<'a> FnMut1<&'a T, Output = ()>,
-{
-    type Output = T;
-
-    fn call_mut(&mut self, arg: T) -> Self::Output {
-        self.inner.call_mut(&arg);
-
-        arg
-    }
-}
 
 pin_project_lite::pin_project! {
     #[derive(Clone)]
@@ -34,7 +17,7 @@ pin_project_lite::pin_project! {
 impl<Fut, F> Inspect<Fut, F> {
     pub(crate) fn new(fut: Fut, f: F) -> Self {
         Self {
-            inner: Map::new(fut, InspectFn { inner: f }),
+            inner: Map::new(fut, InspectFn::new(f)),
         }
     }
 }
