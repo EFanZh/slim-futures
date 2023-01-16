@@ -10,7 +10,7 @@ use futures_core::FusedFuture;
 
 struct MapOkAsyncFn<F, E> {
     inner: F,
-    _phantom: PhantomData<fn() -> E>,
+    phantom: PhantomData<fn() -> E>,
 }
 
 impl<F, E> Clone for MapOkAsyncFn<F, E>
@@ -20,7 +20,7 @@ where
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),
-            _phantom: PhantomData,
+            phantom: self.phantom,
         }
     }
 }
@@ -61,7 +61,7 @@ where
                 fut,
                 MapOkAsyncFn {
                     inner: f,
-                    _phantom: PhantomData,
+                    phantom: PhantomData,
                 },
             ),
         }

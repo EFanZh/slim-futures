@@ -106,7 +106,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_flatten_is_slim() {
+    async fn test_flatten_async_iterator_is_slim() {
         let make_base_future =
             || crate::future::ready(NonZeroU32::new(2).unwrap()).slim_map(|_| crate::future::ready(()));
 

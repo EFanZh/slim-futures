@@ -3,18 +3,18 @@ use core::marker::PhantomData;
 use futures_util::future::Either;
 
 pub struct EitherRightFn<A, B> {
-    _phantom: PhantomData<fn(B) -> Either<A, B>>,
+    phantom: PhantomData<fn(B) -> Either<A, B>>,
 }
 
 impl<A, B> Default for EitherRightFn<A, B> {
     fn default() -> Self {
-        Self { _phantom: PhantomData }
+        Self { phantom: PhantomData }
     }
 }
 
 impl<A, B> Clone for EitherRightFn<A, B> {
     fn clone(&self) -> Self {
-        Self { ..*self }
+        Self { phantom: self.phantom }
     }
 }
 

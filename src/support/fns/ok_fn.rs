@@ -2,18 +2,18 @@ use crate::support::fn_mut_1::FnMut1;
 use core::marker::PhantomData;
 
 pub struct OkFn<T, E> {
-    _phantom: PhantomData<fn(T) -> Result<T, E>>,
+    phantom: PhantomData<fn(T) -> Result<T, E>>,
 }
 
 impl<T, E> Default for OkFn<T, E> {
     fn default() -> Self {
-        Self { _phantom: PhantomData }
+        Self { phantom: PhantomData }
     }
 }
 
 impl<T, E> Clone for OkFn<T, E> {
     fn clone(&self) -> Self {
-        Self { ..*self }
+        Self { phantom: self.phantom }
     }
 }
 

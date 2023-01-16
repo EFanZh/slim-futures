@@ -150,7 +150,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_or_else_async_is_slim() {
+    async fn test_unwrap_or_else_async_is_slim() {
         let make_base_future = || crate::future::err::<u32, _>(NonZeroU32::new(2).unwrap()).slim_map_err(drop);
         let base_future = make_base_future();
         let future_1 = make_base_future().slim_or_else_async(crate::future::err);

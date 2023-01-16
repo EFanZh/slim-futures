@@ -92,7 +92,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_ok_into_is_slim() {
+    async fn test_map_into_is_slim() {
         let make_base_future = || crate::future::ok::<u32, u32>(2);
         let base_future = make_base_future();
         let future_1 = make_base_future().slim_ok_into::<Option<_>>();

@@ -10,7 +10,7 @@ use futures_core::FusedFuture;
 
 struct MapErrAsyncFn<F, T> {
     inner: F,
-    _phantom: PhantomData<fn() -> T>,
+    phantom: PhantomData<fn() -> T>,
 }
 
 impl<F, T> Clone for MapErrAsyncFn<F, T>
@@ -20,7 +20,7 @@ where
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),
-            _phantom: PhantomData,
+            phantom: self.phantom,
         }
     }
 }
@@ -61,7 +61,7 @@ where
                 fut,
                 MapErrAsyncFn {
                     inner: f,
-                    _phantom: PhantomData,
+                    phantom: PhantomData,
                 },
             ),
         }
