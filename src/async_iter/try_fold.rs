@@ -6,24 +6,24 @@ use core::task::{self, Context, Poll};
 use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
-    pub struct TryFold<I, B, F> {
+    pub struct TryFold<I, T, F> {
         #[pin]
         iter: I,
-        acc: B,
+        acc: T,
         f: F,
     }
 }
 
-impl<I, B, F> TryFold<I, B, F> {
-    pub(crate) fn new(iter: I, acc: B, f: F) -> Self {
+impl<I, T, F> TryFold<I, T, F> {
+    pub(crate) fn new(iter: I, acc: T, f: F) -> Self {
         Self { iter, acc, f }
     }
 }
 
-impl<I, B, F> Clone for TryFold<I, B, F>
+impl<I, T, F> Clone for TryFold<I, T, F>
 where
     I: Clone,
-    B: Clone,
+    T: Clone,
     F: Clone,
 {
     fn clone(&self) -> Self {
@@ -35,12 +35,12 @@ where
     }
 }
 
-impl<I, B, F> Future for TryFold<I, B, F>
+impl<I, T, F> Future for TryFold<I, T, F>
 where
     I: AsyncIterator,
-    B: Copy,
-    F: FnMut2<B, I::Item>,
-    F::Output: Try<Output = B>,
+    T: Copy,
+    F: FnMut2<T, I::Item>,
+    F::Output: Try<Output = T>,
 {
     type Output = F::Output;
 
@@ -63,12 +63,12 @@ where
     }
 }
 
-impl<I, B, F> FusedFuture for TryFold<I, B, F>
+impl<I, T, F> FusedFuture for TryFold<I, T, F>
 where
     I: FusedAsyncIterator,
-    B: Copy,
-    F: FnMut2<B, I::Item>,
-    F::Output: Try<Output = B>,
+    T: Copy,
+    F: FnMut2<T, I::Item>,
+    F::Output: Try<Output = T>,
 {
     fn is_terminated(&self) -> bool {
         self.iter.is_terminated()

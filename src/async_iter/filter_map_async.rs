@@ -46,13 +46,13 @@ where
     }
 }
 
-impl<I, F, B> AsyncIterator for FilterMapAsync<I, F>
+impl<I, F, T> AsyncIterator for FilterMapAsync<I, F>
 where
     I: AsyncIterator,
     F: FnMut1<I::Item>,
-    F::Output: IntoFuture<Output = Option<B>>,
+    F::Output: IntoFuture<Output = Option<T>>,
 {
-    type Item = B;
+    type Item = T;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         let this = self.project();
@@ -93,11 +93,11 @@ where
     }
 }
 
-impl<I, F, B> FusedAsyncIterator for FilterMapAsync<I, F>
+impl<I, F, T> FusedAsyncIterator for FilterMapAsync<I, F>
 where
     I: FusedAsyncIterator,
     F: FnMut1<I::Item>,
-    F::Output: IntoFuture<Output = Option<B>>,
+    F::Output: IntoFuture<Output = Option<T>>,
     <F::Output as IntoFuture>::IntoFuture: FusedFuture,
 {
     fn is_terminated(&self) -> bool {

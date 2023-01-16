@@ -66,13 +66,13 @@ where
     }
 }
 
-impl<Fut, F, T, E> Future for UnwrapOrElseAsync<Fut, F>
+impl<Fut, F> Future for UnwrapOrElseAsync<Fut, F>
 where
-    Fut: Future<Output = Result<T, E>>,
-    F: FnMut1<E>,
-    F::Output: IntoFuture<Output = T>,
+    Fut: ResultFuture,
+    F: FnMut1<Fut::Error>,
+    F::Output: IntoFuture<Output = Fut::Ok>,
 {
-    type Output = T;
+    type Output = Fut::Ok;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         fn dispatch<B, C>(result: ControlFlow<B, C>) -> ControlFlow<B, C::IntoFuture>
@@ -91,11 +91,12 @@ where
     }
 }
 
-impl<Fut, F, T, E> FusedFuture for UnwrapOrElseAsync<Fut, F>
+impl<Fut, F> FusedFuture for UnwrapOrElseAsync<Fut, F>
 where
-    Fut: FusedFuture<Output = Result<T, E>>,
-    F: FnMut1<E>,
-    F::Output: FusedFuture<Output = T>,
+    Fut: ResultFuture + FusedFuture,
+    F: FnMut1<Fut::Error>,
+    F::Output: IntoFuture<Output = Fut::Ok>,
+    <F::Output as IntoFuture>::IntoFuture: FusedFuture,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_future_terminated()

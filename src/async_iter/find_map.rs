@@ -13,11 +13,11 @@ struct FindMapFn<F> {
     inner: F,
 }
 
-impl<T, F, B> FnMut2<(), T> for FindMapFn<F>
+impl<T, F, U> FnMut2<(), T> for FindMapFn<F>
 where
-    F: FnMut1<T, Output = Option<B>>,
+    F: FnMut1<T, Output = Option<U>>,
 {
-    type Output = ControlFlow<B>;
+    type Output = ControlFlow<U>;
 
     fn call_mut(&mut self, (): (), arg_2: T) -> Self::Output {
         match self.inner.call_mut(arg_2) {
@@ -57,22 +57,22 @@ where
     }
 }
 
-impl<I, F, B> Future for FindMap<I, F>
+impl<I, F, T> Future for FindMap<I, F>
 where
     I: AsyncIterator,
-    F: FnMut1<I::Item, Output = Option<B>>,
+    F: FnMut1<I::Item, Output = Option<T>>,
 {
-    type Output = Option<B>;
+    type Output = Option<T>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         self.project().inner.poll(cx)
     }
 }
 
-impl<I, F, B> FusedFuture for FindMap<I, F>
+impl<I, F, T> FusedFuture for FindMap<I, F>
 where
     I: FusedAsyncIterator,
-    F: FnMut1<I::Item, Output = Option<B>>,
+    F: FnMut1<I::Item, Output = Option<T>>,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

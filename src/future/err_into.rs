@@ -7,16 +7,16 @@ use core::task::{Context, Poll};
 use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
-    pub struct ErrInto<Fut, U>
+    pub struct ErrInto<Fut, T>
     where
         Fut: ResultFuture,
     {
         #[pin]
-        inner: MapErr<Fut, IntoFn<Fut::Error, U>>,
+        inner: MapErr<Fut, IntoFn<Fut::Error, T>>,
     }
 }
 
-impl<Fut, U> ErrInto<Fut, U>
+impl<Fut, T> ErrInto<Fut, T>
 where
     Fut: ResultFuture,
 {
@@ -27,7 +27,7 @@ where
     }
 }
 
-impl<Fut, U> Clone for ErrInto<Fut, U>
+impl<Fut, T> Clone for ErrInto<Fut, T>
 where
     Fut: ResultFuture + Clone,
 {
@@ -38,22 +38,22 @@ where
     }
 }
 
-impl<Fut, U, T, E> Future for ErrInto<Fut, U>
+impl<Fut, T> Future for ErrInto<Fut, T>
 where
-    Fut: Future<Output = Result<T, E>>,
-    E: Into<U>,
+    Fut: ResultFuture,
+    Fut::Error: Into<T>,
 {
-    type Output = Result<T, U>;
+    type Output = Result<Fut::Ok, T>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         self.project().inner.poll(cx)
     }
 }
 
-impl<Fut, E, T, U> FusedFuture for ErrInto<Fut, U>
+impl<Fut, T> FusedFuture for ErrInto<Fut, T>
 where
-    Fut: FusedFuture<Output = Result<T, E>>,
-    E: Into<U>,
+    Fut: ResultFuture + FusedFuture,
+    Fut::Error: Into<T>,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

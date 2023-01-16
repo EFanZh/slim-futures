@@ -1,5 +1,5 @@
 use crate::future::map::Map;
-use crate::support::FnMut1;
+use crate::support::{FnMut1, ResultFuture};
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
@@ -37,22 +37,22 @@ impl<Fut, F> UnwrapOrElse<Fut, F> {
     }
 }
 
-impl<Fut, F, T, E> Future for UnwrapOrElse<Fut, F>
+impl<Fut, F> Future for UnwrapOrElse<Fut, F>
 where
-    Fut: Future<Output = Result<T, E>>,
-    F: FnMut1<E, Output = T>,
+    Fut: ResultFuture,
+    F: FnMut1<Fut::Error, Output = Fut::Ok>,
 {
-    type Output = T;
+    type Output = Fut::Ok;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         self.project().inner.poll(cx)
     }
 }
 
-impl<Fut, F, T, E> FusedFuture for UnwrapOrElse<Fut, F>
+impl<Fut, F> FusedFuture for UnwrapOrElse<Fut, F>
 where
-    Fut: FusedFuture<Output = Result<T, E>>,
-    F: FnMut1<E, Output = T>,
+    Fut: ResultFuture + FusedFuture,
+    F: FnMut1<Fut::Error, Output = Fut::Ok>,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

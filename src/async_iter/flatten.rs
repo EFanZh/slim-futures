@@ -8,11 +8,11 @@ struct FlattenFn<F> {
     inner: F,
 }
 
-impl<T, F, B> FnMut2<(), T> for FlattenFn<F>
+impl<T, F, U> FnMut2<(), T> for FlattenFn<F>
 where
-    F: FnMut1<T, Output = Option<B>>,
+    F: FnMut1<T, Output = Option<U>>,
 {
-    type Output = ControlFlow<B>;
+    type Output = ControlFlow<U>;
 
     fn call_mut(&mut self, (): (), arg_2: T) -> Self::Output {
         match self.inner.call_mut(arg_2) {

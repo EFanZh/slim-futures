@@ -49,10 +49,10 @@ pin_project_lite::pin_project! {
     }
 }
 
-impl<Fut, F, T, E> MapOkAsync<Fut, F>
+impl<Fut, F> MapOkAsync<Fut, F>
 where
-    Fut: Future<Output = Result<T, E>>,
-    F: FnMut1<T>,
+    Fut: ResultFuture,
+    F: FnMut1<Fut::Ok>,
     F::Output: IntoFuture,
 {
     pub(crate) fn new(fut: Fut, f: F) -> Self {
@@ -68,10 +68,10 @@ where
     }
 }
 
-impl<Fut, F, T, E> Clone for MapOkAsync<Fut, F>
+impl<Fut, F> Clone for MapOkAsync<Fut, F>
 where
-    Fut: Future<Output = Result<T, E>> + Clone,
-    F: FnMut1<T> + Clone,
+    Fut: ResultFuture + Clone,
+    F: FnMut1<Fut::Ok> + Clone,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::IntoFuture: Clone,
 {
@@ -82,24 +82,25 @@ where
     }
 }
 
-impl<Fut, F, T, E> Future for MapOkAsync<Fut, F>
+impl<Fut, F> Future for MapOkAsync<Fut, F>
 where
-    Fut: Future<Output = Result<T, E>>,
-    F: FnMut1<T>,
+    Fut: ResultFuture,
+    F: FnMut1<Fut::Ok>,
     F::Output: IntoFuture,
 {
-    type Output = Result<<F::Output as IntoFuture>::Output, E>;
+    type Output = Result<<F::Output as IntoFuture>::Output, Fut::Error>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         self.project().inner.poll(cx)
     }
 }
 
-impl<Fut, F, T, E> FusedFuture for MapOkAsync<Fut, F>
+impl<Fut, F> FusedFuture for MapOkAsync<Fut, F>
 where
-    Fut: FusedFuture<Output = Result<T, E>>,
-    F: FnMut1<T>,
-    F::Output: FusedFuture,
+    Fut: ResultFuture + FusedFuture,
+    F: FnMut1<Fut::Ok>,
+    F::Output: IntoFuture,
+    <F::Output as IntoFuture>::IntoFuture: FusedFuture,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

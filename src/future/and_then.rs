@@ -57,10 +57,12 @@ where
     }
 }
 
-impl<Fut, F, T, E, U> FusedFuture for AndThen<Fut, F>
+impl<Fut, F> FusedFuture for AndThen<Fut, F>
 where
-    Fut: FusedFuture<Output = Result<T, E>>,
-    F: FnMut1<T, Output = Result<U, E>>,
+    Fut: FusedFuture,
+    Fut::Output: Try,
+    F: FnMut1<<Fut::Output as Try>::Output>,
+    F::Output: FromResidual<<Fut::Output as Try>::Residual> + Try,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()
@@ -103,7 +105,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_and_then_fused_future() {
-        let mut future = future::ok(2).slim_and_then(ok_plus_3);
+        let mut future = future::ok::<u32, u32>(2).slim_and_then(ok_plus_3);
 
         assert!(!future.is_terminated());
         assert_eq!(future.by_ref().await, Ok(5));

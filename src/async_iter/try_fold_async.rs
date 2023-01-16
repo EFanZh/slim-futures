@@ -6,28 +6,28 @@ use core::task::{self, Context, Poll};
 use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
-    pub struct TryFoldAsync<I, B, F>
+    pub struct TryFoldAsync<I, T, F>
     where
         I: AsyncIterator,
-        F: FnMut2<B, I::Item>,
+        F: FnMut2<T, I::Item>,
         F::Output: IntoFuture,
     {
         #[pin]
         iter: I,
-        acc: B,
+        acc: T,
         f: F,
         #[pin]
         fut: Option<<F::Output as IntoFuture>::IntoFuture>,
     }
 }
 
-impl<I, B, F> TryFoldAsync<I, B, F>
+impl<I, T, F> TryFoldAsync<I, T, F>
 where
     I: AsyncIterator,
-    F: FnMut2<B, I::Item>,
+    F: FnMut2<T, I::Item>,
     F::Output: IntoFuture,
 {
-    pub(crate) fn new(iter: I, acc: B, f: F) -> Self {
+    pub(crate) fn new(iter: I, acc: T, f: F) -> Self {
         Self {
             iter,
             acc,
@@ -37,11 +37,11 @@ where
     }
 }
 
-impl<I, B, F> Clone for TryFoldAsync<I, B, F>
+impl<I, T, F> Clone for TryFoldAsync<I, T, F>
 where
     I: AsyncIterator + Clone,
-    B: Clone,
-    F: FnMut2<B, I::Item> + Clone,
+    T: Clone,
+    F: FnMut2<T, I::Item> + Clone,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::IntoFuture: Clone,
 {
@@ -55,13 +55,13 @@ where
     }
 }
 
-impl<I, B, F> Future for TryFoldAsync<I, B, F>
+impl<I, T, F> Future for TryFoldAsync<I, T, F>
 where
     I: AsyncIterator,
-    B: Copy,
-    F: FnMut2<B, I::Item>,
+    T: Copy,
+    F: FnMut2<T, I::Item>,
     F::Output: IntoFuture,
-    <F::Output as IntoFuture>::Output: Try<Output = B>,
+    <F::Output as IntoFuture>::Output: Try<Output = T>,
 {
     type Output = <F::Output as IntoFuture>::Output;
 
@@ -89,13 +89,13 @@ where
     }
 }
 
-impl<I, B, F> FusedFuture for TryFoldAsync<I, B, F>
+impl<I, T, F> FusedFuture for TryFoldAsync<I, T, F>
 where
     I: FusedAsyncIterator,
-    B: Copy,
-    F: FnMut2<B, I::Item>,
+    T: Copy,
+    F: FnMut2<T, I::Item>,
     F::Output: IntoFuture,
-    <F::Output as IntoFuture>::Output: Try<Output = B>,
+    <F::Output as IntoFuture>::Output: Try<Output = T>,
     <F::Output as IntoFuture>::IntoFuture: FusedFuture,
 {
     fn is_terminated(&self) -> bool {

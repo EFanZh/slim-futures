@@ -7,16 +7,16 @@ use core::task::{Context, Poll};
 use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
-    pub struct OkInto<Fut, U>
+    pub struct OkInto<Fut, T>
     where
         Fut: ResultFuture,
     {
         #[pin]
-        inner: MapOk<Fut, IntoFn<Fut::Ok, U>>,
+        inner: MapOk<Fut, IntoFn<Fut::Ok, T>>,
     }
 }
 
-impl<Fut, U> OkInto<Fut, U>
+impl<Fut, T> OkInto<Fut, T>
 where
     Fut: ResultFuture,
 {
@@ -27,7 +27,7 @@ where
     }
 }
 
-impl<Fut, U> Clone for OkInto<Fut, U>
+impl<Fut, T> Clone for OkInto<Fut, T>
 where
     Fut: ResultFuture + Clone,
 {
@@ -38,22 +38,22 @@ where
     }
 }
 
-impl<Fut, U, T, E> Future for OkInto<Fut, U>
+impl<Fut, T> Future for OkInto<Fut, T>
 where
-    Fut: Future<Output = Result<T, E>>,
-    T: Into<U>,
+    Fut: ResultFuture,
+    Fut::Ok: Into<T>,
 {
-    type Output = Result<U, E>;
+    type Output = Result<T, Fut::Error>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         self.project().inner.poll(cx)
     }
 }
 
-impl<Fut, E, T, U> FusedFuture for OkInto<Fut, U>
+impl<Fut, T> FusedFuture for OkInto<Fut, T>
 where
-    Fut: FusedFuture<Output = Result<T, E>>,
-    T: Into<U>,
+    Fut: FusedFuture + ResultFuture,
+    Fut::Ok: Into<T>,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

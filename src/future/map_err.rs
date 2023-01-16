@@ -1,5 +1,5 @@
 use crate::future::map::Map;
-use crate::support::FnMut1;
+use crate::support::{FnMut1, ResultFuture};
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
@@ -37,22 +37,22 @@ impl<Fut, F> MapErr<Fut, F> {
     }
 }
 
-impl<Fut, F, T, E> Future for MapErr<Fut, F>
+impl<Fut, F> Future for MapErr<Fut, F>
 where
-    Fut: Future<Output = Result<T, E>>,
-    F: FnMut1<E>,
+    Fut: ResultFuture,
+    F: FnMut1<Fut::Error>,
 {
-    type Output = Result<T, F::Output>;
+    type Output = Result<Fut::Ok, F::Output>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         self.project().inner.poll(cx)
     }
 }
 
-impl<Fut, F, T, E> FusedFuture for MapErr<Fut, F>
+impl<Fut, F> FusedFuture for MapErr<Fut, F>
 where
-    Fut: FusedFuture<Output = Result<T, E>>,
-    F: FnMut1<E>,
+    Fut: ResultFuture + FusedFuture,
+    F: FnMut1<Fut::Error>,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

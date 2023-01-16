@@ -1,5 +1,5 @@
 use crate::future::inspect::Inspect;
-use crate::support::FnMut1;
+use crate::support::{FnMut1, ResultFuture};
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
@@ -39,10 +39,10 @@ impl<Fut, F> InspectOk<Fut, F> {
     }
 }
 
-impl<Fut, F, T, E> Future for InspectOk<Fut, F>
+impl<Fut, F> Future for InspectOk<Fut, F>
 where
-    Fut: Future<Output = Result<T, E>>,
-    F: for<'a> FnMut1<&'a T, Output = ()>,
+    Fut: ResultFuture,
+    F: for<'a> FnMut1<&'a Fut::Ok, Output = ()>,
 {
     type Output = Fut::Output;
 
@@ -51,10 +51,10 @@ where
     }
 }
 
-impl<Fut, F, T, E> FusedFuture for InspectOk<Fut, F>
+impl<Fut, F> FusedFuture for InspectOk<Fut, F>
 where
-    Fut: FusedFuture<Output = Result<T, E>>,
-    F: for<'a> FnMut1<&'a T, Output = ()>,
+    Fut: ResultFuture + FusedFuture,
+    F: for<'a> FnMut1<&'a Fut::Ok, Output = ()>,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

@@ -5,24 +5,24 @@ use core::task::{self, Context, Poll};
 use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
-    pub struct Fold<I, B, F> {
+    pub struct Fold<I, T, F> {
         #[pin]
         iter: I,
-        acc: B,
+        acc: T,
         f: F,
     }
 }
 
-impl<I, B, F> Fold<I, B, F> {
-    pub(crate) fn new(iter: I, acc: B, f: F) -> Self {
+impl<I, T, F> Fold<I, T, F> {
+    pub(crate) fn new(iter: I, acc: T, f: F) -> Self {
         Self { iter, acc, f }
     }
 }
 
-impl<I, B, F> Clone for Fold<I, B, F>
+impl<I, T, F> Clone for Fold<I, T, F>
 where
     I: Clone,
-    B: Clone,
+    T: Clone,
     F: Clone,
 {
     fn clone(&self) -> Self {
@@ -34,13 +34,13 @@ where
     }
 }
 
-impl<I, B, F> Future for Fold<I, B, F>
+impl<I, T, F> Future for Fold<I, T, F>
 where
     I: AsyncIterator,
-    B: Copy,
-    F: FnMut2<B, I::Item, Output = B>,
+    T: Copy,
+    F: FnMut2<T, I::Item, Output = T>,
 {
-    type Output = B;
+    type Output = T;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         let this = self.project();
@@ -56,11 +56,11 @@ where
     }
 }
 
-impl<I, B, F> FusedFuture for Fold<I, B, F>
+impl<I, T, F> FusedFuture for Fold<I, T, F>
 where
     I: FusedAsyncIterator,
-    B: Copy,
-    F: FnMut2<B, I::Item, Output = B>,
+    T: Copy,
+    F: FnMut2<T, I::Item, Output = T>,
 {
     fn is_terminated(&self) -> bool {
         self.iter.is_terminated()

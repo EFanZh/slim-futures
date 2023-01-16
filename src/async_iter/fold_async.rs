@@ -5,28 +5,28 @@ use core::task::{self, Context, Poll};
 use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
-    pub struct FoldAsync<I, B, F>
+    pub struct FoldAsync<I, T, F>
     where
         I: AsyncIterator,
-        F: FnMut2<B, I::Item>,
+        F: FnMut2<T, I::Item>,
         F::Output: IntoFuture,
     {
         #[pin]
         iter: I,
-        acc: B,
+        acc: T,
         f: F,
         #[pin]
         fut: Option<<F::Output as IntoFuture>::IntoFuture>,
     }
 }
 
-impl<I, B, F> FoldAsync<I, B, F>
+impl<I, T, F> FoldAsync<I, T, F>
 where
     I: AsyncIterator,
-    F: FnMut2<B, I::Item>,
+    F: FnMut2<T, I::Item>,
     F::Output: IntoFuture,
 {
-    pub(crate) fn new(iter: I, acc: B, f: F) -> Self {
+    pub(crate) fn new(iter: I, acc: T, f: F) -> Self {
         Self {
             iter,
             acc,
@@ -36,11 +36,11 @@ where
     }
 }
 
-impl<I, B, F> Clone for FoldAsync<I, B, F>
+impl<I, T, F> Clone for FoldAsync<I, T, F>
 where
     I: AsyncIterator + Clone,
-    B: Clone,
-    F: FnMut2<B, I::Item> + Clone,
+    T: Clone,
+    F: FnMut2<T, I::Item> + Clone,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::IntoFuture: Clone,
 {
@@ -54,14 +54,14 @@ where
     }
 }
 
-impl<I, B, F> Future for FoldAsync<I, B, F>
+impl<I, T, F> Future for FoldAsync<I, T, F>
 where
     I: AsyncIterator,
-    B: Copy,
-    F: FnMut2<B, I::Item>,
-    F::Output: IntoFuture<Output = B>,
+    T: Copy,
+    F: FnMut2<T, I::Item>,
+    F::Output: IntoFuture<Output = T>,
 {
-    type Output = B;
+    type Output = T;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         let this = self.project();
@@ -86,12 +86,12 @@ where
     }
 }
 
-impl<I, B, F> FusedFuture for FoldAsync<I, B, F>
+impl<I, T, F> FusedFuture for FoldAsync<I, T, F>
 where
     I: FusedAsyncIterator,
-    B: Copy,
-    F: FnMut2<B, I::Item>,
-    F::Output: IntoFuture<Output = B>,
+    T: Copy,
+    F: FnMut2<T, I::Item>,
+    F::Output: IntoFuture<Output = T>,
     <F::Output as IntoFuture>::IntoFuture: FusedFuture,
 {
     fn is_terminated(&self) -> bool {

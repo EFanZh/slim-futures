@@ -49,9 +49,9 @@ where
     type Output = <Fut::Error as IntoFuture>::Output;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
-        fn dispatch<T, E, E2>(result: Result<T, E>) -> ControlFlow<E::Output, E::IntoFuture>
+        fn dispatch<T, E>(result: Result<T, E>) -> ControlFlow<E::Output, E::IntoFuture>
         where
-            E: IntoFuture<Output = Result<T, E2>>,
+            E: IntoResultFuture<Ok = T>,
             E::IntoFuture: ResultFuture<Ok = T>,
         {
             match result {
@@ -60,14 +60,9 @@ where
             }
         }
 
-        fn poll<E>(future: Pin<&mut E::IntoFuture>, cx: &mut Context) -> Poll<E::Output>
-        where
-            E: IntoFuture,
-        {
-            future.poll(cx)
-        }
-
-        self.project().inner.poll_with(cx, dispatch, poll::<Fut::Error>)
+        self.project()
+            .inner
+            .poll_with(cx, dispatch, <Fut::Error as IntoFuture>::IntoFuture::poll)
     }
 }
 

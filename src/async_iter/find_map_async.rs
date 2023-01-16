@@ -83,24 +83,24 @@ where
     }
 }
 
-impl<I, F, B> Future for FindMapAsync<I, F>
+impl<I, F, T> Future for FindMapAsync<I, F>
 where
     I: AsyncIterator,
     F: FnMut1<I::Item>,
-    F::Output: IntoFuture<Output = Option<B>>,
+    F::Output: IntoFuture<Output = Option<T>>,
 {
-    type Output = Option<B>;
+    type Output = Option<T>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         self.project().inner.poll(cx)
     }
 }
 
-impl<I, F, B> FusedFuture for FindMapAsync<I, F>
+impl<I, F, T> FusedFuture for FindMapAsync<I, F>
 where
     I: FusedAsyncIterator,
     F: FnMut1<I::Item>,
-    F::Output: FusedFuture<Output = Option<B>>,
+    F::Output: FusedFuture<Output = Option<T>>,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()
