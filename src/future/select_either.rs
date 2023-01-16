@@ -2,7 +2,7 @@ use crate::future::map::Map;
 use crate::future::raw_select::RawSelect;
 use crate::support;
 use crate::support::fns::{EitherLeftFn, EitherRightFn};
-use core::future::Future;
+use core::future::{Future, IntoFuture};
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use futures_core::FusedFuture;
@@ -60,12 +60,15 @@ where
     }
 }
 
-pub fn select_either<Fut1, Fut2>(fut_1: Fut1, fut_2: Fut2) -> SelectEither<Fut1, Fut2>
+pub fn select_either<Fut1, Fut2>(fut_1: Fut1, fut_2: Fut2) -> SelectEither<Fut1::IntoFuture, Fut2::IntoFuture>
 where
-    Fut1: Future,
-    Fut2: Future,
+    Fut1: IntoFuture,
+    Fut2: IntoFuture,
 {
-    support::assert_future::<_, Either<Fut1::Output, Fut2::Output>>(SelectEither::new(fut_1, fut_2))
+    support::assert_future::<_, Either<Fut1::Output, Fut2::Output>>(SelectEither::new(
+        fut_1.into_future(),
+        fut_2.into_future(),
+    ))
 }
 
 #[cfg(test)]

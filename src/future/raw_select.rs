@@ -1,5 +1,5 @@
 use crate::support;
-use core::future::Future;
+use core::future::{Future, IntoFuture};
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use futures_core::FusedFuture;
@@ -59,12 +59,12 @@ where
     }
 }
 
-pub fn raw_select<Fut1, Fut2>(fut_1: Fut1, fut_2: Fut2) -> RawSelect<Fut1, Fut2>
+pub fn raw_select<Fut1, Fut2>(fut_1: Fut1, fut_2: Fut2) -> RawSelect<Fut1::IntoFuture, Fut2::IntoFuture>
 where
-    Fut1: Future,
-    Fut2: Future<Output = Fut1::Output>,
+    Fut1: IntoFuture,
+    Fut2: IntoFuture<Output = Fut1::Output>,
 {
-    support::assert_future::<_, Fut1::Output>(RawSelect::new(fut_1, fut_2))
+    support::assert_future::<_, Fut1::Output>(RawSelect::new(fut_1.into_future(), fut_2.into_future()))
 }
 
 #[cfg(test)]
