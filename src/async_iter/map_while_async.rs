@@ -84,21 +84,6 @@ where
     }
 }
 
-impl<I, F, T> FusedAsyncIterator for MapWhileAsync<I, F>
-where
-    I: FusedAsyncIterator,
-    F: FnMut1<I::Item>,
-    F::Output: IntoFuture<Output = Option<T>>,
-    <F::Output as IntoFuture>::IntoFuture: FusedFuture,
-{
-    fn is_terminated(&self) -> bool {
-        match &self.fut {
-            None => self.iter.is_terminated(),
-            Some(fut) => fut.is_terminated(),
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use crate::async_iter::async_iter_ext::AsyncIteratorExt;
