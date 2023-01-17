@@ -1,8 +1,8 @@
-use crate::support::{AsyncIterator, FnMut1, FusedAsyncIterator};
+use crate::support::{AsyncIterator, FnMut1};
 use core::future::IntoFuture;
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
-use futures_core::{FusedFuture, Future};
+use futures_core::Future;
 
 pin_project_lite::pin_project! {
     pub struct MapWhileAsync<I, F>

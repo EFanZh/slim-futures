@@ -1,4 +1,4 @@
-use crate::support::{AsyncIterator, FnMut1, FusedAsyncIterator};
+use crate::support::{AsyncIterator, FnMut1};
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
 
