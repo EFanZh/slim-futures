@@ -24,6 +24,7 @@ use crate::async_iter::try_fold::TryFold;
 use crate::async_iter::try_fold_async::TryFoldAsync;
 use crate::async_iter::try_for_each::TryForEach;
 use crate::async_iter::try_for_each_async::TryForEachAsync;
+use crate::async_iter::zip::Zip;
 use crate::support::{AsyncIterator, IntoAsyncIterator, Try};
 use core::future::IntoFuture;
 
@@ -258,6 +259,14 @@ pub trait AsyncIteratorExt: AsyncIterator {
         Fut::Output: Try<Output = ()>,
     {
         crate::support::assert_future::<_, Fut::Output>(TryForEachAsync::new(self, f))
+    }
+
+    fn slim_zip<I>(self, other: I) -> Zip<Self, I::IntoAsyncIter>
+    where
+        Self: Sized,
+        I: IntoAsyncIterator,
+    {
+        crate::support::assert_async_iter::<_, (Self::Item, I::Item)>(Zip::new(self, other.into_async_iter()))
     }
 }
 

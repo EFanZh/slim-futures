@@ -25,6 +25,7 @@ pub use self::try_fold::TryFold;
 pub use self::try_fold_async::TryFoldAsync;
 pub use self::try_for_each::TryForEach;
 pub use self::try_for_each_async::TryForEachAsync;
+pub use self::zip::Zip;
 
 mod all;
 mod all_async;
@@ -53,3 +54,4 @@ mod try_fold;
 mod try_fold_async;
 mod try_for_each;
 mod try_for_each_async;
+mod zip;

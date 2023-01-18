@@ -23,6 +23,7 @@ Async combinators that focus on small binary sizes.
 | `AsyncIteratorExt::slim_try_fold_async`     | [`TryStreamExt::try_fold`]       |
 | `AsyncIteratorExt::slim_try_for_each`       |                                  |
 | `AsyncIteratorExt::slim_try_for_each_async` |                                  |
+| `AsyncIteratorExt::slim_zip`                | [`StreamExt::zip`]               |
 | `FutureExt::slim_and_then`                  |                                  |
 | `FutureExt::slim_and_then_async`            | [`TryFutureExt::and_then`]       |
 | `FutureExt::slim_err_into`                  | [`TryFutureExt::err_into`]       |
@@ -74,6 +75,7 @@ Async combinators that focus on small binary sizes.
 [`StreamExt::filter_map`]: https://docs.rs/futures/latest/futures/stream/trait.StreamExt.html#method.filter_map
 [`StreamExt::fold`]: https://docs.rs/futures/latest/futures/stream/trait.StreamExt.html#method.fold
 [`StreamExt::inspect`]: https://docs.rs/futures/latest/futures/stream/trait.StreamExt.html#method.inspect
+[`StreamExt::zip`]: https://docs.rs/futures/latest/futures/stream/trait.StreamExt.html#method.zip
 [`TryFutureExt::and_then`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.and_then
 [`TryFutureExt::err_into`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.err_into
 [`TryFutureExt::inspect_err`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.inspect_err
