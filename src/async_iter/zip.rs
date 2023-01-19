@@ -63,37 +63,38 @@ where
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         let mut this = self.project();
+        let buffer = this.buffer;
 
         Poll::Ready(loop {
-            break match this.buffer {
+            break match buffer {
                 Buffer::Empty => match this.left.as_mut().poll_next(cx) {
                     Poll::Ready(None) => None,
                     Poll::Ready(Some(item)) => {
-                        *this.buffer = Buffer::Left(item);
+                        *buffer = Buffer::Left(item);
 
                         continue;
                     }
                     Poll::Pending => match task::ready!(this.right.as_mut().poll_next(cx)) {
                         None => None,
                         Some(item) => {
-                            *this.buffer = Buffer::Right(item);
+                            *buffer = Buffer::Right(item);
 
                             continue;
                         }
                     },
                 },
-                Buffer::Left(_) => task::ready!(this.right.poll_next(cx)).map(|right_item| {
-                    match mem::replace(this.buffer, Buffer::Empty) {
+                Buffer::Left(_) => {
+                    task::ready!(this.right.poll_next(cx)).map(|right_item| match mem::replace(buffer, Buffer::Empty) {
                         Buffer::Left(left_item) => (left_item, right_item),
                         _ => unreachable!(),
-                    }
-                }),
-                Buffer::Right(_) => task::ready!(this.left.poll_next(cx)).map(|left_item| {
-                    match mem::replace(this.buffer, Buffer::Empty) {
+                    })
+                }
+                Buffer::Right(_) => {
+                    task::ready!(this.left.poll_next(cx)).map(|left_item| match mem::replace(buffer, Buffer::Empty) {
                         Buffer::Right(right_item) => (left_item, right_item),
                         _ => unreachable!(),
-                    }
-                }),
+                    })
+                }
             };
         })
     }
