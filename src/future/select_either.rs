@@ -8,8 +8,8 @@ use core::task::{Context, Poll};
 use futures_core::FusedFuture;
 use futures_util::future::Either;
 
-type LeftFuture<A, B> = Map<A, EitherLeftFn<<A as Future>::Output, <B as Future>::Output>>;
-type RightFuture<A, B> = Map<B, EitherRightFn<<A as Future>::Output, <B as Future>::Output>>;
+type LeftFuture<A, B> = Map<A, EitherLeftFn<<B as Future>::Output>>;
+type RightFuture<A, B> = Map<B, EitherRightFn<<A as Future>::Output>>;
 
 pin_project_lite::pin_project! {
     #[derive(Clone)]

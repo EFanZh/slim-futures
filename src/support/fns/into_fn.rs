@@ -1,23 +1,23 @@
 use core::marker::PhantomData;
 use fn_traits::FnMut;
 
-pub struct IntoFn<T, U> {
-    phantom: PhantomData<fn(T) -> U>,
+pub struct IntoFn<U> {
+    phantom: PhantomData<fn() -> U>,
 }
 
-impl<T, U> Default for IntoFn<T, U> {
+impl<U> Default for IntoFn<U> {
     fn default() -> Self {
         Self { phantom: PhantomData }
     }
 }
 
-impl<T, U> Clone for IntoFn<T, U> {
+impl<U> Clone for IntoFn<U> {
     fn clone(&self) -> Self {
         Self { phantom: self.phantom }
     }
 }
 
-impl<T, U> FnMut<(T,)> for IntoFn<T, U>
+impl<T, U> FnMut<(T,)> for IntoFn<U>
 where
     T: Into<U>,
 {

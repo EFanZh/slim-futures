@@ -31,7 +31,7 @@ where
     F: FnMut<(T,)>,
     F::Output: IntoFuture,
 {
-    type Output = Map<<F::Output as IntoFuture>::IntoFuture, OkFn<<F::Output as IntoFuture>::Output, E>>;
+    type Output = Map<<F::Output as IntoFuture>::IntoFuture, OkFn<E>>;
 
     fn call_mut(&mut self, args: (T,)) -> Self::Output {
         Map::new(self.inner.call_mut(args).into_future(), OkFn::default())

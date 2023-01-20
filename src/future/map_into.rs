@@ -6,33 +6,27 @@ use core::task::{Context, Poll};
 use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
-    pub struct MapInto<Fut, T>
-    where
-        Fut: Future,
-    {
+    pub struct MapInto<Fut, T> {
         #[pin]
-        inner: Map<Fut, IntoFn<Fut::Output, T>>,
+        inner: Map<Fut, IntoFn<T>>,
+    }
+}
+
+impl<Fut, T> MapInto<Fut, T> {
+    pub(crate) fn new(fut: Fut) -> Self {
+        Self {
+            inner: Map::new(fut, IntoFn::default()),
+        }
     }
 }
 
 impl<Fut, T> Clone for MapInto<Fut, T>
 where
-    Fut: Future + Clone,
+    Fut: Clone,
 {
     fn clone(&self) -> Self {
         Self {
             inner: self.inner.clone(),
-        }
-    }
-}
-
-impl<Fut, T> MapInto<Fut, T>
-where
-    Fut: Future,
-{
-    pub(crate) fn new(fut: Fut) -> Self {
-        Self {
-            inner: Map::new(fut, IntoFn::default()),
         }
     }
 }

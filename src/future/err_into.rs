@@ -7,19 +7,13 @@ use core::task::{Context, Poll};
 use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
-    pub struct ErrInto<Fut, T>
-    where
-        Fut: ResultFuture,
-    {
+    pub struct ErrInto<Fut, T> {
         #[pin]
-        inner: MapErr<Fut, IntoFn<Fut::Error, T>>,
+        inner: MapErr<Fut, IntoFn<T>>,
     }
 }
 
-impl<Fut, T> ErrInto<Fut, T>
-where
-    Fut: ResultFuture,
-{
+impl<Fut, T> ErrInto<Fut, T> {
     pub(crate) fn new(fut: Fut) -> Self {
         Self {
             inner: MapErr::new(fut, IntoFn::default()),
@@ -29,7 +23,7 @@ where
 
 impl<Fut, T> Clone for ErrInto<Fut, T>
 where
-    Fut: ResultFuture + Clone,
+    Fut: Clone,
 {
     fn clone(&self) -> Self {
         Self {

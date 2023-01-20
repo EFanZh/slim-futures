@@ -1,23 +1,23 @@
 use core::marker::PhantomData;
 use fn_traits::FnMut;
 
-pub struct OkFn<T, E> {
-    phantom: PhantomData<fn(T) -> Result<T, E>>,
+pub struct OkFn<E> {
+    phantom: PhantomData<fn() -> E>,
 }
 
-impl<T, E> Default for OkFn<T, E> {
+impl<E> Default for OkFn<E> {
     fn default() -> Self {
         Self { phantom: PhantomData }
     }
 }
 
-impl<T, E> Clone for OkFn<T, E> {
+impl<E> Clone for OkFn<E> {
     fn clone(&self) -> Self {
         Self { phantom: self.phantom }
     }
 }
 
-impl<T, E> FnMut<(T,)> for OkFn<T, E> {
+impl<T, E> FnMut<(T,)> for OkFn<E> {
     type Output = Result<T, E>;
 
     fn call_mut(&mut self, args: (T,)) -> Self::Output {

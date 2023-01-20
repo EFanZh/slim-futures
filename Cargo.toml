@@ -9,7 +9,7 @@ repository = "https://github.com/EFanZh/slim-futures"
 version = "0.1.0"
 
 [dependencies]
-fn-traits = { git = "https://github.com/EFanZh/fn-traits.git" }
+fn-traits = "0.1"
 futures-core = "0.3"
 futures-util = "0.3"
 pin-project-lite = "0.2"

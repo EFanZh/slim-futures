@@ -9,7 +9,7 @@ use core::task::{Context, Poll};
 pin_project_lite::pin_project! {
     pub struct Err<T, E> {
         #[pin]
-        inner: Map<Ready<E>, ErrFn<T, E>>
+        inner: Map<Ready<E>, ErrFn<T>>
     }
 }
 

@@ -8,21 +8,21 @@ use core::task::{Context, Poll};
 use futures_core::FusedFuture;
 use futures_util::future::Either;
 
-type OkEitherLeftFn<Fut1, Fut2> = EitherLeftFn<<Fut1 as ResultFuture>::Ok, <Fut2 as ResultFuture>::Ok>;
-type OkEitherRightFn<Fut1, Fut2> = EitherRightFn<<Fut1 as ResultFuture>::Ok, <Fut2 as ResultFuture>::Ok>;
-type ErrorEitherLeftFn<Fut1, Fut2> = EitherLeftFn<<Fut1 as ResultFuture>::Error, <Fut2 as ResultFuture>::Error>;
-type ErrorEitherRightFn<Fut1, Fut2> = EitherRightFn<<Fut1 as ResultFuture>::Error, <Fut2 as ResultFuture>::Error>;
+type OkEitherLeftFn<Fut2> = EitherLeftFn<<Fut2 as ResultFuture>::Ok>;
+type OkEitherRightFn<Fut1> = EitherRightFn<<Fut1 as ResultFuture>::Ok>;
+type ErrorEitherLeftFn<Fut2> = EitherLeftFn<<Fut2 as ResultFuture>::Error>;
+type ErrorEitherRightFn<Fut1> = EitherRightFn<<Fut1 as ResultFuture>::Error>;
 
 type OkEither<Fut1, Fut2> = Either<<Fut1 as ResultFuture>::Ok, <Fut2 as ResultFuture>::Ok>;
 type ErrorEither<Fut1, Fut2> = Either<<Fut1 as ResultFuture>::Error, <Fut2 as ResultFuture>::Error>;
 
-type OkEitherFn<Fut1, Fut2> = OkFn<OkEither<Fut1, Fut2>, ErrorEither<Fut1, Fut2>>;
-type ErrorEitherFn<Fut1, Fut2> = ErrFn<OkEither<Fut1, Fut2>, ErrorEither<Fut1, Fut2>>;
+type OkEitherFn<Fut1, Fut2> = OkFn<ErrorEither<Fut1, Fut2>>;
+type ErrorEitherFn<Fut1, Fut2> = ErrFn<OkEither<Fut1, Fut2>>;
 
-type OkLeftFn<Fut1, Fut2> = ComposeFn<OkEitherLeftFn<Fut1, Fut2>, OkEitherFn<Fut1, Fut2>>;
-type OkRightFn<Fut1, Fut2> = ComposeFn<OkEitherRightFn<Fut1, Fut2>, OkEitherFn<Fut1, Fut2>>;
-type ErrorLeftFn<Fut1, Fut2> = ComposeFn<ErrorEitherLeftFn<Fut1, Fut2>, ErrorEitherFn<Fut1, Fut2>>;
-type ErrorRightFn<Fut1, Fut2> = ComposeFn<ErrorEitherRightFn<Fut1, Fut2>, ErrorEitherFn<Fut1, Fut2>>;
+type OkLeftFn<Fut1, Fut2> = ComposeFn<OkEitherLeftFn<Fut2>, OkEitherFn<Fut1, Fut2>>;
+type OkRightFn<Fut1, Fut2> = ComposeFn<OkEitherRightFn<Fut1>, OkEitherFn<Fut1, Fut2>>;
+type ErrorLeftFn<Fut1, Fut2> = ComposeFn<ErrorEitherLeftFn<Fut2>, ErrorEitherFn<Fut1, Fut2>>;
+type ErrorRightFn<Fut1, Fut2> = ComposeFn<ErrorEitherRightFn<Fut1>, ErrorEitherFn<Fut1, Fut2>>;
 
 type LeftFuture<Fut1, Fut2> = MapOkOrElse<Fut1, ErrorLeftFn<Fut1, Fut2>, OkLeftFn<Fut1, Fut2>>;
 type RightFuture<Fut1, Fut2> = MapOkOrElse<Fut2, ErrorRightFn<Fut1, Fut2>, OkRightFn<Fut1, Fut2>>;

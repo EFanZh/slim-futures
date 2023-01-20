@@ -2,23 +2,23 @@ use core::marker::PhantomData;
 use fn_traits::FnMut;
 use futures_util::future::Either;
 
-pub struct EitherLeftFn<A, B> {
-    phantom: PhantomData<fn(A) -> Either<A, B>>,
+pub struct EitherLeftFn<B> {
+    phantom: PhantomData<fn() -> B>,
 }
 
-impl<A, B> Default for EitherLeftFn<A, B> {
+impl<B> Default for EitherLeftFn<B> {
     fn default() -> Self {
         Self { phantom: PhantomData }
     }
 }
 
-impl<A, B> Clone for EitherLeftFn<A, B> {
+impl<B> Clone for EitherLeftFn<B> {
     fn clone(&self) -> Self {
         Self { phantom: self.phantom }
     }
 }
 
-impl<A, B> FnMut<(A,)> for EitherLeftFn<A, B> {
+impl<A, B> FnMut<(A,)> for EitherLeftFn<B> {
     type Output = Either<A, B>;
 
     fn call_mut(&mut self, args: (A,)) -> Self::Output {

@@ -7,19 +7,13 @@ use core::task::{Context, Poll};
 use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
-    pub struct OkInto<Fut, T>
-    where
-        Fut: ResultFuture,
-    {
+    pub struct OkInto<Fut, T> {
         #[pin]
-        inner: MapOk<Fut, IntoFn<Fut::Ok, T>>,
+        inner: MapOk<Fut, IntoFn<T>>,
     }
 }
 
-impl<Fut, T> OkInto<Fut, T>
-where
-    Fut: ResultFuture,
-{
+impl<Fut, T> OkInto<Fut, T> {
     pub(crate) fn new(fut: Fut) -> Self {
         Self {
             inner: MapOk::new(fut, IntoFn::default()),
@@ -29,7 +23,7 @@ where
 
 impl<Fut, T> Clone for OkInto<Fut, T>
 where
-    Fut: ResultFuture + Clone,
+    Fut: Clone,
 {
     fn clone(&self) -> Self {
         Self {
