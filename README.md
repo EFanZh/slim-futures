@@ -16,9 +16,20 @@ Async combinators that focus on small binary sizes.
 | `AsyncIteratorExt::slim_filter_async`       | [`StreamExt::filter`]            |
 | `AsyncIteratorExt::slim_filter_map`         |                                  |
 | `AsyncIteratorExt::slim_filter_map_async`   | [`StreamExt::filter_map`]        |
+| `AsyncIteratorExt::slim_find_map`           |                                  |
+| `AsyncIteratorExt::slim_find_map_async`     |                                  |
+| `AsyncIteratorExt::slim_flat_map`           |                                  |
+| `AsyncIteratorExt::slim_flat_map_async`     | [`StreamExt::flat_map`]          |
+| `AsyncIteratorExt::slim_flatten`            | [`StreamExt::flatten`]           |
 | `AsyncIteratorExt::slim_fold`               |                                  |
 | `AsyncIteratorExt::slim_fold_async`         | [`StreamExt::fold`]              |
+| `AsyncIteratorExt::slim_for_each`           |                                  |
+| `AsyncIteratorExt::slim_for_each_async`     | [`StreamExt::for_each`]          |
 | `AsyncIteratorExt::slim_inspect`            | [`StreamExt::inspect`]           |
+| `AsyncIteratorExt::slim_map`                | [`StreamExt::map`]               |
+| `AsyncIteratorExt::slim_map_async`          | [`StreamExt::then`]              |
+| `AsyncIteratorExt::slim_map_while`          |                                  |
+| `AsyncIteratorExt::slim_map_while_async`    |                                  |
 | `AsyncIteratorExt::slim_try_fold`           |                                  |
 | `AsyncIteratorExt::slim_try_fold_async`     | [`TryStreamExt::try_fold`]       |
 | `AsyncIteratorExt::slim_try_for_each`       |                                  |
@@ -73,8 +84,13 @@ Async combinators that focus on small binary sizes.
 [`StreamExt::any`]: https://docs.rs/futures/latest/futures/stream/trait.StreamExt.html#method.any
 [`StreamExt::filter`]: https://docs.rs/futures/latest/futures/stream/trait.StreamExt.html#method.filter
 [`StreamExt::filter_map`]: https://docs.rs/futures/latest/futures/stream/trait.StreamExt.html#method.filter_map
+[`StreamExt::flat_map`]: https://docs.rs/futures/latest/futures/stream/trait.StreamExt.html#method.flat_map
+[`StreamExt::flatten`]: https://docs.rs/futures/latest/futures/stream/trait.StreamExt.html#method.flatten
 [`StreamExt::fold`]: https://docs.rs/futures/latest/futures/stream/trait.StreamExt.html#method.fold
+[`StreamExt::for_each`]: https://docs.rs/futures/latest/futures/stream/trait.StreamExt.html#method.for_each
 [`StreamExt::inspect`]: https://docs.rs/futures/latest/futures/stream/trait.StreamExt.html#method.inspect
+[`StreamExt::map`]: https://docs.rs/futures/latest/futures/stream/trait.StreamExt.html#method.map
+[`StreamExt::then`]: https://docs.rs/futures/latest/futures/stream/trait.StreamExt.html#method.then
 [`StreamExt::zip`]: https://docs.rs/futures/latest/futures/stream/trait.StreamExt.html#method.zip
 [`TryFutureExt::and_then`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.and_then
 [`TryFutureExt::err_into`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.err_into
