@@ -77,7 +77,7 @@ where
             if let Some(inner_future) = fut.as_mut().as_pin_mut() {
                 *acc = match task::ready!(inner_future.poll(cx)).branch() {
                     ControlFlow::Continue(acc) => acc,
-                    ControlFlow::Break(error) => break Self::Output::from_residual(error),
+                    ControlFlow::Break(residual) => break Self::Output::from_residual(residual),
                 };
 
                 fut.set(None);

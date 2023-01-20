@@ -22,7 +22,7 @@ where
 
     fn call_mut(&mut self, args: (T,)) -> Self::Output {
         match args.0.branch() {
-            ControlFlow::Continue(value) => self.inner.call_mut((value,)),
+            ControlFlow::Continue(output) => self.inner.call_mut((output,)),
             ControlFlow::Break(residual) => Self::Output::from_residual(residual),
         }
     }
