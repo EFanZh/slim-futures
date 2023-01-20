@@ -1,26 +1,11 @@
 use crate::async_iter::fold_async::FoldAsync;
+use crate::support::fns::ForEachFn;
 use crate::support::{AsyncIterator, FusedAsyncIterator};
 use core::future::{Future, IntoFuture};
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use fn_traits::FnMut;
 use futures_core::FusedFuture;
-
-#[derive(Clone)]
-struct ForEachAsyncFn<F> {
-    f: F,
-}
-
-impl<T, F> FnMut<((), T)> for ForEachAsyncFn<F>
-where
-    F: FnMut<(T,)>,
-{
-    type Output = F::Output;
-
-    fn call_mut(&mut self, args: ((), T)) -> Self::Output {
-        self.f.call_mut((args.1,))
-    }
-}
 
 pin_project_lite::pin_project! {
     pub struct ForEachAsync<I, F>
@@ -30,7 +15,7 @@ pin_project_lite::pin_project! {
         F::Output: IntoFuture,
     {
         #[pin]
-        inner: FoldAsync<I, (), ForEachAsyncFn<F>>,
+        inner: FoldAsync<I, (), ForEachFn<F>>,
     }
 }
 
@@ -42,7 +27,7 @@ where
 {
     pub(crate) fn new(iter: I, f: F) -> Self {
         Self {
-            inner: FoldAsync::new(iter, (), ForEachAsyncFn { f }),
+            inner: FoldAsync::new(iter, (), ForEachFn::new(f)),
         }
     }
 }
