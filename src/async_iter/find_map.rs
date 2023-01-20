@@ -1,11 +1,12 @@
 use crate::async_iter::try_fold::TryFold;
 use crate::future::Map;
 use crate::support::fns::ControlFlowBreakValueFn;
-use crate::support::{AsyncIterator, FnMut1, FnMut2, FusedAsyncIterator};
+use crate::support::{AsyncIterator, FusedAsyncIterator};
 use core::future::Future;
 use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
 #[derive(Clone)]
@@ -13,14 +14,14 @@ struct FindMapFn<F> {
     inner: F,
 }
 
-impl<T, F, U> FnMut2<(), T> for FindMapFn<F>
+impl<T, F, U> FnMut<((), T)> for FindMapFn<F>
 where
-    F: FnMut1<T, Output = Option<U>>,
+    F: FnMut<(T,), Output = Option<U>>,
 {
     type Output = ControlFlow<U>;
 
-    fn call_mut(&mut self, (): (), arg_2: T) -> Self::Output {
-        match self.inner.call_mut(arg_2) {
+    fn call_mut(&mut self, args: ((), T)) -> Self::Output {
+        match self.inner.call_mut((args.1,)) {
             None => ControlFlow::Continue(()),
             Some(item) => ControlFlow::Break(item),
         }
@@ -60,7 +61,7 @@ where
 impl<I, F, T> Future for FindMap<I, F>
 where
     I: AsyncIterator,
-    F: FnMut1<I::Item, Output = Option<T>>,
+    F: FnMut<(I::Item,), Output = Option<T>>,
 {
     type Output = Option<T>;
 
@@ -72,7 +73,7 @@ where
 impl<I, F, T> FusedFuture for FindMap<I, F>
 where
     I: FusedAsyncIterator,
-    F: FnMut1<I::Item, Output = Option<T>>,
+    F: FnMut<(I::Item,), Output = Option<T>>,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

@@ -1,8 +1,9 @@
-use crate::support::{AsyncIterator, FnMut2, FromResidual, FusedAsyncIterator, Try};
+use crate::support::{AsyncIterator, FromResidual, FusedAsyncIterator, Try};
 use core::future::Future;
 use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
+use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
@@ -39,7 +40,7 @@ impl<I, T, F> Future for TryFold<I, T, F>
 where
     I: AsyncIterator,
     T: Copy,
-    F: FnMut2<T, I::Item>,
+    F: FnMut<(T, I::Item)>,
     F::Output: Try<Output = T>,
 {
     type Output = F::Output;
@@ -52,7 +53,7 @@ where
 
         Poll::Ready(loop {
             if let Some(item) = task::ready!(iter.as_mut().poll_next(cx)) {
-                match f.call_mut(*acc, item).branch() {
+                match f.call_mut((*acc, item)).branch() {
                     ControlFlow::Continue(result) => *acc = result,
                     ControlFlow::Break(residual) => break Self::Output::from_residual(residual),
                 }
@@ -67,7 +68,7 @@ impl<I, T, F> FusedFuture for TryFold<I, T, F>
 where
     I: FusedAsyncIterator,
     T: Copy,
-    F: FnMut2<T, I::Item>,
+    F: FnMut<(T, I::Item)>,
     F::Output: Try<Output = T>,
 {
     fn is_terminated(&self) -> bool {

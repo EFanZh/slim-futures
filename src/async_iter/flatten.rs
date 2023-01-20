@@ -1,21 +1,22 @@
-use crate::support::{AsyncIterator, FnMut1, FnMut2, FusedAsyncIterator, IntoAsyncIterator};
+use crate::support::{AsyncIterator, FusedAsyncIterator, IntoAsyncIterator};
 use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
+use fn_traits::FnMut;
 
 #[derive(Clone)]
 struct FlattenFn<F> {
     inner: F,
 }
 
-impl<T, F, U> FnMut2<(), T> for FlattenFn<F>
+impl<T, F, U> FnMut<((), T)> for FlattenFn<F>
 where
-    F: FnMut1<T, Output = Option<U>>,
+    F: FnMut<(T,), Output = Option<U>>,
 {
     type Output = ControlFlow<U>;
 
-    fn call_mut(&mut self, (): (), arg_2: T) -> Self::Output {
-        match self.inner.call_mut(arg_2) {
+    fn call_mut(&mut self, args: ((), T)) -> Self::Output {
+        match self.inner.call_mut((args.1,)) {
             None => ControlFlow::Continue(()),
             Some(item) => ControlFlow::Break(item),
         }

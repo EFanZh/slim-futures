@@ -1,8 +1,9 @@
 use crate::future::inspect::Inspect;
-use crate::support::{FnMut1, ResultFuture};
+use crate::support::ResultFuture;
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
 #[derive(Clone)]
@@ -10,15 +11,15 @@ struct InspectOkFn<F> {
     inner: F,
 }
 
-impl<'a, T, E, F> FnMut1<&'a Result<T, E>> for InspectOkFn<F>
+impl<'a, T, E, F> FnMut<(&'a Result<T, E>,)> for InspectOkFn<F>
 where
-    F: FnMut1<&'a T, Output = ()>,
+    F: FnMut<(&'a T,), Output = ()>,
 {
     type Output = ();
 
-    fn call_mut(&mut self, arg: &'a Result<T, E>) -> Self::Output {
-        if let Ok(value) = arg {
-            self.inner.call_mut(value);
+    fn call_mut(&mut self, args: (&'a Result<T, E>,)) -> Self::Output {
+        if let Ok(value) = args.0 {
+            self.inner.call_mut((value,));
         }
     }
 }
@@ -42,7 +43,7 @@ impl<Fut, F> InspectOk<Fut, F> {
 impl<Fut, F> Future for InspectOk<Fut, F>
 where
     Fut: ResultFuture,
-    F: for<'a> FnMut1<&'a Fut::Ok, Output = ()>,
+    F: for<'a> FnMut<(&'a Fut::Ok,), Output = ()>,
 {
     type Output = Fut::Output;
 
@@ -54,7 +55,7 @@ where
 impl<Fut, F> FusedFuture for InspectOk<Fut, F>
 where
     Fut: ResultFuture + FusedFuture,
-    F: for<'a> FnMut1<&'a Fut::Ok, Output = ()>,
+    F: for<'a> FnMut<(&'a Fut::Ok,), Output = ()>,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

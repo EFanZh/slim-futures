@@ -1,4 +1,4 @@
-use crate::support::fn_mut_1::FnMut1;
+use fn_traits::FnMut;
 
 pub struct MapOkOrElseFn<D, F> {
     default: D,
@@ -24,17 +24,17 @@ where
     }
 }
 
-impl<T, E, D, F> FnMut1<Result<T, E>> for MapOkOrElseFn<D, F>
+impl<T, E, D, F> FnMut<(Result<T, E>,)> for MapOkOrElseFn<D, F>
 where
-    D: FnMut1<E>,
-    F: FnMut1<T, Output = D::Output>,
+    D: FnMut<(E,)>,
+    F: FnMut<(T,), Output = D::Output>,
 {
     type Output = F::Output;
 
-    fn call_mut(&mut self, arg: Result<T, E>) -> Self::Output {
-        match arg {
-            Ok(value) => self.f.call_mut(value),
-            Err(error) => self.default.call_mut(error),
+    fn call_mut(&mut self, args: (Result<T, E>,)) -> Self::Output {
+        match args.0 {
+            Ok(value) => self.f.call_mut((value,)),
+            Err(error) => self.default.call_mut((error,)),
         }
     }
 }

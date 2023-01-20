@@ -1,18 +1,19 @@
 use crate::future::map_async::MapAsync;
 use crate::support::fns::MapOkOrElseFn;
-use crate::support::{FnMut1, ResultFuture};
+use crate::support::ResultFuture;
 use core::future::{Future, IntoFuture};
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
     pub struct RawMapOkOrElseAsync<Fut, D, F>
     where
         Fut: ResultFuture,
-        D: FnMut1<Fut::Error>,
+        D: FnMut<(Fut::Error,)>,
         D::Output: IntoFuture,
-        F: FnMut1<Fut::Ok, Output = D::Output>,
+        F: FnMut<(Fut::Ok, ),Output = D::Output,>,
     {
         #[pin]
         inner: MapAsync<Fut, MapOkOrElseFn<D, F>>,
@@ -22,10 +23,10 @@ pin_project_lite::pin_project! {
 impl<Fut, D, F> Clone for RawMapOkOrElseAsync<Fut, D, F>
 where
     Fut: ResultFuture + Clone,
-    D: FnMut1<Fut::Error> + Clone,
+    D: FnMut<(Fut::Error,)> + Clone,
     D::Output: IntoFuture,
     <D::Output as IntoFuture>::IntoFuture: Clone,
-    F: FnMut1<Fut::Ok, Output = D::Output> + Clone,
+    F: FnMut<(Fut::Ok,), Output = D::Output> + Clone,
 {
     fn clone(&self) -> Self {
         Self {
@@ -37,9 +38,9 @@ where
 impl<Fut, D, F> RawMapOkOrElseAsync<Fut, D, F>
 where
     Fut: ResultFuture,
-    D: FnMut1<Fut::Error>,
+    D: FnMut<(Fut::Error,)>,
     D::Output: IntoFuture,
-    F: FnMut1<Fut::Ok, Output = D::Output>,
+    F: FnMut<(Fut::Ok,), Output = D::Output>,
 {
     pub(crate) fn new(fut: Fut, default: D, f: F) -> Self {
         Self {
@@ -51,9 +52,9 @@ where
 impl<Fut, D, F> Future for RawMapOkOrElseAsync<Fut, D, F>
 where
     Fut: ResultFuture,
-    D: FnMut1<Fut::Error>,
+    D: FnMut<(Fut::Error,)>,
     D::Output: IntoFuture,
-    F: FnMut1<Fut::Ok, Output = D::Output>,
+    F: FnMut<(Fut::Ok,), Output = D::Output>,
 {
     type Output = <D::Output as IntoFuture>::Output;
 
@@ -65,10 +66,10 @@ where
 impl<Fut, D, F> FusedFuture for RawMapOkOrElseAsync<Fut, D, F>
 where
     Fut: ResultFuture + FusedFuture,
-    D: FnMut1<Fut::Error>,
+    D: FnMut<(Fut::Error,)>,
     D::Output: IntoFuture,
     <D::Output as IntoFuture>::IntoFuture: FusedFuture,
-    F: FnMut1<Fut::Ok, Output = D::Output>,
+    F: FnMut<(Fut::Ok,), Output = D::Output>,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

@@ -1,7 +1,8 @@
-use crate::support::{AsyncIterator, FnMut2, FusedAsyncIterator};
+use crate::support::{AsyncIterator, FusedAsyncIterator};
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
+use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
@@ -38,7 +39,7 @@ impl<I, T, F> Future for Fold<I, T, F>
 where
     I: AsyncIterator,
     T: Copy,
-    F: FnMut2<T, I::Item, Output = T>,
+    F: FnMut<(T, I::Item), Output = T>,
 {
     type Output = T;
 
@@ -49,7 +50,7 @@ where
         let f = this.f;
 
         while let Some(item) = task::ready!(iter.as_mut().poll_next(cx)) {
-            *acc = f.call_mut(*acc, item);
+            *acc = f.call_mut((*acc, item));
         }
 
         Poll::Ready(*acc)
@@ -60,7 +61,7 @@ impl<I, T, F> FusedFuture for Fold<I, T, F>
 where
     I: FusedAsyncIterator,
     T: Copy,
-    F: FnMut2<T, I::Item, Output = T>,
+    F: FnMut<(T, I::Item), Output = T>,
 {
     fn is_terminated(&self) -> bool {
         self.iter.is_terminated()

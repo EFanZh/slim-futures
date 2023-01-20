@@ -1,11 +1,12 @@
 use crate::async_iter::try_fold::TryFold;
 use crate::future::Map;
 use crate::support::fns::ControlFlowIsBreakFn;
-use crate::support::{AsyncIterator, FnMut1, FnMut2, FusedAsyncIterator};
+use crate::support::{AsyncIterator, FusedAsyncIterator};
 use core::future::Future;
 use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
 #[derive(Clone)]
@@ -13,14 +14,14 @@ struct AnyFn<P> {
     predicate: P,
 }
 
-impl<T, P> FnMut2<(), T> for AnyFn<P>
+impl<T, P> FnMut<((), T)> for AnyFn<P>
 where
-    P: FnMut1<T, Output = bool>,
+    P: FnMut<(T,), Output = bool>,
 {
     type Output = ControlFlow<()>;
 
-    fn call_mut(&mut self, (): (), arg_2: T) -> Self::Output {
-        if self.predicate.call_mut(arg_2) {
+    fn call_mut(&mut self, args: ((), T)) -> Self::Output {
+        if self.predicate.call_mut((args.1,)) {
             ControlFlow::Break(())
         } else {
             ControlFlow::Continue(())
@@ -61,7 +62,7 @@ where
 impl<I, P> Future for Any<I, P>
 where
     I: AsyncIterator,
-    P: FnMut1<I::Item, Output = bool>,
+    P: FnMut<(I::Item,), Output = bool>,
 {
     type Output = bool;
 
@@ -73,7 +74,7 @@ where
 impl<I, P> FusedFuture for Any<I, P>
 where
     I: FusedAsyncIterator,
-    P: FnMut1<I::Item, Output = bool>,
+    P: FnMut<(I::Item,), Output = bool>,
 {
     fn is_terminated(&self) -> bool {
         self.predicate.is_terminated()

@@ -1,7 +1,9 @@
-use crate::support::{self, FnMut1};
+use crate::support;
 use core::future::Future;
+use core::ops;
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::FnMut;
 
 #[derive(Clone)]
 pub struct Lazy<F> {
@@ -12,18 +14,18 @@ impl<F> Unpin for Lazy<F> {}
 
 impl<F, T> Future for Lazy<F>
 where
-    F: for<'a, 'b> FnMut1<&'a mut Context<'b>, Output = T>,
+    F: for<'a, 'b> FnMut<(&'a mut Context<'b>,), Output = T>,
 {
     type Output = T;
 
     fn poll(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
-        Poll::Ready(self.f.call_mut(cx))
+        Poll::Ready(self.f.call_mut((cx,)))
     }
 }
 
 pub fn lazy<F, T>(f: F) -> Lazy<F>
 where
-    F: FnMut(&mut Context) -> T,
+    F: ops::FnMut(&mut Context) -> T,
 {
     support::assert_future::<_, T>(Lazy { f })
 }

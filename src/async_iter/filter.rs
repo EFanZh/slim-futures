@@ -1,21 +1,22 @@
 use crate::async_iter::filter_map::FilterMap;
-use crate::support::{AsyncIterator, FnMut1, FusedAsyncIterator};
+use crate::support::{AsyncIterator, FusedAsyncIterator};
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::FnMut;
 
 #[derive(Clone)]
 struct FilterFn<P> {
     predicate: P,
 }
 
-impl<T, P> FnMut1<T> for FilterFn<P>
+impl<T, P> FnMut<(T,)> for FilterFn<P>
 where
-    P: for<'a> FnMut1<&'a T, Output = bool>,
+    P: for<'a> FnMut<(&'a T,), Output = bool>,
 {
     type Output = Option<T>;
 
-    fn call_mut(&mut self, arg: T) -> Self::Output {
-        self.predicate.call_mut(&arg).then_some(arg)
+    fn call_mut(&mut self, args: (T,)) -> Self::Output {
+        self.predicate.call_mut((&args.0,)).then_some(args.0)
     }
 }
 
@@ -49,7 +50,7 @@ where
 impl<I, P> AsyncIterator for Filter<I, P>
 where
     I: AsyncIterator,
-    P: for<'a> FnMut1<&'a I::Item, Output = bool>,
+    P: for<'a> FnMut<(&'a I::Item,), Output = bool>,
 {
     type Item = I::Item;
 
@@ -65,7 +66,7 @@ where
 impl<I, P> FusedAsyncIterator for Filter<I, P>
 where
     I: FusedAsyncIterator,
-    P: for<'a> FnMut1<&'a I::Item, Output = bool>,
+    P: for<'a> FnMut<(&'a I::Item,), Output = bool>,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

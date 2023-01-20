@@ -1,14 +1,15 @@
-use crate::support::{AsyncIterator, FnMut1, FusedAsyncIterator};
+use crate::support::{AsyncIterator, FusedAsyncIterator};
 use core::future::IntoFuture;
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
+use fn_traits::FnMut;
 use futures_core::{FusedFuture, Future};
 
 pin_project_lite::pin_project! {
     pub struct FilterMapAsync<I, F>
     where
         I: AsyncIterator,
-        F: FnMut1<I::Item>,
+        F: FnMut<(I::Item,)>,
         F::Output: IntoFuture,
     {
         #[pin]
@@ -22,7 +23,7 @@ pin_project_lite::pin_project! {
 impl<I, F> FilterMapAsync<I, F>
 where
     I: AsyncIterator,
-    F: FnMut1<I::Item>,
+    F: FnMut<(I::Item,)>,
     F::Output: IntoFuture,
 {
     pub(crate) fn new(iter: I, f: F) -> Self {
@@ -33,7 +34,7 @@ where
 impl<I, F> Clone for FilterMapAsync<I, F>
 where
     I: AsyncIterator + Clone,
-    F: FnMut1<I::Item> + Clone,
+    F: FnMut<(I::Item,)> + Clone,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::IntoFuture: Clone,
 {
@@ -49,7 +50,7 @@ where
 impl<I, F, T> AsyncIterator for FilterMapAsync<I, F>
 where
     I: AsyncIterator,
-    F: FnMut1<I::Item>,
+    F: FnMut<(I::Item,)>,
     F::Output: IntoFuture<Output = Option<T>>,
 {
     type Item = T;
@@ -76,7 +77,7 @@ where
 
             match task::ready!(iter.as_mut().poll_next(cx)) {
                 None => break None,
-                Some(item) => fut_slot.set(Some(f.call_mut(item).into_future())),
+                Some(item) => fut_slot.set(Some(f.call_mut((item,)).into_future())),
             }
         })
     }
@@ -96,7 +97,7 @@ where
 impl<I, F, T> FusedAsyncIterator for FilterMapAsync<I, F>
 where
     I: FusedAsyncIterator,
-    F: FnMut1<I::Item>,
+    F: FnMut<(I::Item,)>,
     F::Output: IntoFuture<Output = Option<T>>,
     <F::Output as IntoFuture>::IntoFuture: FusedFuture,
 {

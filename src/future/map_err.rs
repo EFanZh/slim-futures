@@ -1,8 +1,9 @@
 use crate::future::map::Map;
-use crate::support::{FnMut1, ResultFuture};
+use crate::support::ResultFuture;
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
 #[derive(Clone)]
@@ -10,14 +11,14 @@ struct MapErrFn<F> {
     inner: F,
 }
 
-impl<T, E, F> FnMut1<Result<T, E>> for MapErrFn<F>
+impl<T, E, F> FnMut<(Result<T, E>,)> for MapErrFn<F>
 where
-    F: FnMut1<E>,
+    F: FnMut<(E,)>,
 {
     type Output = Result<T, F::Output>;
 
-    fn call_mut(&mut self, arg: Result<T, E>) -> Self::Output {
-        arg.map_err(|value| self.inner.call_mut(value))
+    fn call_mut(&mut self, args: (Result<T, E>,)) -> Self::Output {
+        args.0.map_err(|value| self.inner.call_mut((value,)))
     }
 }
 
@@ -40,7 +41,7 @@ impl<Fut, F> MapErr<Fut, F> {
 impl<Fut, F> Future for MapErr<Fut, F>
 where
     Fut: ResultFuture,
-    F: FnMut1<Fut::Error>,
+    F: FnMut<(Fut::Error,)>,
 {
     type Output = Result<Fut::Ok, F::Output>;
 
@@ -52,7 +53,7 @@ where
 impl<Fut, F> FusedFuture for MapErr<Fut, F>
 where
     Fut: ResultFuture + FusedFuture,
-    F: FnMut1<Fut::Error>,
+    F: FnMut<(Fut::Error,)>,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

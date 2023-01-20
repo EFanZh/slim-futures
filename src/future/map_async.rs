@@ -1,16 +1,16 @@
 use crate::future::flatten::Flatten;
 use crate::future::map::Map;
-use crate::support::FnMut1;
 use core::future::{Future, IntoFuture};
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
     pub struct MapAsync<Fut, F>
     where
         Fut: Future,
-        F: FnMut1<Fut::Output>,
+        F: FnMut<(Fut::Output,)>,
         F::Output: IntoFuture,
     {
         #[pin]
@@ -21,7 +21,7 @@ pin_project_lite::pin_project! {
 impl<Fut, F> MapAsync<Fut, F>
 where
     Fut: Future,
-    F: FnMut1<Fut::Output>,
+    F: FnMut<(Fut::Output,)>,
     F::Output: IntoFuture,
 {
     pub(crate) fn new(fut: Fut, f: F) -> Self {
@@ -34,7 +34,7 @@ where
 impl<Fut, F> Clone for MapAsync<Fut, F>
 where
     Fut: Future + Clone,
-    F: FnMut1<Fut::Output> + Clone,
+    F: FnMut<(Fut::Output,)> + Clone,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::IntoFuture: Clone,
 {
@@ -48,7 +48,7 @@ where
 impl<Fut, F> Future for MapAsync<Fut, F>
 where
     Fut: Future,
-    F: FnMut1<Fut::Output>,
+    F: FnMut<(Fut::Output,)>,
     F::Output: IntoFuture,
 {
     type Output = <F::Output as IntoFuture>::Output;
@@ -61,7 +61,7 @@ where
 impl<Fut, F> FusedFuture for MapAsync<Fut, F>
 where
     Fut: FusedFuture,
-    F: FnMut1<Fut::Output>,
+    F: FnMut<(Fut::Output,)>,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::IntoFuture: FusedFuture,
 {

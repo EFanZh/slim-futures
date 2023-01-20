@@ -1,4 +1,4 @@
-use crate::support::fn_mut_1::FnMut1;
+use fn_traits::FnMut;
 
 #[derive(Clone)]
 pub struct InspectFn<F> {
@@ -11,15 +11,15 @@ impl<F> InspectFn<F> {
     }
 }
 
-impl<T, F> FnMut1<T> for InspectFn<F>
+impl<T, F> FnMut<(T,)> for InspectFn<F>
 where
-    F: for<'a> FnMut1<&'a T, Output = ()>,
+    F: for<'a> FnMut<(&'a T,), Output = ()>,
 {
     type Output = T;
 
-    fn call_mut(&mut self, arg: T) -> Self::Output {
-        self.f.call_mut(&arg);
+    fn call_mut(&mut self, args: (T,)) -> Self::Output {
+        self.f.call_mut((&args.0,));
 
-        arg
+        args.0
     }
 }

@@ -1,14 +1,15 @@
-use crate::support::{AsyncIterator, FnMut1};
+use crate::support::AsyncIterator;
 use core::future::IntoFuture;
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
+use fn_traits::FnMut;
 use futures_core::Future;
 
 pin_project_lite::pin_project! {
     pub struct MapWhileAsync<I, F>
     where
         I: AsyncIterator,
-        F: FnMut1<I::Item>,
+        F: FnMut<(I::Item,)>,
         F::Output: IntoFuture,
     {
         #[pin]
@@ -22,7 +23,7 @@ pin_project_lite::pin_project! {
 impl<I, F> MapWhileAsync<I, F>
 where
     I: AsyncIterator,
-    F: FnMut1<I::Item>,
+    F: FnMut<(I::Item,)>,
     F::Output: IntoFuture,
 {
     pub(crate) fn new(iter: I, f: F) -> Self {
@@ -33,7 +34,7 @@ where
 impl<I, F> Clone for MapWhileAsync<I, F>
 where
     I: AsyncIterator + Clone,
-    F: FnMut1<I::Item> + Clone,
+    F: FnMut<(I::Item,)> + Clone,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::IntoFuture: Clone,
 {
@@ -49,7 +50,7 @@ where
 impl<I, F, T> AsyncIterator for MapWhileAsync<I, F>
 where
     I: AsyncIterator,
-    F: FnMut1<I::Item>,
+    F: FnMut<(I::Item,)>,
     F::Output: IntoFuture<Output = Option<T>>,
 {
     type Item = T;
@@ -63,7 +64,7 @@ where
                 None => {
                     match task::ready!(this.iter.poll_next(cx)) {
                         None => break 'outer None,
-                        Some(item) => fut_slot.set(Some(this.f.call_mut(item).into_future())),
+                        Some(item) => fut_slot.set(Some(this.f.call_mut((item,)).into_future())),
                     }
 
                     fut_slot.as_mut().as_pin_mut().unwrap()

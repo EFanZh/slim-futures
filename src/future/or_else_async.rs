@@ -1,16 +1,17 @@
 use crate::future::map_err::MapErr;
 use crate::future::try_flatten_err::TryFlattenErr;
-use crate::support::{FnMut1, IntoResultFuture, ResultFuture};
+use crate::support::{IntoResultFuture, ResultFuture};
 use core::future::{Future, IntoFuture};
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
     pub struct OrElseAsync<Fut, F>
     where
         Fut: ResultFuture,
-        F: FnMut1<Fut::Error>,
+        F: FnMut<(Fut::Error,)>,
         F::Output: IntoFuture,
     {
         #[pin]
@@ -21,7 +22,7 @@ pin_project_lite::pin_project! {
 impl<Fut, F> OrElseAsync<Fut, F>
 where
     Fut: ResultFuture,
-    F: FnMut1<Fut::Error>,
+    F: FnMut<(Fut::Error,)>,
     F::Output: IntoFuture,
 {
     pub(crate) fn new(fut: Fut, f: F) -> Self {
@@ -34,7 +35,7 @@ where
 impl<Fut, F> Clone for OrElseAsync<Fut, F>
 where
     Fut: ResultFuture + Clone,
-    F: FnMut1<Fut::Error> + Clone,
+    F: FnMut<(Fut::Error,)> + Clone,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::IntoFuture: Clone,
 {
@@ -48,7 +49,7 @@ where
 impl<Fut, F> Future for OrElseAsync<Fut, F>
 where
     Fut: ResultFuture,
-    F: FnMut1<Fut::Error>,
+    F: FnMut<(Fut::Error,)>,
     F::Output: IntoResultFuture<Ok = Fut::Ok>,
 {
     type Output = <<F::Output as IntoFuture>::IntoFuture as Future>::Output;
@@ -61,7 +62,7 @@ where
 impl<Fut, F> FusedFuture for OrElseAsync<Fut, F>
 where
     Fut: ResultFuture + FusedFuture,
-    F: FnMut1<Fut::Error>,
+    F: FnMut<(Fut::Error,)>,
     F::Output: IntoResultFuture<Ok = Fut::Ok>,
     <F::Output as IntoFuture>::IntoFuture: FusedFuture,
 {

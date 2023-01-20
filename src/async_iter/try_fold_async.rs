@@ -1,15 +1,16 @@
-use crate::support::{AsyncIterator, FnMut2, FromResidual, FusedAsyncIterator, Try};
+use crate::support::{AsyncIterator, FromResidual, FusedAsyncIterator, Try};
 use core::future::{Future, IntoFuture};
 use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
+use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
     pub struct TryFoldAsync<I, T, F>
     where
         I: AsyncIterator,
-        F: FnMut2<T, I::Item>,
+        F: FnMut<(T, I::Item)>,
         F::Output: IntoFuture,
     {
         #[pin]
@@ -24,7 +25,7 @@ pin_project_lite::pin_project! {
 impl<I, T, F> TryFoldAsync<I, T, F>
 where
     I: AsyncIterator,
-    F: FnMut2<T, I::Item>,
+    F: FnMut<(T, I::Item)>,
     F::Output: IntoFuture,
 {
     pub(crate) fn new(iter: I, acc: T, f: F) -> Self {
@@ -41,7 +42,7 @@ impl<I, T, F> Clone for TryFoldAsync<I, T, F>
 where
     I: AsyncIterator + Clone,
     T: Clone,
-    F: FnMut2<T, I::Item> + Clone,
+    F: FnMut<(T, I::Item)> + Clone,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::IntoFuture: Clone,
 {
@@ -59,7 +60,7 @@ impl<I, T, F> Future for TryFoldAsync<I, T, F>
 where
     I: AsyncIterator,
     T: Copy,
-    F: FnMut2<T, I::Item>,
+    F: FnMut<(T, I::Item)>,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::Output: Try<Output = T>,
 {
@@ -81,7 +82,7 @@ where
 
                 fut.set(None);
             } else if let Some(item) = task::ready!(iter.as_mut().poll_next(cx)) {
-                fut.set(Some(f.call_mut(*acc, item).into_future()));
+                fut.set(Some(f.call_mut((*acc, item)).into_future()));
             } else {
                 break Self::Output::from_output(*acc);
             }
@@ -93,7 +94,7 @@ impl<I, T, F> FusedFuture for TryFoldAsync<I, T, F>
 where
     I: FusedAsyncIterator,
     T: Copy,
-    F: FnMut2<T, I::Item>,
+    F: FnMut<(T, I::Item)>,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::Output: Try<Output = T>,
     <F::Output as IntoFuture>::IntoFuture: FusedFuture,

@@ -1,8 +1,9 @@
 use crate::future::map::Map;
-use crate::support::{FnMut1, ResultFuture};
+use crate::support::ResultFuture;
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
 #[derive(Clone)]
@@ -10,14 +11,14 @@ struct MapOkFn<F> {
     inner: F,
 }
 
-impl<T, E, F> FnMut1<Result<T, E>> for MapOkFn<F>
+impl<T, E, F> FnMut<(Result<T, E>,)> for MapOkFn<F>
 where
-    F: FnMut1<T>,
+    F: FnMut<(T,)>,
 {
     type Output = Result<F::Output, E>;
 
-    fn call_mut(&mut self, arg: Result<T, E>) -> Self::Output {
-        arg.map(|value| self.inner.call_mut(value))
+    fn call_mut(&mut self, args: (Result<T, E>,)) -> Self::Output {
+        args.0.map(|value| self.inner.call_mut((value,)))
     }
 }
 
@@ -40,7 +41,7 @@ impl<Fut, F> MapOk<Fut, F> {
 impl<Fut, F> Future for MapOk<Fut, F>
 where
     Fut: ResultFuture,
-    F: FnMut1<Fut::Ok>,
+    F: FnMut<(Fut::Ok,)>,
 {
     type Output = Result<F::Output, Fut::Error>;
 
@@ -52,7 +53,7 @@ where
 impl<Fut, F> FusedFuture for MapOk<Fut, F>
 where
     Fut: ResultFuture + FusedFuture,
-    F: FnMut1<Fut::Ok>,
+    F: FnMut<(Fut::Ok,)>,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

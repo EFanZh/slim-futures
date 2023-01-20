@@ -1,11 +1,12 @@
 use crate::future::and_then_async::AndThenAsync;
 use crate::future::map::Map;
 use crate::support::fns::OkFn;
-use crate::support::{FnMut1, ResultFuture};
+use crate::support::ResultFuture;
 use core::future::{Future, IntoFuture};
 use core::marker::PhantomData;
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
 struct MapOkAsyncFn<F, E> {
@@ -25,15 +26,15 @@ where
     }
 }
 
-impl<T, F, E> FnMut1<T> for MapOkAsyncFn<F, E>
+impl<T, F, E> FnMut<(T,)> for MapOkAsyncFn<F, E>
 where
-    F: FnMut1<T>,
+    F: FnMut<(T,)>,
     F::Output: IntoFuture,
 {
     type Output = Map<<F::Output as IntoFuture>::IntoFuture, OkFn<<F::Output as IntoFuture>::Output, E>>;
 
-    fn call_mut(&mut self, arg: T) -> Self::Output {
-        Map::new(self.inner.call_mut(arg).into_future(), OkFn::default())
+    fn call_mut(&mut self, args: (T,)) -> Self::Output {
+        Map::new(self.inner.call_mut(args).into_future(), OkFn::default())
     }
 }
 
@@ -41,7 +42,7 @@ pin_project_lite::pin_project! {
     pub struct MapOkAsync<Fut, F>
     where
         Fut: ResultFuture,
-        F: FnMut1<Fut::Ok>,
+        F: FnMut<(Fut::Ok,)>,
         F::Output: IntoFuture,
     {
         #[pin]
@@ -52,7 +53,7 @@ pin_project_lite::pin_project! {
 impl<Fut, F> MapOkAsync<Fut, F>
 where
     Fut: ResultFuture,
-    F: FnMut1<Fut::Ok>,
+    F: FnMut<(Fut::Ok,)>,
     F::Output: IntoFuture,
 {
     pub(crate) fn new(fut: Fut, f: F) -> Self {
@@ -71,7 +72,7 @@ where
 impl<Fut, F> Clone for MapOkAsync<Fut, F>
 where
     Fut: ResultFuture + Clone,
-    F: FnMut1<Fut::Ok> + Clone,
+    F: FnMut<(Fut::Ok,)> + Clone,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::IntoFuture: Clone,
 {
@@ -85,7 +86,7 @@ where
 impl<Fut, F> Future for MapOkAsync<Fut, F>
 where
     Fut: ResultFuture,
-    F: FnMut1<Fut::Ok>,
+    F: FnMut<(Fut::Ok,)>,
     F::Output: IntoFuture,
 {
     type Output = Result<<F::Output as IntoFuture>::Output, Fut::Error>;
@@ -98,7 +99,7 @@ where
 impl<Fut, F> FusedFuture for MapOkAsync<Fut, F>
 where
     Fut: ResultFuture + FusedFuture,
-    F: FnMut1<Fut::Ok>,
+    F: FnMut<(Fut::Ok,)>,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::IntoFuture: FusedFuture,
 {

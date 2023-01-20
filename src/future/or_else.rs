@@ -1,8 +1,9 @@
 use crate::future::map::Map;
-use crate::support::{FnMut1, ResultFuture};
+use crate::support::ResultFuture;
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
 #[derive(Clone)]
@@ -10,14 +11,14 @@ struct OrElseFn<F> {
     inner: F,
 }
 
-impl<T, E, F, U> FnMut1<Result<T, E>> for OrElseFn<F>
+impl<T, E, F, U> FnMut<(Result<T, E>,)> for OrElseFn<F>
 where
-    F: FnMut1<E, Output = Result<T, U>>,
+    F: FnMut<(E,), Output = Result<T, U>>,
 {
     type Output = Result<T, U>;
 
-    fn call_mut(&mut self, arg: Result<T, E>) -> Self::Output {
-        arg.or_else(|value| self.inner.call_mut(value))
+    fn call_mut(&mut self, args: (Result<T, E>,)) -> Self::Output {
+        args.0.or_else(|value| self.inner.call_mut((value,)))
     }
 }
 
@@ -40,7 +41,7 @@ impl<Fut, F> OrElse<Fut, F> {
 impl<Fut, F, E> Future for OrElse<Fut, F>
 where
     Fut: ResultFuture,
-    F: FnMut1<Fut::Error, Output = Result<Fut::Ok, E>>,
+    F: FnMut<(Fut::Error,), Output = Result<Fut::Ok, E>>,
 {
     type Output = Result<Fut::Ok, E>;
 
@@ -52,7 +53,7 @@ where
 impl<Fut, F, E> FusedFuture for OrElse<Fut, F>
 where
     Fut: ResultFuture + FusedFuture,
-    F: FnMut1<Fut::Error, Output = Result<Fut::Ok, E>>,
+    F: FnMut<(Fut::Error,), Output = Result<Fut::Ok, E>>,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

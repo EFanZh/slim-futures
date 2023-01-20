@@ -1,10 +1,11 @@
 use crate::future::map::Map;
 use crate::future::try_flatten::TryFlatten;
-use crate::support::{FnMut1, FromResidual, RawResidual, Try};
+use crate::support::{FromResidual, RawResidual, Try};
 use core::future::{Future, IntoFuture};
 use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
 #[derive(Clone)]
@@ -12,18 +13,18 @@ struct AndThenAsyncFn<F> {
     inner: F,
 }
 
-impl<T, F> FnMut1<T> for AndThenAsyncFn<F>
+impl<T, F> FnMut<(T,)> for AndThenAsyncFn<F>
 where
     T: Try,
-    F: FnMut1<T::Output>,
+    F: FnMut<(T::Output,)>,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::Output: FromResidual<T::Residual>,
 {
     type Output = RawResidual<T::Residual, F::Output>;
 
-    fn call_mut(&mut self, arg: T) -> Self::Output {
-        match arg.branch() {
-            ControlFlow::Continue(output) => RawResidual::from_output(self.inner.call_mut(output)),
+    fn call_mut(&mut self, args: (T,)) -> Self::Output {
+        match args.0.branch() {
+            ControlFlow::Continue(output) => RawResidual::from_output(self.inner.call_mut((output,))),
             ControlFlow::Break(residual) => RawResidual::from_residual(residual),
         }
     }
@@ -34,7 +35,7 @@ pin_project_lite::pin_project! {
     where
         Fut: Future,
         Fut::Output: Try,
-        F: FnMut1<<Fut::Output as Try>::Output>,
+        F: FnMut<(<Fut::Output as Try>::Output,)>,
         F::Output: IntoFuture,
         <F::Output as IntoFuture>::Output: FromResidual<<Fut::Output as Try>::Residual>,
         <F::Output as IntoFuture>::Output: Try,
@@ -48,7 +49,7 @@ impl<Fut, F> AndThenAsync<Fut, F>
 where
     Fut: Future,
     Fut::Output: Try,
-    F: FnMut1<<Fut::Output as Try>::Output>,
+    F: FnMut<(<Fut::Output as Try>::Output,)>,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::Output: FromResidual<<Fut::Output as Try>::Residual> + Try,
 {
@@ -63,7 +64,7 @@ impl<Fut, F> Clone for AndThenAsync<Fut, F>
 where
     Fut: Future + Clone,
     Fut::Output: Try,
-    F: FnMut1<<Fut::Output as Try>::Output> + Clone,
+    F: FnMut<(<Fut::Output as Try>::Output,)> + Clone,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::Output: FromResidual<<Fut::Output as Try>::Residual> + Try,
     <F::Output as IntoFuture>::IntoFuture: Clone,
@@ -79,7 +80,7 @@ impl<Fut, F> Future for AndThenAsync<Fut, F>
 where
     Fut: Future,
     Fut::Output: Try,
-    F: FnMut1<<Fut::Output as Try>::Output>,
+    F: FnMut<(<Fut::Output as Try>::Output,)>,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::Output: FromResidual<<Fut::Output as Try>::Residual> + Try,
 {
@@ -94,7 +95,7 @@ impl<Fut, F> FusedFuture for AndThenAsync<Fut, F>
 where
     Fut: FusedFuture,
     Fut::Output: Try,
-    F: FnMut1<<Fut::Output as Try>::Output>,
+    F: FnMut<(<Fut::Output as Try>::Output,)>,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::Output: FromResidual<<Fut::Output as Try>::Residual> + Try,
     <F::Output as IntoFuture>::IntoFuture: FusedFuture,

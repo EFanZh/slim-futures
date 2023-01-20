@@ -1,9 +1,9 @@
 use crate::future::map::Map;
 use crate::support::fns::InspectFn;
-use crate::support::FnMut1;
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
@@ -25,7 +25,7 @@ impl<Fut, F> Inspect<Fut, F> {
 impl<Fut, F> Future for Inspect<Fut, F>
 where
     Fut: Future,
-    F: for<'a> FnMut1<&'a Fut::Output, Output = ()>,
+    F: for<'a> FnMut<(&'a Fut::Output,), Output = ()>,
 {
     type Output = Fut::Output;
 
@@ -37,7 +37,7 @@ where
 impl<Fut, F> FusedFuture for Inspect<Fut, F>
 where
     Fut: FusedFuture,
-    F: for<'a> FnMut1<&'a Fut::Output, Output = ()>,
+    F: for<'a> FnMut<(&'a Fut::Output,), Output = ()>,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

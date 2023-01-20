@@ -1,7 +1,7 @@
-use crate::support::FnMut1;
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
+use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
@@ -22,21 +22,21 @@ impl<Fut, F> Map<Fut, F> {
 impl<Fut, F> Future for Map<Fut, F>
 where
     Fut: Future,
-    F: FnMut1<Fut::Output>,
+    F: FnMut<(Fut::Output,)>,
 {
     type Output = F::Output;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         let this = self.project();
 
-        Poll::Ready(this.f.call_mut(task::ready!(this.fut.poll(cx))))
+        Poll::Ready(this.f.call_mut((task::ready!(this.fut.poll(cx)),)))
     }
 }
 
 impl<Fut, F> FusedFuture for Map<Fut, F>
 where
     Fut: FusedFuture,
-    F: FnMut1<Fut::Output>,
+    F: FnMut<(Fut::Output,)>,
 {
     fn is_terminated(&self) -> bool {
         self.fut.is_terminated()

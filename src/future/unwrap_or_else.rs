@@ -1,8 +1,9 @@
 use crate::future::map::Map;
-use crate::support::{FnMut1, ResultFuture};
+use crate::support::ResultFuture;
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
 #[derive(Clone)]
@@ -10,14 +11,14 @@ struct UnwrapOrElseFn<F> {
     inner: F,
 }
 
-impl<T, E, F> FnMut1<Result<T, E>> for UnwrapOrElseFn<F>
+impl<T, E, F> FnMut<(Result<T, E>,)> for UnwrapOrElseFn<F>
 where
-    F: FnMut1<E, Output = T>,
+    F: FnMut<(E,), Output = T>,
 {
     type Output = T;
 
-    fn call_mut(&mut self, arg: Result<T, E>) -> Self::Output {
-        arg.unwrap_or_else(|error| self.inner.call_mut(error))
+    fn call_mut(&mut self, args: (Result<T, E>,)) -> Self::Output {
+        args.0.unwrap_or_else(|error| self.inner.call_mut((error,)))
     }
 }
 
@@ -40,7 +41,7 @@ impl<Fut, F> UnwrapOrElse<Fut, F> {
 impl<Fut, F> Future for UnwrapOrElse<Fut, F>
 where
     Fut: ResultFuture,
-    F: FnMut1<Fut::Error, Output = Fut::Ok>,
+    F: FnMut<(Fut::Error,), Output = Fut::Ok>,
 {
     type Output = Fut::Ok;
 
@@ -52,7 +53,7 @@ where
 impl<Fut, F> FusedFuture for UnwrapOrElse<Fut, F>
 where
     Fut: ResultFuture + FusedFuture,
-    F: FnMut1<Fut::Error, Output = Fut::Ok>,
+    F: FnMut<(Fut::Error,), Output = Fut::Ok>,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

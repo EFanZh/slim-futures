@@ -1,8 +1,9 @@
 use crate::future::inspect::Inspect;
-use crate::support::{FnMut1, ResultFuture};
+use crate::support::ResultFuture;
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
 #[derive(Clone)]
@@ -10,15 +11,15 @@ struct InspectErrFn<F> {
     inner: F,
 }
 
-impl<'a, T, E, F> FnMut1<&'a Result<T, E>> for InspectErrFn<F>
+impl<'a, T, E, F> FnMut<(&'a Result<T, E>,)> for InspectErrFn<F>
 where
-    F: FnMut1<&'a E, Output = ()>,
+    F: FnMut<(&'a E,), Output = ()>,
 {
     type Output = ();
 
-    fn call_mut(&mut self, arg: &'a Result<T, E>) -> Self::Output {
-        if let Err(error) = arg {
-            self.inner.call_mut(error);
+    fn call_mut(&mut self, args: (&'a Result<T, E>,)) -> Self::Output {
+        if let Err(error) = args.0 {
+            self.inner.call_mut((error,));
         }
     }
 }
@@ -42,7 +43,7 @@ impl<Fut, F> InspectErr<Fut, F> {
 impl<Fut, F> Future for InspectErr<Fut, F>
 where
     Fut: ResultFuture,
-    F: for<'a> FnMut1<&'a Fut::Error, Output = ()>,
+    F: for<'a> FnMut<(&'a Fut::Error,), Output = ()>,
 {
     type Output = Fut::Output;
 
@@ -54,7 +55,7 @@ where
 impl<Fut, F> FusedFuture for InspectErr<Fut, F>
 where
     Fut: ResultFuture + FusedFuture,
-    F: for<'a> FnMut1<&'a Fut::Error, Output = ()>,
+    F: for<'a> FnMut<(&'a Fut::Error,), Output = ()>,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

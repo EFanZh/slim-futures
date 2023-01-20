@@ -1,9 +1,10 @@
 use crate::future::map::Map;
-use crate::support::{FnMut1, ResultFuture, TwoPhases};
+use crate::support::{ResultFuture, TwoPhases};
 use core::future::{Future, IntoFuture};
 use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
 #[derive(Clone)]
@@ -11,16 +12,16 @@ struct UnwrapOrElseAsyncFn<F> {
     inner: F,
 }
 
-impl<T, E, F> FnMut1<Result<T, E>> for UnwrapOrElseAsyncFn<F>
+impl<T, E, F> FnMut<(Result<T, E>,)> for UnwrapOrElseAsyncFn<F>
 where
-    F: FnMut1<E>,
+    F: FnMut<(E,)>,
 {
     type Output = ControlFlow<T, F::Output>;
 
-    fn call_mut(&mut self, arg: Result<T, E>) -> Self::Output {
-        match arg {
+    fn call_mut(&mut self, args: (Result<T, E>,)) -> Self::Output {
+        match args.0 {
             Ok(value) => ControlFlow::Break(value),
-            Err(error) => ControlFlow::Continue(self.inner.call_mut(error)),
+            Err(error) => ControlFlow::Continue(self.inner.call_mut((error,))),
         }
     }
 }
@@ -29,7 +30,7 @@ pin_project_lite::pin_project! {
     pub struct UnwrapOrElseAsync<Fut, F>
     where
         Fut: ResultFuture,
-        F: FnMut1<Fut::Error>,
+        F: FnMut<(Fut::Error,)>,
         F::Output: IntoFuture,
     {
         #[pin]
@@ -40,7 +41,7 @@ pin_project_lite::pin_project! {
 impl<Fut, F> UnwrapOrElseAsync<Fut, F>
 where
     Fut: ResultFuture,
-    F: FnMut1<Fut::Error>,
+    F: FnMut<(Fut::Error,)>,
     F::Output: IntoFuture,
 {
     pub(crate) fn new(fut: Fut, f: F) -> Self {
@@ -55,7 +56,7 @@ where
 impl<Fut, F> Clone for UnwrapOrElseAsync<Fut, F>
 where
     Fut: ResultFuture + Clone,
-    F: FnMut1<Fut::Error> + Clone,
+    F: FnMut<(Fut::Error,)> + Clone,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::IntoFuture: Clone,
 {
@@ -69,7 +70,7 @@ where
 impl<Fut, F> Future for UnwrapOrElseAsync<Fut, F>
 where
     Fut: ResultFuture,
-    F: FnMut1<Fut::Error>,
+    F: FnMut<(Fut::Error,)>,
     F::Output: IntoFuture<Output = Fut::Ok>,
 {
     type Output = Fut::Ok;
@@ -94,7 +95,7 @@ where
 impl<Fut, F> FusedFuture for UnwrapOrElseAsync<Fut, F>
 where
     Fut: ResultFuture + FusedFuture,
-    F: FnMut1<Fut::Error>,
+    F: FnMut<(Fut::Error,)>,
     F::Output: IntoFuture<Output = Fut::Ok>,
     <F::Output as IntoFuture>::IntoFuture: FusedFuture,
 {

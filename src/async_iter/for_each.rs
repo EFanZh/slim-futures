@@ -1,8 +1,9 @@
 use crate::async_iter::fold::Fold;
-use crate::support::{AsyncIterator, FnMut1, FnMut2, FusedAsyncIterator};
+use crate::support::{AsyncIterator, FusedAsyncIterator};
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
 #[derive(Clone)]
@@ -10,14 +11,14 @@ struct ForEachFn<F> {
     f: F,
 }
 
-impl<T, F> FnMut2<(), T> for ForEachFn<F>
+impl<T, F> FnMut<((), T)> for ForEachFn<F>
 where
-    F: FnMut1<T>,
+    F: FnMut<(T,)>,
 {
     type Output = F::Output;
 
-    fn call_mut(&mut self, (): (), arg_2: T) -> Self::Output {
-        self.f.call_mut(arg_2)
+    fn call_mut(&mut self, args: ((), T)) -> Self::Output {
+        self.f.call_mut((args.1,))
     }
 }
 
@@ -51,7 +52,7 @@ where
 impl<I, F> Future for ForEach<I, F>
 where
     I: AsyncIterator,
-    F: FnMut1<I::Item, Output = ()>,
+    F: FnMut<(I::Item,), Output = ()>,
 {
     type Output = ();
 
@@ -63,7 +64,7 @@ where
 impl<I, F> FusedFuture for ForEach<I, F>
 where
     I: FusedAsyncIterator,
-    F: FnMut1<I::Item, Output = ()>,
+    F: FnMut<(I::Item,), Output = ()>,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

@@ -1,6 +1,7 @@
-use crate::support::{AsyncIterator, FnMut1, FusedAsyncIterator};
+use crate::support::{AsyncIterator, FusedAsyncIterator};
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
+use fn_traits::FnMut;
 
 pin_project_lite::pin_project! {
     pub struct Map<I, F> {
@@ -32,14 +33,14 @@ where
 impl<I, F> AsyncIterator for Map<I, F>
 where
     I: AsyncIterator,
-    F: FnMut1<I::Item>,
+    F: FnMut<(I::Item,)>,
 {
     type Item = F::Output;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         let this = self.project();
 
-        Poll::Ready(task::ready!(this.iter.poll_next(cx)).map(|item| this.f.call_mut(item)))
+        Poll::Ready(task::ready!(this.iter.poll_next(cx)).map(|item| this.f.call_mut((item,))))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -50,7 +51,7 @@ where
 impl<I, F> FusedAsyncIterator for Map<I, F>
 where
     I: FusedAsyncIterator,
-    F: FnMut1<I::Item>,
+    F: FnMut<(I::Item,)>,
 {
     fn is_terminated(&self) -> bool {
         self.iter.is_terminated()

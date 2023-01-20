@@ -1,6 +1,7 @@
-use crate::support::{AsyncIterator, FnMut1};
+use crate::support::AsyncIterator;
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
+use fn_traits::FnMut;
 
 pin_project_lite::pin_project! {
     pub struct MapWhile<I, F> {
@@ -32,14 +33,14 @@ where
 impl<I, F, T> AsyncIterator for MapWhile<I, F>
 where
     I: AsyncIterator,
-    F: FnMut1<I::Item, Output = Option<T>>,
+    F: FnMut<(I::Item,), Output = Option<T>>,
 {
     type Item = T;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         let this = self.project();
 
-        Poll::Ready(task::ready!(this.iter.poll_next(cx)).and_then(|item| this.f.call_mut(item)))
+        Poll::Ready(task::ready!(this.iter.poll_next(cx)).and_then(|item| this.f.call_mut((item,))))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {

@@ -1,16 +1,17 @@
-use crate::support::{AsyncIterator, FnMut1, FusedAsyncIterator};
+use crate::support::{AsyncIterator, FusedAsyncIterator};
 use core::future::IntoFuture;
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
+use fn_traits::FnMut;
 use futures_core::{FusedFuture, Future};
 
-pub trait PredicateFn<T>: for<'a> FnMut1<&'a T, Output = <Self as PredicateFn<T>>::Output> {
+pub trait PredicateFn<T>: for<'a> FnMut<(&'a T,), Output = <Self as PredicateFn<T>>::Output> {
     type Output;
 }
 
 impl<T, F, R> PredicateFn<T> for F
 where
-    F: for<'a> FnMut1<&'a T, Output = R>,
+    F: for<'a> FnMut<(&'a T,), Output = R>,
 {
     type Output = R;
 }
@@ -110,7 +111,7 @@ where
             match task::ready!(iter.as_mut().poll_next(cx)) {
                 None => break None,
                 Some(item) => {
-                    let fut = predicate.call_mut(&item).into_future();
+                    let fut = predicate.call_mut((&item,)).into_future();
 
                     state_slot.set(PredicateState::Polling { item, fut });
                 }

@@ -1,16 +1,17 @@
 use crate::async_iter::flatten::Flatten;
 use crate::async_iter::map_async::MapAsync;
-use crate::support::{AsyncIterator, FnMut1, FusedAsyncIterator, IntoAsyncIterator};
+use crate::support::{AsyncIterator, FusedAsyncIterator, IntoAsyncIterator};
 use core::future::IntoFuture;
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
     pub struct FlatMapAsync<I, F>
     where
         I: AsyncIterator,
-        F: FnMut1<I::Item>,
+        F: FnMut<(I::Item,)>,
         F::Output: IntoFuture,
         <F::Output as IntoFuture>::Output: IntoAsyncIterator,
     {
@@ -22,7 +23,7 @@ pin_project_lite::pin_project! {
 impl<I, F> FlatMapAsync<I, F>
 where
     I: AsyncIterator,
-    F: FnMut1<I::Item>,
+    F: FnMut<(I::Item,)>,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::Output: IntoAsyncIterator,
 {
@@ -36,7 +37,7 @@ where
 impl<I, F> Clone for FlatMapAsync<I, F>
 where
     I: AsyncIterator + Clone,
-    F: FnMut1<I::Item> + Clone,
+    F: FnMut<(I::Item,)> + Clone,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::Output: IntoAsyncIterator,
     <F::Output as IntoFuture>::IntoFuture: Clone,
@@ -52,7 +53,7 @@ where
 impl<I, F> AsyncIterator for FlatMapAsync<I, F>
 where
     I: AsyncIterator,
-    F: FnMut1<I::Item>,
+    F: FnMut<(I::Item,)>,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::Output: IntoAsyncIterator,
 {
@@ -66,7 +67,7 @@ where
 impl<I, F> FusedAsyncIterator for FlatMapAsync<I, F>
 where
     I: FusedAsyncIterator,
-    F: FnMut1<I::Item>,
+    F: FnMut<(I::Item,)>,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::Output: IntoAsyncIterator,
     <F::Output as IntoFuture>::IntoFuture: FusedFuture,

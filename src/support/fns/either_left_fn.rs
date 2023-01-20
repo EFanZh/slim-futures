@@ -1,5 +1,5 @@
-use crate::support::fn_mut_1::FnMut1;
 use core::marker::PhantomData;
+use fn_traits::FnMut;
 use futures_util::future::Either;
 
 pub struct EitherLeftFn<A, B> {
@@ -18,10 +18,10 @@ impl<A, B> Clone for EitherLeftFn<A, B> {
     }
 }
 
-impl<A, B> FnMut1<A> for EitherLeftFn<A, B> {
+impl<A, B> FnMut<(A,)> for EitherLeftFn<A, B> {
     type Output = Either<A, B>;
 
-    fn call_mut(&mut self, arg: A) -> Self::Output {
-        Either::Left(arg)
+    fn call_mut(&mut self, args: (A,)) -> Self::Output {
+        Either::Left(args.0)
     }
 }

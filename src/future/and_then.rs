@@ -1,9 +1,10 @@
 use crate::future::map::Map;
-use crate::support::{FnMut1, FromResidual, Try};
+use crate::support::{FromResidual, Try};
 use core::future::Future;
 use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
 #[derive(Clone)]
@@ -11,17 +12,17 @@ struct AndThenFn<F> {
     inner: F,
 }
 
-impl<T, F> FnMut1<T> for AndThenFn<F>
+impl<T, F> FnMut<(T,)> for AndThenFn<F>
 where
     T: Try,
-    F: FnMut1<T::Output>,
+    F: FnMut<(T::Output,)>,
     F::Output: FromResidual<T::Residual> + Try,
 {
     type Output = F::Output;
 
-    fn call_mut(&mut self, arg: T) -> Self::Output {
-        match arg.branch() {
-            ControlFlow::Continue(value) => self.inner.call_mut(value),
+    fn call_mut(&mut self, args: (T,)) -> Self::Output {
+        match args.0.branch() {
+            ControlFlow::Continue(value) => self.inner.call_mut((value,)),
             ControlFlow::Break(residual) => Self::Output::from_residual(residual),
         }
     }
@@ -47,7 +48,7 @@ impl<Fut, F> Future for AndThen<Fut, F>
 where
     Fut: Future,
     Fut::Output: Try,
-    F: FnMut1<<Fut::Output as Try>::Output>,
+    F: FnMut<(<Fut::Output as Try>::Output,)>,
     F::Output: FromResidual<<Fut::Output as Try>::Residual> + Try,
 {
     type Output = F::Output;
@@ -61,7 +62,7 @@ impl<Fut, F> FusedFuture for AndThen<Fut, F>
 where
     Fut: FusedFuture,
     Fut::Output: Try,
-    F: FnMut1<<Fut::Output as Try>::Output>,
+    F: FnMut<(<Fut::Output as Try>::Output,)>,
     F::Output: FromResidual<<Fut::Output as Try>::Residual> + Try,
 {
     fn is_terminated(&self) -> bool {

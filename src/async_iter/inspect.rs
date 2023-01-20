@@ -1,8 +1,9 @@
 use crate::async_iter::map::Map;
 use crate::support::fns::InspectFn;
-use crate::support::{AsyncIterator, FnMut1, FusedAsyncIterator};
+use crate::support::{AsyncIterator, FusedAsyncIterator};
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::FnMut;
 
 pin_project_lite::pin_project! {
     pub struct Inspect<I, F> {
@@ -34,7 +35,7 @@ where
 impl<I, F> AsyncIterator for Inspect<I, F>
 where
     I: AsyncIterator,
-    F: for<'a> FnMut1<&'a I::Item, Output = ()>,
+    F: for<'a> FnMut<(&'a I::Item,), Output = ()>,
 {
     type Item = I::Item;
 
@@ -46,7 +47,7 @@ where
 impl<I, F> FusedAsyncIterator for Inspect<I, F>
 where
     I: FusedAsyncIterator,
-    F: for<'a> FnMut1<&'a I::Item, Output = ()>,
+    F: for<'a> FnMut<(&'a I::Item,), Output = ()>,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

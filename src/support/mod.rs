@@ -1,5 +1,3 @@
-pub use self::fn_mut_1::FnMut1;
-pub use self::fn_mut_2::FnMut2;
 pub use self::into_async_iterator::IntoAsyncIterator;
 pub use self::into_result_future::IntoResultFuture;
 pub use self::option_future::OptionFuture;
@@ -11,8 +9,6 @@ pub use core::convert::Infallible as Never;
 use futures_core::Future;
 pub use futures_core::{FusedStream as FusedAsyncIterator, Stream as AsyncIterator};
 
-mod fn_mut_1;
-mod fn_mut_2;
 pub mod fns;
 mod into_async_iterator;
 mod into_result_future;

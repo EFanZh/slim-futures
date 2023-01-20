@@ -1,9 +1,10 @@
 use crate::future::map::Map;
 use crate::support::fns::MapOkOrElseFn;
-use crate::support::{FnMut1, ResultFuture};
+use crate::support::ResultFuture;
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
@@ -25,8 +26,8 @@ impl<Fut, D, F> MapOkOrElse<Fut, D, F> {
 impl<Fut, D, F> Future for MapOkOrElse<Fut, D, F>
 where
     Fut: ResultFuture,
-    D: FnMut1<Fut::Error>,
-    F: FnMut1<Fut::Ok, Output = D::Output>,
+    D: FnMut<(Fut::Error,)>,
+    F: FnMut<(Fut::Ok,), Output = D::Output>,
 {
     type Output = F::Output;
 
@@ -38,8 +39,8 @@ where
 impl<Fut, D, F> FusedFuture for MapOkOrElse<Fut, D, F>
 where
     Fut: ResultFuture + FusedFuture,
-    D: FnMut1<Fut::Error>,
-    F: FnMut1<Fut::Ok, Output = D::Output>,
+    D: FnMut<(Fut::Error,)>,
+    F: FnMut<(Fut::Ok,), Output = D::Output>,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

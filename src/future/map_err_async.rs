@@ -1,11 +1,12 @@
 use crate::future::map::Map;
 use crate::future::or_else_async::OrElseAsync;
 use crate::support::fns::ErrFn;
-use crate::support::{FnMut1, ResultFuture};
+use crate::support::ResultFuture;
 use core::future::{Future, IntoFuture};
 use core::marker::PhantomData;
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
 struct MapErrAsyncFn<F, T> {
@@ -25,15 +26,15 @@ where
     }
 }
 
-impl<E, F, T> FnMut1<E> for MapErrAsyncFn<F, T>
+impl<E, F, T> FnMut<(E,)> for MapErrAsyncFn<F, T>
 where
-    F: FnMut1<E>,
+    F: FnMut<(E,)>,
     F::Output: IntoFuture,
 {
     type Output = Map<<F::Output as IntoFuture>::IntoFuture, ErrFn<T, <F::Output as IntoFuture>::Output>>;
 
-    fn call_mut(&mut self, arg: E) -> Self::Output {
-        Map::new(self.inner.call_mut(arg).into_future(), ErrFn::default())
+    fn call_mut(&mut self, args: (E,)) -> Self::Output {
+        Map::new(self.inner.call_mut(args).into_future(), ErrFn::default())
     }
 }
 
@@ -41,7 +42,7 @@ pin_project_lite::pin_project! {
     pub struct MapErrAsync<Fut, F>
     where
         Fut: ResultFuture,
-        F: FnMut1<Fut::Error>,
+        F: FnMut<(Fut::Error,)>,
         F::Output: IntoFuture,
     {
         #[pin]
@@ -52,7 +53,7 @@ pin_project_lite::pin_project! {
 impl<Fut, F> MapErrAsync<Fut, F>
 where
     Fut: ResultFuture,
-    F: FnMut1<Fut::Error>,
+    F: FnMut<(Fut::Error,)>,
     F::Output: IntoFuture,
 {
     pub(crate) fn new(fut: Fut, f: F) -> Self {
@@ -71,7 +72,7 @@ where
 impl<Fut, F> Clone for MapErrAsync<Fut, F>
 where
     Fut: ResultFuture + Clone,
-    F: FnMut1<Fut::Error> + Clone,
+    F: FnMut<(Fut::Error,)> + Clone,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::IntoFuture: Clone,
 {
@@ -85,7 +86,7 @@ where
 impl<Fut, F> Future for MapErrAsync<Fut, F>
 where
     Fut: ResultFuture,
-    F: FnMut1<Fut::Error>,
+    F: FnMut<(Fut::Error,)>,
     F::Output: IntoFuture,
 {
     type Output = Result<Fut::Ok, <F::Output as IntoFuture>::Output>;
@@ -98,7 +99,7 @@ where
 impl<Fut, F> FusedFuture for MapErrAsync<Fut, F>
 where
     Fut: ResultFuture + FusedFuture,
-    F: FnMut1<Fut::Error>,
+    F: FnMut<(Fut::Error,)>,
     F::Output: FusedFuture,
 {
     fn is_terminated(&self) -> bool {

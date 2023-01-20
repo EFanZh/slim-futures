@@ -1,6 +1,7 @@
-use crate::support::{AsyncIterator, FnMut1, FusedAsyncIterator};
+use crate::support::{AsyncIterator, FusedAsyncIterator};
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
+use fn_traits::FnMut;
 
 pin_project_lite::pin_project! {
     pub struct FilterMap<I, F> {
@@ -32,7 +33,7 @@ where
 impl<I, F, T> AsyncIterator for FilterMap<I, F>
 where
     I: AsyncIterator,
-    F: FnMut1<I::Item, Output = Option<T>>,
+    F: FnMut<(I::Item,), Output = Option<T>>,
 {
     type Item = T;
 
@@ -43,7 +44,7 @@ where
 
         Poll::Ready(loop {
             if let Some(item) = task::ready!(iter.as_mut().poll_next(cx)) {
-                let item = f.call_mut(item);
+                let item = f.call_mut((item,));
 
                 if item.is_some() {
                     break item;
@@ -62,7 +63,7 @@ where
 impl<I, F, T> FusedAsyncIterator for FilterMap<I, F>
 where
     I: FusedAsyncIterator,
-    F: FnMut1<I::Item, Output = Option<T>>,
+    F: FnMut<(I::Item,), Output = Option<T>>,
 {
     fn is_terminated(&self) -> bool {
         self.iter.is_terminated()
