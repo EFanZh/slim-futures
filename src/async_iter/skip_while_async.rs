@@ -14,6 +14,12 @@ pin_project_lite::pin_project! {
     }
 }
 
+type StateType<I, F> = State<
+    F,
+    <I as AsyncIterator>::Item,
+    <<F as PredicateFn<<I as AsyncIterator>::Item>>::Output as IntoFuture>::IntoFuture,
+>;
+
 pin_project_lite::pin_project! {
     pub struct SkipWhileAsync<I, F>
     where
@@ -24,7 +30,7 @@ pin_project_lite::pin_project! {
         #[pin]
         iter: I,
         #[pin]
-        state: Option<State<F, I::Item, <<F as PredicateFn<I::Item>>::Output as IntoFuture>::IntoFuture>>,
+        state: Option<StateType<I, F>>,
     }
 }
 
@@ -95,7 +101,7 @@ where
                     Some(item) => {
                         let fut = f.call_mut((&item,)).into_future();
 
-                        fut_slot.set(PredicateState::Polling { item, fut })
+                        fut_slot.set(PredicateState::Polling { item, fut });
                     }
                 }
             }

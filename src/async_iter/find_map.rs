@@ -1,11 +1,11 @@
 use crate::async_iter::try_fold::TryFold;
 use crate::future::Map;
-use crate::support::fns::ControlFlowBreakValueFn;
 use crate::support::{AsyncIterator, FusedAsyncIterator};
 use core::future::Future;
 use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::fns::ControlFlowBreakValueFn;
 use fn_traits::FnMut;
 use futures_core::FusedFuture;
 

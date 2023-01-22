@@ -1,10 +1,11 @@
 use crate::future::map_ok_or_else::MapOkOrElse;
 use crate::future::raw_select::RawSelect;
-use crate::support::fns::{ComposeFn, EitherLeftFn, EitherRightFn, ErrFn, OkFn};
+use crate::support::fns::{EitherLeftFn, EitherRightFn};
 use crate::support::{self, IntoResultFuture, ResultFuture};
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::fns::{ComposeFn, ResultErrFn, ResultOkFn};
 use futures_core::FusedFuture;
 use futures_util::future::Either;
 
@@ -16,8 +17,8 @@ type ErrorEitherRightFn<Fut1> = EitherRightFn<<Fut1 as ResultFuture>::Error>;
 type OkEither<Fut1, Fut2> = Either<<Fut1 as ResultFuture>::Ok, <Fut2 as ResultFuture>::Ok>;
 type ErrorEither<Fut1, Fut2> = Either<<Fut1 as ResultFuture>::Error, <Fut2 as ResultFuture>::Error>;
 
-type OkEitherFn<Fut1, Fut2> = OkFn<ErrorEither<Fut1, Fut2>>;
-type ErrorEitherFn<Fut1, Fut2> = ErrFn<OkEither<Fut1, Fut2>>;
+type OkEitherFn<Fut1, Fut2> = ResultOkFn<ErrorEither<Fut1, Fut2>>;
+type ErrorEitherFn<Fut1, Fut2> = ResultErrFn<OkEither<Fut1, Fut2>>;
 
 type OkLeftFn<Fut1, Fut2> = ComposeFn<OkEitherLeftFn<Fut2>, OkEitherFn<Fut1, Fut2>>;
 type OkRightFn<Fut1, Fut2> = ComposeFn<OkEitherRightFn<Fut1>, OkEitherFn<Fut1, Fut2>>;
@@ -47,16 +48,8 @@ where
     pub(crate) fn new(fut_1: Fut1, fut_2: Fut2) -> Self {
         Self {
             inner: RawSelect::new(
-                MapOkOrElse::new(
-                    fut_1,
-                    ComposeFn::new(EitherLeftFn::default(), ErrFn::default()),
-                    ComposeFn::new(EitherLeftFn::default(), OkFn::default()),
-                ),
-                MapOkOrElse::new(
-                    fut_2,
-                    ComposeFn::new(EitherRightFn::default(), ErrFn::default()),
-                    ComposeFn::new(EitherRightFn::default(), OkFn::default()),
-                ),
+                MapOkOrElse::new(fut_1, ComposeFn::default(), ComposeFn::default()),
+                MapOkOrElse::new(fut_2, ComposeFn::default(), ComposeFn::default()),
             ),
         }
     }

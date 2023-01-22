@@ -1,21 +1,21 @@
 use crate::future::map::Map;
-use crate::support::fns::OkFn;
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::fns::ResultOkFn;
 use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
     pub struct IntoResultFuture<Fut, E> {
         #[pin]
-        inner: Map<Fut, OkFn<E>>,
+        inner: Map<Fut, ResultOkFn<E>>,
     }
 }
 
 impl<Fut, E> IntoResultFuture<Fut, E> {
     pub(crate) fn new(fut: Fut) -> Self {
         Self {
-            inner: Map::new(fut, OkFn::default()),
+            inner: Map::new(fut, ResultOkFn::default()),
         }
     }
 }

@@ -23,7 +23,7 @@ impl<T, Fut> PredicateState<T, Fut> {
     }
 
     pub fn take_item(self: Pin<&mut Self>) -> Option<T> {
-        match self.project_replace(PredicateState::Empty) {
+        match self.project_replace(Self::Empty) {
             PredicateStateReplace::Empty => None,
             PredicateStateReplace::Polling { item, .. } => Some(item),
         }

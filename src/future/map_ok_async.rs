@@ -1,11 +1,11 @@
 use crate::future::and_then_async::AndThenAsync;
 use crate::future::map::Map;
-use crate::support::fns::OkFn;
 use crate::support::ResultFuture;
 use core::future::{Future, IntoFuture};
 use core::marker::PhantomData;
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::fns::ResultOkFn;
 use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
@@ -31,10 +31,10 @@ where
     F: FnMut<(T,)>,
     F::Output: IntoFuture,
 {
-    type Output = Map<<F::Output as IntoFuture>::IntoFuture, OkFn<E>>;
+    type Output = Map<<F::Output as IntoFuture>::IntoFuture, ResultOkFn<E>>;
 
     fn call_mut(&mut self, args: (T,)) -> Self::Output {
-        Map::new(self.inner.call_mut(args).into_future(), OkFn::default())
+        Map::new(self.inner.call_mut(args).into_future(), ResultOkFn::default())
     }
 }
 

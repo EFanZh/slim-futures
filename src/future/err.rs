@@ -1,22 +1,22 @@
 use crate::future::map::Map;
 use crate::future::ready::Ready;
 use crate::support;
-use crate::support::fns::ErrFn;
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::fns::ResultErrFn;
 
 pin_project_lite::pin_project! {
     pub struct Err<T, E> {
         #[pin]
-        inner: Map<Ready<E>, ErrFn<T>>
+        inner: Map<Ready<E>, ResultErrFn<T>>
     }
 }
 
 impl<T, E> Err<T, E> {
     fn new(error: E) -> Self {
         Self {
-            inner: Map::new(Ready::new(error), ErrFn::default()),
+            inner: Map::new(Ready::new(error), ResultErrFn::default()),
         }
     }
 }

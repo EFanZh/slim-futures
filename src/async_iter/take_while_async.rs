@@ -70,15 +70,15 @@ where
                 let result = task::ready!(fut.poll(cx));
                 let item = state_slot.as_mut().take_item().unwrap();
 
-                break if result { Some(item) } else { None };
-            } else {
-                match task::ready!(iter.as_mut().poll_next(cx)) {
-                    None => break None,
-                    Some(item) => {
-                        let fut = f.call_mut((&item,)).into_future();
+                break result.then_some(item);
+            }
 
-                        state_slot.set(PredicateState::Polling { item, fut });
-                    }
+            match task::ready!(iter.as_mut().poll_next(cx)) {
+                None => break None,
+                Some(item) => {
+                    let fut = f.call_mut((&item,)).into_future();
+
+                    state_slot.set(PredicateState::Polling { item, fut });
                 }
             }
         })

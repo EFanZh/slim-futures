@@ -1,9 +1,9 @@
 use crate::future::map_ok::MapOk;
-use crate::support::fns::IntoFn;
 use crate::support::ResultFuture;
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::fns::IntoFn;
 use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {

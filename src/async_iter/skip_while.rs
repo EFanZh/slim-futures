@@ -49,9 +49,9 @@ where
                 if let Some(item) = &item {
                     if f.call_mut((item,)) {
                         continue;
-                    } else {
-                        *f_slot = None;
                     }
+
+                    *f_slot = None;
                 }
 
                 return Poll::Ready(item);
