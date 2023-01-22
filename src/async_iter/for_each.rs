@@ -4,13 +4,14 @@ use crate::support::{AsyncIterator, FusedAsyncIterator};
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::fns::CopyFn;
 use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
     pub struct ForEach<I, F> {
         #[pin]
-        inner: Fold<I, (), ForEachFn<F>>,
+        inner: Fold<I, (), CopyFn, ForEachFn<F>>,
     }
 }
 
