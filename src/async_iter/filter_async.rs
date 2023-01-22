@@ -1,34 +1,9 @@
-use crate::support::{AsyncIterator, FusedAsyncIterator};
+use crate::support::states::PredicateState;
+use crate::support::{AsyncIterator, FusedAsyncIterator, PredicateFn};
 use core::future::IntoFuture;
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
-use fn_traits::FnMut;
 use futures_core::{FusedFuture, Future};
-
-pub trait PredicateFn<T>: for<'a> FnMut<(&'a T,), Output = <Self as PredicateFn<T>>::Output> {
-    type Output;
-}
-
-impl<T, F, R> PredicateFn<T> for F
-where
-    F: for<'a> FnMut<(&'a T,), Output = R>,
-{
-    type Output = R;
-}
-
-pin_project_lite::pin_project! {
-    #[derive(Clone)]
-    #[project = PredicateStateProject]
-    #[project_replace = PredicateStateReplace]
-    enum PredicateState<T, Fut> {
-        Empty,
-        Polling {
-            item: T,
-            #[pin]
-            fut: Fut,
-        }
-    }
-}
 
 pin_project_lite::pin_project! {
     pub struct FilterAsync<I, P>
@@ -92,15 +67,11 @@ where
         let mut state_slot = this.state;
 
         Poll::Ready(loop {
-            match state_slot.as_mut().project() {
-                PredicateStateProject::Empty => {}
-                PredicateStateProject::Polling { fut, .. } => {
+            match state_slot.as_mut().get_future() {
+                None => {}
+                Some(fut) => {
                     let filter_result = task::ready!(fut.poll(cx));
-
-                    let item = match state_slot.as_mut().project_replace(PredicateState::Empty) {
-                        PredicateStateReplace::Empty => unreachable!(),
-                        PredicateStateReplace::Polling { item, .. } => item,
-                    };
+                    let item = state_slot.as_mut().take_item().unwrap();
 
                     if filter_result {
                         break Some(item);

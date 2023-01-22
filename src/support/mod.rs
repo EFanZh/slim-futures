@@ -1,6 +1,7 @@
 pub use self::into_async_iterator::IntoAsyncIterator;
 pub use self::into_result_future::IntoResultFuture;
 pub use self::option_future::OptionFuture;
+pub use self::predicate_fn::PredicateFn;
 pub use self::raw_residual::RawResidual;
 pub use self::result_future::ResultFuture;
 pub use self::try_::{FromResidual, Try};
@@ -13,8 +14,10 @@ pub mod fns;
 mod into_async_iterator;
 mod into_result_future;
 mod option_future;
+mod predicate_fn;
 mod raw_residual;
 mod result_future;
+pub mod states;
 mod try_;
 mod two_phases;
 
