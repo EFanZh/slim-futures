@@ -62,7 +62,13 @@ where
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        (0, self.iter.size_hint().1)
+        let mut candidate = self.iter.size_hint();
+
+        if self.f.is_some() {
+            candidate.0 = 0;
+        }
+
+        candidate
     }
 }
 

@@ -105,7 +105,17 @@ where
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        (0, self.iter.size_hint().1)
+        let mut candidate = self.iter.size_hint();
+
+        if let Some(state) = &self.state {
+            candidate.0 = 0;
+
+            if matches!(state.polling_state, PredicateState::Polling { .. }) {
+                candidate.1 = candidate.1.and_then(|high| high.checked_add(1));
+            }
+        }
+
+        candidate
     }
 }
 
@@ -117,7 +127,15 @@ where
     <<F as PredicateFn<I::Item>>::Output as IntoFuture>::IntoFuture: FusedFuture,
 {
     fn is_terminated(&self) -> bool {
-        self.iter.is_terminated()
+        if let Some(State {
+            polling_state: PredicateState::Polling { fut, .. },
+            ..
+        }) = &self.state
+        {
+            fut.is_terminated()
+        } else {
+            self.iter.is_terminated()
+        }
     }
 }
 
