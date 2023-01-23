@@ -19,14 +19,7 @@ pin_project_lite::pin_project! {
 }
 
 impl<I, T, G, F> Fold<I, T, G, F> {
-    pub(crate) fn new(iter: I, acc: T, f: F) -> Self
-    where
-        G: Default,
-    {
-        Self::with_getter(iter, acc, G::default(), f)
-    }
-
-    pub(crate) fn with_getter(iter: I, acc: T, getter: G, f: F) -> Self {
+    pub(crate) fn new(iter: I, acc: T, getter: G, f: F) -> Self {
         Self { iter, acc, getter, f }
     }
 }

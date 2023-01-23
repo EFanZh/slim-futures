@@ -6,6 +6,7 @@ use core::future::Future;
 use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::fns::CopyFn;
 use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
@@ -32,7 +33,7 @@ where
 pin_project_lite::pin_project! {
     pub struct Any<I, P> {
         #[pin]
-        predicate: Map<TryFold<I, (), AnyFn<P>>, ControlFlowIsBreakFn>
+        predicate: Map<TryFold<I, (), CopyFn, AnyFn<P>>, ControlFlowIsBreakFn>
     }
 }
 
@@ -40,7 +41,7 @@ impl<I, P> Any<I, P> {
     pub(crate) fn new(iter: I, predicate: P) -> Self {
         Self {
             predicate: Map::new(
-                TryFold::new(iter, (), AnyFn { predicate }),
+                TryFold::new(iter, (), CopyFn::default(), AnyFn { predicate }),
                 ControlFlowIsBreakFn::default(),
             ),
         }

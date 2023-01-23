@@ -146,8 +146,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_try_flatten_is_slim() {
-        let make_base_future =
-            || crate::future::ok(NonZeroU32::new(2).unwrap()).slim_map_ok(|_| crate::future::ok::<_, ()>(()));
+        let make_base_future = || {
+            crate::future::ok_by_copy(NonZeroU32::new(2).unwrap())
+                .slim_map_ok(|_| crate::future::ok_by_copy::<_, ()>(()))
+        };
 
         let base_future = make_base_future();
         let future_1 = make_base_future().slim_try_flatten();

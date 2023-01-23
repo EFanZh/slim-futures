@@ -5,7 +5,7 @@ use core::future::Future;
 use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{Context, Poll};
-use fn_traits::fns::ControlFlowBreakValueFn;
+use fn_traits::fns::{ControlFlowBreakValueFn, CopyFn};
 use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
@@ -31,7 +31,7 @@ where
 pin_project_lite::pin_project! {
     pub struct FindMap<I, F> {
         #[pin]
-        inner: Map<TryFold<I, (), FindMapFn<F>>, ControlFlowBreakValueFn>
+        inner: Map<TryFold<I, (), CopyFn, FindMapFn<F>>, ControlFlowBreakValueFn>
     }
 }
 
@@ -39,7 +39,7 @@ impl<I, F> FindMap<I, F> {
     pub(crate) fn new(iter: I, f: F) -> Self {
         Self {
             inner: Map::new(
-                TryFold::new(iter, (), FindMapFn { inner: f }),
+                TryFold::new(iter, (), CopyFn::default(), FindMapFn { inner: f }),
                 ControlFlowBreakValueFn::default(),
             ),
         }

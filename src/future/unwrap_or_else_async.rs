@@ -153,10 +153,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_unwrap_or_else_async_is_slim() {
-        let make_base_future = || crate::future::err::<u32, _>(NonZeroU32::new(2).unwrap()).slim_map_err(drop);
+        let make_base_future = || crate::future::err_by_copy::<u32, _>(NonZeroU32::new(2).unwrap()).slim_map_err(drop);
         let base_future = make_base_future();
-        let future_1 = make_base_future().slim_or_else_async(crate::future::err);
-        let future_2 = make_base_future().or_else(crate::future::err);
+        let future_1 = make_base_future().slim_or_else_async(crate::future::err_by_copy);
+        let future_2 = make_base_future().or_else(crate::future::err_by_copy);
 
         assert_eq!(mem::size_of_val(&base_future), mem::size_of_val(&future_1));
         assert!(mem::size_of_val(&future_1) < mem::size_of_val(&future_2));

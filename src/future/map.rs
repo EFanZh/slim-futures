@@ -79,7 +79,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_map_is_slim() {
-        let make_base_future = || crate::future::ready(2);
+        let make_base_future = || crate::future::ready_by_copy(2);
         let base_future = make_base_future();
         let future_1 = make_base_future().slim_map(plus_3);
         let future_2 = make_base_future().map(plus_3);

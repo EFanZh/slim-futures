@@ -76,7 +76,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_delayed() {
-        let mut future = super::delayed(crate::future::ready::<u32>(2));
+        let mut future = super::delayed(crate::future::ready_by_copy::<u32>(2));
 
         assert_eq!(futures_util::poll!(future.by_ref()), Poll::Pending);
         assert_eq!(futures_util::poll!(future.by_ref()), Poll::Ready(2));

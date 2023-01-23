@@ -18,7 +18,7 @@ pin_project_lite::pin_project! {
 impl<I, F> ForEach<I, F> {
     pub(crate) fn new(iter: I, f: F) -> Self {
         Self {
-            inner: Fold::new(iter, (), ForEachFn::new(f)),
+            inner: Fold::new(iter, (), CopyFn::default(), ForEachFn::new(f)),
         }
     }
 }

@@ -2,7 +2,7 @@
 
 pub use self::and_then::AndThen;
 pub use self::and_then_async::AndThenAsync;
-pub use self::err::{err, Err};
+pub use self::err::{err_by, err_by_clone, err_by_copy, err_by_take, Err};
 pub use self::err_into::ErrInto;
 pub use self::flatten::Flatten;
 pub use self::flatten_async_iterator::FlattenAsyncIterator;
@@ -20,12 +20,12 @@ pub use self::map_ok::MapOk;
 pub use self::map_ok_async::MapOkAsync;
 pub use self::map_ok_or_else::MapOkOrElse;
 pub use self::map_ok_or_else_async::MapOkOrElseAsync;
-pub use self::ok::{ok, Ok};
+pub use self::ok::{ok_by, ok_by_clone, ok_by_copy, ok_by_take, Ok};
 pub use self::ok_into::OkInto;
 pub use self::or_else_async::OrElseAsync;
 pub use self::raw_map_ok_or_else_async::RawMapOkOrElseAsync;
 pub use self::raw_select::{raw_select, RawSelect};
-pub use self::ready::{ready, Ready};
+pub use self::ready::{ready_by, ready_by_clone, ready_by_copy, ready_by_take, Ready};
 pub use self::select_either::{select_either, SelectEither};
 pub use self::try_flatten::TryFlatten;
 pub use self::try_flatten_err::TryFlattenErr;

@@ -121,7 +121,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_raw_map_ok_or_else_async_is_slim() {
-        let make_base_future = || crate::future::ok::<_, NonZeroU32>(NonZeroU32::new(2).unwrap());
+        let make_base_future = || crate::future::ok_by_copy::<_, NonZeroU32>(NonZeroU32::new(2).unwrap());
         let base_future = make_base_future();
         let f = |_| crate::future::lazy(|_| 3);
         let future = make_base_future().slim_raw_map_ok_or_else_async(f, f);

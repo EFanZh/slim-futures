@@ -105,9 +105,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_map_async_is_slim() {
-        let make_base_future = || crate::future::ready(NonZeroU32::new(2).unwrap()).slim_map(drop);
-        let future_1 = make_base_future().slim_map_async(crate::future::ready);
-        let future_2 = make_base_future().then(crate::future::ready);
+        let make_base_future = || crate::future::ready_by_copy(NonZeroU32::new(2).unwrap()).slim_map(drop);
+        let future_1 = make_base_future().slim_map_async(crate::future::ready_by_copy);
+        let future_2 = make_base_future().then(crate::future::ready_by_copy);
 
         assert!(mem::size_of_val(&future_1) < mem::size_of_val(&future_2));
         assert!(matches!(future_1.await, ()));

@@ -95,7 +95,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_inspect_is_slim() {
-        let make_base_future = || crate::future::ready::<u32>(2);
+        let make_base_future = || crate::future::ready_by_copy::<u32>(2);
         let base_future = make_base_future();
         let future_1 = make_base_future().slim_inspect(|_| {});
         let future_2 = make_base_future().inspect(|_| {});

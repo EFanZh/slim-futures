@@ -5,7 +5,7 @@ use core::future::{Future, IntoFuture};
 use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{Context, Poll};
-use fn_traits::fns::ControlFlowBreakValueFn;
+use fn_traits::fns::{ControlFlowBreakValueFn, CopyFn};
 use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
@@ -49,7 +49,7 @@ pin_project_lite::pin_project! {
         <F::Output as IntoFuture>::IntoFuture: OptionFuture,
     {
         #[pin]
-        inner: Map<TryFoldAsync<I, (), FindMapAsyncFn<F>>, ControlFlowBreakValueFn>
+        inner: Map<TryFoldAsync<I, (), CopyFn, FindMapAsyncFn<F>>, ControlFlowBreakValueFn>
     }
 }
 
@@ -63,7 +63,7 @@ where
     pub(crate) fn new(iter: I, f: F) -> Self {
         Self {
             inner: Map::new(
-                TryFoldAsync::new(iter, (), FindMapAsyncFn { f }),
+                TryFoldAsync::new(iter, (), CopyFn::default(), FindMapAsyncFn { f }),
                 ControlFlowBreakValueFn::default(),
             ),
         }

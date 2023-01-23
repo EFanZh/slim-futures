@@ -145,9 +145,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_map_err_async_is_slim() {
-        let make_base_future = || crate::future::err::<u32, _>(NonZeroU32::new(2).unwrap()).slim_map_err(drop);
+        let make_base_future = || crate::future::err_by_copy::<u32, _>(NonZeroU32::new(2).unwrap()).slim_map_err(drop);
         let base_future = make_base_future();
-        let future = make_base_future().slim_map_err_async(crate::future::ready);
+        let future = make_base_future().slim_map_err_async(crate::future::ready_by_copy);
 
         assert_eq!(mem::size_of_val(&base_future), mem::size_of_val(&future));
         assert_eq!(base_future.await, Err(()));

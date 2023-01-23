@@ -6,6 +6,7 @@ use core::future::{Future, IntoFuture};
 use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::fns::CopyFn;
 use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
@@ -49,7 +50,7 @@ pin_project_lite::pin_project! {
         P::Output: IntoFuture<Output = bool>,
     {
         #[pin]
-        predicate: Map<TryFoldAsync<I, (), AnyAsyncFn<P>>, ControlFlowIsBreakFn>
+        predicate: Map<TryFoldAsync<I, (), CopyFn, AnyAsyncFn<P>>, ControlFlowIsBreakFn>
     }
 }
 
@@ -62,7 +63,7 @@ where
     pub(crate) fn new(iter: I, predicate: P) -> Self {
         Self {
             predicate: Map::new(
-                TryFoldAsync::new(iter, (), AnyAsyncFn { predicate }),
+                TryFoldAsync::new(iter, (), CopyFn::default(), AnyAsyncFn { predicate }),
                 ControlFlowIsBreakFn::default(),
             ),
         }

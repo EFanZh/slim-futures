@@ -4,20 +4,21 @@ use crate::support::{AsyncIterator, FusedAsyncIterator, Try};
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::fns::CopyFn;
 use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
     pub struct TryForEach<I, F> {
         #[pin]
-        inner: TryFold<I, (), ForEachFn<F>>,
+        inner: TryFold<I, (), CopyFn, ForEachFn<F>>,
     }
 }
 
 impl<I, F> TryForEach<I, F> {
     pub(crate) fn new(iter: I, f: F) -> Self {
         Self {
-            inner: TryFold::new(iter, (), ForEachFn::new(f)),
+            inner: TryFold::new(iter, (), CopyFn::default(), ForEachFn::new(f)),
         }
     }
 }

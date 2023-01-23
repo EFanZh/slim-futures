@@ -97,7 +97,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_unwrap_or_else_is_slim() {
-        let make_base_future = || crate::future::err::<u32, u32>(2);
+        let make_base_future = || crate::future::err_by_copy::<u32, u32>(2);
         let base_future = make_base_future();
         let future = make_base_future().slim_or_else(Err);
 

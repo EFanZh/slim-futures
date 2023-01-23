@@ -4,6 +4,7 @@ use crate::support::{AsyncIterator, FusedAsyncIterator, Try};
 use core::future::{Future, IntoFuture};
 use core::pin::Pin;
 use core::task::{Context, Poll};
+use fn_traits::fns::CopyFn;
 use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
@@ -15,7 +16,7 @@ pin_project_lite::pin_project! {
         F::Output: IntoFuture,
     {
         #[pin]
-        inner: TryFoldAsync<I, (), ForEachFn<F>>,
+        inner: TryFoldAsync<I, (), CopyFn, ForEachFn<F>>,
     }
 }
 
@@ -27,7 +28,7 @@ where
 {
     pub(crate) fn new(iter: I, f: F) -> Self {
         Self {
-            inner: TryFoldAsync::new(iter, (), ForEachFn::new(f)),
+            inner: TryFoldAsync::new(iter, (), CopyFn::default(), ForEachFn::new(f)),
         }
     }
 }

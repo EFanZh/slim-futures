@@ -99,10 +99,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_try_select_either() {
-        let ok_2 = || future::ok::<u32, u32>(2);
-        let ok_3 = || future::ok::<u32, u32>(3);
-        let err_2 = || future::err::<u32, u32>(2);
-        let err_3 = || future::err::<u32, u32>(3);
+        let ok_2 = || future::ok_by_copy::<u32, u32>(2);
+        let ok_3 = || future::ok_by_copy::<u32, u32>(3);
+        let err_2 = || future::err_by_copy::<u32, u32>(2);
+        let err_3 = || future::err_by_copy::<u32, u32>(3);
 
         assert!(matches!(
             future::try_select_either(ok_2(), ok_3()).await,
@@ -147,7 +147,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_try_select_either_clone() {
-        let future = future::try_select_either(future::ok::<u32, u32>(2), future::ok::<u32, u32>(3));
+        let future = future::try_select_either(future::ok_by_copy::<u32, u32>(2), future::ok_by_copy::<u32, u32>(3));
         let future_2 = future.clone();
 
         assert!(matches!(future.await, Ok(Either::Left(2))));
@@ -175,7 +175,8 @@ mod tests {
     #[tokio::test]
     async fn test_try_select_either_is_slim() {
         let make_base_future_1 = || future::lazy(|_| Ok::<u32, u32>(2));
-        let make_base_future_2 = || future::ok::<_, u32>(NonZeroU32::new(3).unwrap()).slim_map_ok(NonZeroU32::get);
+        let make_base_future_2 =
+            || future::ok_by_copy::<_, u32>(NonZeroU32::new(3).unwrap()).slim_map_ok(NonZeroU32::get);
         let base_future_1 = make_base_future_1();
         let base_future_2 = make_base_future_2();
         let future = future::try_select_either(make_base_future_1(), make_base_future_2());
