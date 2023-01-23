@@ -25,6 +25,7 @@ Async combinators that focus on small binary sizes.
 | `AsyncIteratorExt::slim_fold_async`         | [`StreamExt::fold`]              |
 | `AsyncIteratorExt::slim_for_each`           |                                  |
 | `AsyncIteratorExt::slim_for_each_async`     | [`StreamExt::for_each`]          |
+| `AsyncIteratorExt::slim_fuse`               | [`StreamExt::fuse`]              |
 | `AsyncIteratorExt::slim_inspect`            | [`StreamExt::inspect`]           |
 | `AsyncIteratorExt::slim_map`                | [`StreamExt::map`]               |
 | `AsyncIteratorExt::slim_map_async`          | [`StreamExt::then`]              |
@@ -92,6 +93,7 @@ Async combinators that focus on small binary sizes.
 [`StreamExt::flatten`]: https://docs.rs/futures/latest/futures/stream/trait.StreamExt.html#method.flatten
 [`StreamExt::fold`]: https://docs.rs/futures/latest/futures/stream/trait.StreamExt.html#method.fold
 [`StreamExt::for_each`]: https://docs.rs/futures/latest/futures/stream/trait.StreamExt.html#method.for_each
+[`StreamExt::fuse`]: https://docs.rs/futures/latest/futures/stream/trait.StreamExt.html#method.fuse
 [`StreamExt::inspect`]: https://docs.rs/futures/latest/futures/stream/trait.StreamExt.html#method.inspect
 [`StreamExt::map`]: https://docs.rs/futures/latest/futures/stream/trait.StreamExt.html#method.map
 [`StreamExt::skip_while`]: https://docs.rs/futures/latest/futures/stream/trait.StreamExt.html#method.skip_while
