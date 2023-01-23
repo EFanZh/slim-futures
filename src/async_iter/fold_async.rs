@@ -6,41 +6,45 @@ use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
-    pub struct FoldAsync<I, T, F>
+    pub struct FoldAsync<I, T, G, F>
     where
         I: AsyncIterator,
         F: FnMut<(T, I::Item)>,
+        F: ?Sized,
         F::Output: IntoFuture,
     {
         #[pin]
         iter: I,
         acc: T,
-        f: F,
+        getter: G,
         #[pin]
         fut: Option<<F::Output as IntoFuture>::IntoFuture>,
+        f: F,
     }
 }
 
-impl<I, T, F> FoldAsync<I, T, F>
+impl<I, T, G, F> FoldAsync<I, T, G, F>
 where
     I: AsyncIterator,
     F: FnMut<(T, I::Item)>,
     F::Output: IntoFuture,
 {
-    pub(crate) fn new(iter: I, acc: T, f: F) -> Self {
+    pub(crate) fn new(iter: I, acc: T, getter: G, f: F) -> Self {
         Self {
             iter,
             acc,
-            f,
+            getter,
             fut: None,
+            f,
         }
     }
 }
 
-impl<I, T, F> Clone for FoldAsync<I, T, F>
+impl<I, T, G, F> Clone for FoldAsync<I, T, G, F>
 where
     I: AsyncIterator + Clone,
     T: Clone,
+    G: Clone,
     F: FnMut<(T, I::Item)> + Clone,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::IntoFuture: Clone,
@@ -49,17 +53,18 @@ where
         Self {
             iter: self.iter.clone(),
             acc: self.acc.clone(),
-            f: self.f.clone(),
+            getter: self.getter.clone(),
             fut: self.fut.clone(),
+            f: self.f.clone(),
         }
     }
 }
 
-impl<I, T, F> Future for FoldAsync<I, T, F>
+impl<I, T, G, F> Future for FoldAsync<I, T, G, F>
 where
     I: AsyncIterator,
-    T: Copy,
-    F: FnMut<(T, I::Item)>,
+    G: for<'a> FnMut<(&'a mut T,), Output = T>,
+    F: FnMut<(T, I::Item)> + ?Sized,
     F::Output: IntoFuture<Output = T>,
 {
     type Output = T;
@@ -68,8 +73,9 @@ where
         let this = self.project();
         let mut iter = this.iter;
         let acc = this.acc;
-        let f = this.f;
+        let getter = this.getter;
         let mut fut = this.fut;
+        let f = this.f;
 
         loop {
             if let Some(inner_future) = fut.as_mut().as_pin_mut() {
@@ -77,21 +83,21 @@ where
 
                 fut.set(None);
             } else if let Some(item) = task::ready!(iter.as_mut().poll_next(cx)) {
-                fut.set(Some(f.call_mut((*acc, item)).into_future()));
+                fut.set(Some(f.call_mut((getter.call_mut((acc,)), item)).into_future()));
             } else {
                 break;
             }
         }
 
-        Poll::Ready(*acc)
+        Poll::Ready(getter.call_mut((acc,)))
     }
 }
 
-impl<I, T, F> FusedFuture for FoldAsync<I, T, F>
+impl<I, T, G, F> FusedFuture for FoldAsync<I, T, G, F>
 where
     I: FusedAsyncIterator,
-    T: Copy,
-    F: FnMut<(T, I::Item)>,
+    G: for<'a> FnMut<(&'a mut T,), Output = T>,
+    F: FnMut<(T, I::Item)> + ?Sized,
     F::Output: IntoFuture<Output = T>,
     <F::Output as IntoFuture>::IntoFuture: FusedFuture,
 {
@@ -116,14 +122,14 @@ mod tests {
 
     #[tokio::test]
     async fn test_fold_async() {
-        let future = stream::iter([2, 3, 5]).slim_fold_async(1_u64, accumulate);
+        let future = stream::iter([2, 3, 5]).slim_fold_async_by_copy(1_u64, accumulate);
 
         assert_eq!(future.await, 30_u64);
     }
 
     #[tokio::test]
     async fn test_fold_async_clone() {
-        let future = stream::iter([2, 3, 5]).slim_fold_async(1_u64, accumulate);
+        let future = stream::iter([2, 3, 5]).slim_fold_async_by_copy(1_u64, accumulate);
         let future_2 = future.clone();
 
         assert_eq!(future.await, 30_u64);

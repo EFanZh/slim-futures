@@ -6,7 +6,7 @@ use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
-    pub struct Fold<I, T, G,F>
+    pub struct Fold<I, T, G, F>
     where
         F: ?Sized,
     {

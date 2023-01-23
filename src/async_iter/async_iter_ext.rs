@@ -148,7 +148,7 @@ pub trait AsyncIteratorExt: AsyncIterator {
         crate::support::assert_async_iter::<_, <Self::Item as IntoAsyncIterator>::Item>(Flatten::new(self))
     }
 
-    fn slim_fold_by<T, F, G>(self, init: T, getter: G, f: F) -> Fold<Self, T, G, F>
+    fn slim_fold_by<T, G, F>(self, init: T, getter: G, f: F) -> Fold<Self, T, G, F>
     where
         Self: Sized,
         G: FnMut(&mut T) -> T,
@@ -184,14 +184,44 @@ pub trait AsyncIteratorExt: AsyncIterator {
         crate::support::assert_future::<_, T>(Fold::new(self, init, f))
     }
 
-    fn slim_fold_async<T, F, Fut>(self, init: T, f: F) -> FoldAsync<Self, T, F>
+    fn slim_fold_async_by<T, G, F, Fut>(self, init: T, getter: G, f: F) -> FoldAsync<Self, T, G, F>
+    where
+        Self: Sized,
+        G: FnMut(&mut T) -> T,
+        F: FnMut(T, Self::Item) -> Fut,
+        Fut: IntoFuture<Output = T>,
+    {
+        crate::support::assert_future::<_, T>(FoldAsync::new(self, init, getter, f))
+    }
+
+    fn slim_fold_async_by_copy<T, F, Fut>(self, init: T, f: F) -> FoldAsync<Self, T, CopyFn, F>
     where
         Self: Sized,
         T: Copy,
         F: FnMut(T, Self::Item) -> Fut,
         Fut: IntoFuture<Output = T>,
     {
-        crate::support::assert_future::<_, T>(FoldAsync::new(self, init, f))
+        crate::support::assert_future::<_, T>(FoldAsync::new(self, init, CopyFn::default(), f))
+    }
+
+    fn slim_fold_async_by_clone<T, F, Fut>(self, init: T, f: F) -> FoldAsync<Self, T, CloneFn, F>
+    where
+        Self: Sized,
+        T: Clone,
+        F: FnMut(T, Self::Item) -> Fut,
+        Fut: IntoFuture<Output = T>,
+    {
+        crate::support::assert_future::<_, T>(FoldAsync::new(self, init, CloneFn::default(), f))
+    }
+
+    fn slim_fold_async_by_take<T, F, Fut>(self, init: T, f: F) -> FoldAsync<Self, T, MemTakeFn, F>
+    where
+        Self: Sized,
+        T: Default,
+        F: FnMut(T, Self::Item) -> Fut,
+        Fut: IntoFuture<Output = T>,
+    {
+        crate::support::assert_future::<_, T>(FoldAsync::new(self, init, MemTakeFn::default(), f))
     }
 
     fn slim_for_each<F>(self, f: F) -> ForEach<Self, F>
