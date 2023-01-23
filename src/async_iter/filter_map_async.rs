@@ -112,10 +112,8 @@ where
 #[cfg(test)]
 mod tests {
     use crate::async_iter::async_iter_ext::AsyncIteratorExt;
-    use futures_util::{
-        future::{self, Ready},
-        stream, StreamExt,
-    };
+    use futures_util::future::{self, Ready};
+    use futures_util::{stream, StreamExt};
     use std::vec::Vec;
 
     fn filter_map_fn(x: u32) -> Ready<Option<u32>> {

@@ -1,25 +1,40 @@
-use crate::support::{AsyncIterator, FusedAsyncIterator};
+use crate::async_iter::try_fold_async::TryFoldAsync;
+use crate::future::Map;
+use crate::support::fns::UnwrapContinueValueFn;
+use crate::support::{AsyncIterator, FusedAsyncIterator, Never};
 use core::future::{Future, IntoFuture};
 use core::pin::Pin;
-use core::task::{self, Context, Poll};
+use core::task::{Context, Poll};
+use fn_traits::fns::ControlFlowContinueFn;
 use fn_traits::FnMut;
 use futures_core::FusedFuture;
+
+#[derive(Clone)]
+struct FoldAsyncFn<F> {
+    f: F,
+}
+
+impl<T, U, F> FnMut<(T, U)> for FoldAsyncFn<F>
+where
+    F: FnMut<(T, U)>,
+    F::Output: IntoFuture,
+{
+    type Output = Map<<F::Output as IntoFuture>::IntoFuture, ControlFlowContinueFn<Never>>;
+
+    fn call_mut(&mut self, args: (T, U)) -> Self::Output {
+        Map::new(self.f.call_mut(args).into_future(), ControlFlowContinueFn::default())
+    }
+}
 
 pin_project_lite::pin_project! {
     pub struct FoldAsync<I, T, G, F>
     where
         I: AsyncIterator,
         F: FnMut<(T, I::Item)>,
-        F: ?Sized,
         F::Output: IntoFuture,
     {
         #[pin]
-        iter: I,
-        acc: T,
-        getter: G,
-        #[pin]
-        fut: Option<<F::Output as IntoFuture>::IntoFuture>,
-        f: F,
+        inner: Map<TryFoldAsync<I, T, G, FoldAsyncFn<F>>, UnwrapContinueValueFn>
     }
 }
 
@@ -31,11 +46,10 @@ where
 {
     pub(crate) fn new(iter: I, acc: T, getter: G, f: F) -> Self {
         Self {
-            iter,
-            acc,
-            getter,
-            fut: None,
-            f,
+            inner: Map::new(
+                TryFoldAsync::new(iter, acc, getter, FoldAsyncFn { f }),
+                UnwrapContinueValueFn::default(),
+            ),
         }
     }
 }
@@ -51,11 +65,7 @@ where
 {
     fn clone(&self) -> Self {
         Self {
-            iter: self.iter.clone(),
-            acc: self.acc.clone(),
-            getter: self.getter.clone(),
-            fut: self.fut.clone(),
-            f: self.f.clone(),
+            inner: self.inner.clone(),
         }
     }
 }
@@ -64,32 +74,13 @@ impl<I, T, G, F> Future for FoldAsync<I, T, G, F>
 where
     I: AsyncIterator,
     G: for<'a> FnMut<(&'a mut T,), Output = T>,
-    F: FnMut<(T, I::Item)> + ?Sized,
+    F: FnMut<(T, I::Item)>,
     F::Output: IntoFuture<Output = T>,
 {
     type Output = T;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
-        let this = self.project();
-        let mut iter = this.iter;
-        let acc = this.acc;
-        let getter = this.getter;
-        let mut fut = this.fut;
-        let f = this.f;
-
-        loop {
-            if let Some(inner_future) = fut.as_mut().as_pin_mut() {
-                *acc = task::ready!(inner_future.poll(cx));
-
-                fut.set(None);
-            } else if let Some(item) = task::ready!(iter.as_mut().poll_next(cx)) {
-                fut.set(Some(f.call_mut((getter.call_mut((acc,)), item)).into_future()));
-            } else {
-                break;
-            }
-        }
-
-        Poll::Ready(getter.call_mut((acc,)))
+        self.project().inner.poll(cx)
     }
 }
 
@@ -97,16 +88,12 @@ impl<I, T, G, F> FusedFuture for FoldAsync<I, T, G, F>
 where
     I: FusedAsyncIterator,
     G: for<'a> FnMut<(&'a mut T,), Output = T>,
-    F: FnMut<(T, I::Item)> + ?Sized,
+    F: FnMut<(T, I::Item)>,
     F::Output: IntoFuture<Output = T>,
     <F::Output as IntoFuture>::IntoFuture: FusedFuture,
 {
     fn is_terminated(&self) -> bool {
-        if let Some(fut) = &self.fut {
-            fut.is_terminated()
-        } else {
-            self.iter.is_terminated()
-        }
+        self.inner.is_terminated()
     }
 }
 
