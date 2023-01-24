@@ -1,6 +1,5 @@
 use crate::support::{AsyncIterator, FromResidual, Try};
 use core::future::{Future, IntoFuture};
-use core::marker::PhantomData;
 use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
@@ -52,7 +51,6 @@ pin_project_lite::pin_project! {
         getter: G,
         #[pin]
         state: State<<F::Output as IntoFuture>::IntoFuture>,
-        phantom: PhantomData<T>,
         f: F,
     }
 }
@@ -69,7 +67,6 @@ where
             iter,
             getter,
             state: State::Accumulate { acc },
-            phantom: PhantomData,
             f,
         }
     }
@@ -90,7 +87,6 @@ where
             iter: self.iter.clone(),
             getter: self.getter.clone(),
             state: self.state.clone(),
-            phantom: self.phantom,
             f: self.f.clone(),
         }
     }
