@@ -1,13 +1,12 @@
 use crate::async_iter::try_fold_async::TryFoldAsync;
 use crate::future::Map;
 use crate::support::fns::UnwrapContinueValueFn;
-use crate::support::{AsyncIterator, FusedAsyncIterator, Never};
+use crate::support::{AsyncIterator, Never};
 use core::future::{Future, IntoFuture};
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use fn_traits::fns::ControlFlowContinueFn;
 use fn_traits::FnMut;
-use futures_core::FusedFuture;
 
 #[derive(Clone)]
 struct FoldAsyncFn<F> {
@@ -42,7 +41,7 @@ impl<I, T, G, F> FoldAsync<I, T, G, F>
 where
     I: AsyncIterator,
     F: FnMut<(T, I::Item)>,
-    F::Output: IntoFuture,
+    F::Output: IntoFuture<Output = T>,
 {
     pub(crate) fn new(iter: I, acc: T, getter: G, f: F) -> Self {
         Self {
@@ -60,7 +59,7 @@ where
     T: Clone,
     G: Clone,
     F: FnMut<(T, I::Item)> + Clone,
-    F::Output: IntoFuture,
+    F::Output: IntoFuture<Output = T>,
     <F::Output as IntoFuture>::IntoFuture: Clone,
 {
     fn clone(&self) -> Self {
@@ -81,19 +80,6 @@ where
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         self.project().inner.poll(cx)
-    }
-}
-
-impl<I, T, G, F> FusedFuture for FoldAsync<I, T, G, F>
-where
-    I: FusedAsyncIterator,
-    G: for<'a> FnMut<(&'a mut T,), Output = T>,
-    F: FnMut<(T, I::Item)>,
-    F::Output: IntoFuture<Output = T>,
-    <F::Output as IntoFuture>::IntoFuture: FusedFuture,
-{
-    fn is_terminated(&self) -> bool {
-        self.inner.is_terminated()
     }
 }
 

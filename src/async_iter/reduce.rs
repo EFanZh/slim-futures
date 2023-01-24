@@ -1,4 +1,4 @@
-use crate::async_iter::Fold;
+use crate::async_iter::fold::Fold;
 use crate::support::{AsyncIterator, FusedAsyncIterator};
 use core::future::Future;
 use core::pin::Pin;

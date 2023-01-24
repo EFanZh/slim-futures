@@ -1,4 +1,4 @@
-use crate::async_iter::Filter;
+use crate::async_iter::filter::Filter;
 use crate::support::{AsyncIterator, FusedAsyncIterator};
 use core::future::Future;
 use core::pin::Pin;

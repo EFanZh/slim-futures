@@ -1,14 +1,13 @@
 use crate::async_iter::try_fold_async::TryFoldAsync;
 use crate::future::Map;
 use crate::support::fns::ControlFlowIsContinueFn;
-use crate::support::{AsyncIterator, FusedAsyncIterator};
+use crate::support::AsyncIterator;
 use core::future::{Future, IntoFuture};
 use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use fn_traits::fns::CopyFn;
 use fn_traits::FnMut;
-use futures_core::FusedFuture;
 
 #[derive(Clone)]
 struct ContinueIfTrue;
@@ -50,7 +49,7 @@ pin_project_lite::pin_project! {
         P::Output: IntoFuture<Output = bool>,
     {
         #[pin]
-        predicate: Map<TryFoldAsync<I, (), CopyFn, AllAsyncFn<P>>, ControlFlowIsContinueFn>
+        inner: Map<TryFoldAsync<I, (), CopyFn, AllAsyncFn<P>>, ControlFlowIsContinueFn>
     }
 }
 
@@ -62,7 +61,7 @@ where
 {
     pub(crate) fn new(iter: I, predicate: P) -> Self {
         Self {
-            predicate: Map::new(
+            inner: Map::new(
                 TryFoldAsync::new(iter, (), CopyFn::default(), AllAsyncFn { predicate }),
                 ControlFlowIsContinueFn::default(),
             ),
@@ -79,7 +78,7 @@ where
 {
     fn clone(&self) -> Self {
         Self {
-            predicate: self.predicate.clone(),
+            inner: self.inner.clone(),
         }
     }
 }
@@ -93,19 +92,7 @@ where
     type Output = bool;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
-        self.project().predicate.poll(cx)
-    }
-}
-
-impl<I, P> FusedFuture for AllAsync<I, P>
-where
-    I: FusedAsyncIterator,
-    P: FnMut<(I::Item,)>,
-    P::Output: IntoFuture<Output = bool>,
-    <P::Output as IntoFuture>::IntoFuture: FusedFuture,
-{
-    fn is_terminated(&self) -> bool {
-        self.predicate.is_terminated()
+        self.project().inner.poll(cx)
     }
 }
 

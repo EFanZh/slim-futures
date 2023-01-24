@@ -1,4 +1,4 @@
-use crate::async_iter::FilterMapAsync;
+use crate::async_iter::filter_map_async::FilterMapAsync;
 use crate::support::{AsyncIterator, OptionFuture};
 use core::future::{Future, IntoFuture};
 use core::pin::Pin;

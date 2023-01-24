@@ -33,14 +33,14 @@ where
 pin_project_lite::pin_project! {
     pub struct All<I, P> {
         #[pin]
-        predicate: Map<TryFold<I, (), CopyFn, AllFn<P>>, ControlFlowIsContinueFn>
+        inner: Map<TryFold<I, (), CopyFn, AllFn<P>>, ControlFlowIsContinueFn>
     }
 }
 
 impl<I, P> All<I, P> {
     pub(crate) fn new(iter: I, predicate: P) -> Self {
         Self {
-            predicate: Map::new(
+            inner: Map::new(
                 TryFold::new(iter, (), CopyFn::default(), AllFn { predicate }),
                 ControlFlowIsContinueFn::default(),
             ),
@@ -55,7 +55,7 @@ where
 {
     fn clone(&self) -> Self {
         Self {
-            predicate: self.predicate.clone(),
+            inner: self.inner.clone(),
         }
     }
 }
@@ -68,7 +68,7 @@ where
     type Output = bool;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
-        self.project().predicate.poll(cx)
+        self.project().inner.poll(cx)
     }
 }
 
@@ -78,7 +78,7 @@ where
     P: FnMut<(I::Item,), Output = bool>,
 {
     fn is_terminated(&self) -> bool {
-        self.predicate.is_terminated()
+        self.inner.is_terminated()
     }
 }
 

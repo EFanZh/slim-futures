@@ -1,5 +1,5 @@
+use crate::future::map::Map;
 use crate::future::ready::Ready;
-use crate::future::Map;
 use crate::support;
 use core::future::Future;
 use core::ops;

@@ -1,10 +1,42 @@
-use crate::support::{AsyncIterator, FromResidual, FusedAsyncIterator, Try};
+use crate::support::{AsyncIterator, FromResidual, Try};
 use core::future::{Future, IntoFuture};
+use core::marker::PhantomData;
 use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
 use fn_traits::FnMut;
-use futures_core::FusedFuture;
+
+pin_project_lite::pin_project! {
+    #[project = StateProject]
+    #[project_replace = StateProjectReplace]
+    enum State<Fut>
+    where
+        Fut: Future,
+        Fut::Output: Try,
+    {
+        Accumulate {
+            acc: <Fut::Output as Try>::Output,
+        },
+        Future {
+            #[pin]
+            fut: Fut,
+        },
+    }
+}
+
+impl<Fut> Clone for State<Fut>
+where
+    Fut: Future + Clone,
+    Fut::Output: Try,
+    <Fut::Output as Try>::Output: Clone,
+{
+    fn clone(&self) -> Self {
+        match self {
+            Self::Accumulate { acc } => Self::Accumulate { acc: acc.clone() },
+            Self::Future { fut } => Self::Future { fut: fut.clone() },
+        }
+    }
+}
 
 pin_project_lite::pin_project! {
     pub struct TryFoldAsync<I, T, G, F>
@@ -13,13 +45,14 @@ pin_project_lite::pin_project! {
         F: FnMut<(T, I::Item)>,
         F: ?Sized,
         F::Output: IntoFuture,
+        <F::Output as IntoFuture>::Output: Try,
     {
         #[pin]
         iter: I,
-        acc: T,
         getter: G,
         #[pin]
-        fut: Option<<F::Output as IntoFuture>::IntoFuture>,
+        state: State<<F::Output as IntoFuture>::IntoFuture>,
+        phantom: PhantomData<T>,
         f: F,
     }
 }
@@ -29,13 +62,14 @@ where
     I: AsyncIterator,
     F: FnMut<(T, I::Item)>,
     F::Output: IntoFuture,
+    <F::Output as IntoFuture>::Output: Try<Output = T>,
 {
     pub(crate) fn new(iter: I, acc: T, getter: G, f: F) -> Self {
         Self {
             iter,
-            acc,
             getter,
-            fut: None,
+            state: State::Accumulate { acc },
+            phantom: PhantomData,
             f,
         }
     }
@@ -48,14 +82,15 @@ where
     G: Clone,
     F: FnMut<(T, I::Item)> + Clone,
     F::Output: IntoFuture,
+    <F::Output as IntoFuture>::Output: Try<Output = T>,
     <F::Output as IntoFuture>::IntoFuture: Clone,
 {
     fn clone(&self) -> Self {
         Self {
             iter: self.iter.clone(),
-            acc: self.acc.clone(),
             getter: self.getter.clone(),
-            fut: self.fut.clone(),
+            state: self.state.clone(),
+            phantom: self.phantom,
             f: self.f.clone(),
         }
     }
@@ -74,43 +109,34 @@ where
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         let this = self.project();
         let mut iter = this.iter;
-        let acc = this.acc;
         let getter = this.getter;
+        let mut state_slot = this.state;
         let f = this.f;
-        let mut fut = this.fut;
 
         Poll::Ready(loop {
-            if let Some(inner_future) = fut.as_mut().as_pin_mut() {
-                *acc = match task::ready!(inner_future.poll(cx)).branch() {
-                    ControlFlow::Continue(acc) => acc,
-                    ControlFlow::Break(residual) => break Self::Output::from_residual(residual),
-                };
+            let acc = match state_slot.as_mut().project() {
+                StateProject::Accumulate { acc } => acc,
+                StateProject::Future { fut } => match task::ready!(fut.poll(cx)).branch() {
+                    ControlFlow::Continue(acc) => {
+                        state_slot.set(State::Accumulate { acc });
 
-                fut.set(None);
-            } else if let Some(item) = task::ready!(iter.as_mut().poll_next(cx)) {
-                fut.set(Some(f.call_mut((getter.call_mut((acc,)), item)).into_future()));
+                        match state_slot.as_mut().project() {
+                            StateProject::Accumulate { acc } => acc,
+                            StateProject::Future { .. } => unreachable!(),
+                        }
+                    }
+                    ControlFlow::Break(residual) => break Self::Output::from_residual(residual),
+                },
+            };
+
+            if let Some(item) = task::ready!(iter.as_mut().poll_next(cx)) {
+                let fut = f.call_mut((getter.call_mut((acc,)), item)).into_future();
+
+                state_slot.set(State::Future { fut });
             } else {
                 break Self::Output::from_output(getter.call_mut((acc,)));
             }
         })
-    }
-}
-
-impl<I, T, G, F> FusedFuture for TryFoldAsync<I, T, G, F>
-where
-    I: FusedAsyncIterator,
-    G: for<'a> FnMut<(&'a mut T,), Output = T>,
-    F: FnMut<(T, I::Item)> + ?Sized,
-    F::Output: IntoFuture,
-    <F::Output as IntoFuture>::Output: Try<Output = T>,
-    <F::Output as IntoFuture>::IntoFuture: FusedFuture,
-{
-    fn is_terminated(&self) -> bool {
-        if let Some(fut) = &self.fut {
-            fut.is_terminated()
-        } else {
-            self.iter.is_terminated()
-        }
     }
 }
 
