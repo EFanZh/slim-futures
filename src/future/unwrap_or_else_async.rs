@@ -1,5 +1,6 @@
 use crate::future::map::Map;
-use crate::support::{ResultFuture, TwoPhases};
+use crate::support::states::TwoPhases;
+use crate::support::ResultFuture;
 use core::future::{Future, IntoFuture};
 use core::ops::ControlFlow;
 use core::pin::Pin;

@@ -1,14 +1,13 @@
 use crate::async_iter::try_fold::TryFold;
 use crate::future::Map;
 use crate::support::fns::ControlFlowIsBreakFn;
-use crate::support::{AsyncIterator, FusedAsyncIterator};
+use crate::support::AsyncIterator;
 use core::future::Future;
 use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use fn_traits::fns::CopyFn;
 use fn_traits::FnMut;
-use futures_core::FusedFuture;
 
 #[derive(Clone)]
 struct AnyFn<P> {
@@ -69,16 +68,6 @@ where
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         self.project().inner.poll(cx)
-    }
-}
-
-impl<I, P> FusedFuture for Any<I, P>
-where
-    I: FusedAsyncIterator,
-    P: FnMut<(I::Item,), Output = bool>,
-{
-    fn is_terminated(&self) -> bool {
-        self.inner.is_terminated()
     }
 }
 

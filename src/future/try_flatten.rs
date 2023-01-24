@@ -1,4 +1,5 @@
-use crate::support::{FromResidual, Try, TwoPhases};
+use crate::support::states::TwoPhases;
+use crate::support::{FromResidual, Try};
 use core::future::{Future, IntoFuture};
 use core::ops::ControlFlow;
 use core::pin::Pin;

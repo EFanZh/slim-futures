@@ -1,11 +1,10 @@
 use crate::async_iter::fold::Fold;
-use crate::support::{AsyncIterator, FusedAsyncIterator};
+use crate::support::AsyncIterator;
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use fn_traits::fns::MemTakeFn;
 use fn_traits::FnMut;
-use futures_core::FusedFuture;
 
 #[derive(Clone)]
 struct ReduceFn<F> {
@@ -70,16 +69,6 @@ where
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         self.project().inner.poll(cx)
-    }
-}
-
-impl<I, F> FusedFuture for Reduce<I, F>
-where
-    I: FusedAsyncIterator,
-    F: FnMut<(I::Item, I::Item), Output = I::Item>,
-{
-    fn is_terminated(&self) -> bool {
-        self.inner.is_terminated()
     }
 }
 

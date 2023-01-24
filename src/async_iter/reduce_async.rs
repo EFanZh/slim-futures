@@ -93,9 +93,7 @@ where
                 state_slot.set(State::Single { acc });
             }
 
-            let item = task::ready!(iter.as_mut().poll_next(cx));
-
-            if let Some(item) = item {
+            if let Some(item) = task::ready!(iter.as_mut().poll_next(cx)) {
                 let state = match state_slot.as_ref().get_ref() {
                     State::Empty => State::Single { acc: item },
                     State::Single { .. } => {

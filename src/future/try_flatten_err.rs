@@ -1,4 +1,5 @@
-use crate::support::{IntoResultFuture, ResultFuture, TwoPhases};
+use crate::support::states::TwoPhases;
+use crate::support::{IntoResultFuture, ResultFuture};
 use core::future::{Future, IntoFuture};
 use core::ops::ControlFlow;
 use core::pin::Pin;

@@ -1,4 +1,5 @@
-use crate::support::{AsyncIterator, FusedAsyncIterator, IntoAsyncIterator, TwoPhases};
+use crate::support::states::TwoPhases;
+use crate::support::{AsyncIterator, FusedAsyncIterator, IntoAsyncIterator};
 use core::future::Future;
 use core::ops::ControlFlow;
 use core::pin::Pin;

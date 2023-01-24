@@ -1,12 +1,11 @@
 use crate::async_iter::try_fold::TryFold;
 use crate::support::fns::ForEachFn;
-use crate::support::{AsyncIterator, FusedAsyncIterator, Try};
+use crate::support::{AsyncIterator, Try};
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use fn_traits::fns::CopyFn;
 use fn_traits::FnMut;
-use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
     pub struct TryForEach<I, F> {
@@ -45,17 +44,6 @@ where
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         self.project().inner.poll(cx)
-    }
-}
-
-impl<I, F> FusedFuture for TryForEach<I, F>
-where
-    I: FusedAsyncIterator,
-    F: FnMut<(I::Item,)>,
-    F::Output: Try<Output = ()>,
-{
-    fn is_terminated(&self) -> bool {
-        self.inner.is_terminated()
     }
 }
 

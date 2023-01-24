@@ -1,10 +1,9 @@
 use crate::async_iter::filter_map::FilterMap;
-use crate::support::{AsyncIterator, FusedAsyncIterator};
+use crate::support::AsyncIterator;
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use fn_traits::FnMut;
-use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
     pub struct FindMap<I, F>
@@ -45,16 +44,6 @@ where
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         self.project().inner.poll_next(cx)
-    }
-}
-
-impl<I, F, T> FusedFuture for FindMap<I, F>
-where
-    I: FusedAsyncIterator,
-    F: FnMut<(I::Item,), Output = Option<T>> + ?Sized,
-{
-    fn is_terminated(&self) -> bool {
-        self.inner.is_terminated()
     }
 }
 

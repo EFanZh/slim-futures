@@ -1,13 +1,12 @@
 use crate::async_iter::try_fold::TryFold;
 use crate::future::Map;
 use crate::support::fns::UnwrapContinueValueFn;
-use crate::support::{AsyncIterator, FusedAsyncIterator, Never};
+use crate::support::{AsyncIterator, Never};
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use fn_traits::fns::{self, ComposeFn, ControlFlowContinueFn};
 use fn_traits::FnMut;
-use futures_core::FusedFuture;
 
 type InnerFuture<I, T, G, F> = TryFold<I, T, G, ComposeFn<F, ControlFlowContinueFn<Never>>>;
 
@@ -53,17 +52,6 @@ where
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         self.project().inner.poll(cx)
-    }
-}
-
-impl<I, T, G, F> FusedFuture for Fold<I, T, G, F>
-where
-    I: FusedAsyncIterator,
-    G: for<'a> FnMut<(&'a mut T,), Output = T>,
-    F: FnMut<(T, I::Item), Output = T>,
-{
-    fn is_terminated(&self) -> bool {
-        self.inner.is_terminated()
     }
 }
 
