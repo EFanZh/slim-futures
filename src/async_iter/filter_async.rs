@@ -3,20 +3,21 @@ use crate::support::{AsyncIterator, FusedAsyncIterator, PredicateFn};
 use core::future::IntoFuture;
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
-use futures_core::{FusedFuture, Future};
+use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
     pub struct FilterAsync<I, P>
     where
         I: AsyncIterator,
         P: PredicateFn<I::Item>,
+        P: ?Sized,
         <P as PredicateFn<I::Item>>::Output: IntoFuture,
     {
         #[pin]
         iter: I,
-        predicate: P,
         #[pin]
         state: PredicateState<I::Item, <<P as PredicateFn<I::Item>>::Output as IntoFuture>::IntoFuture>,
+        predicate: P,
     }
 }
 
@@ -55,7 +56,7 @@ where
 impl<I, P> AsyncIterator for FilterAsync<I, P>
 where
     I: AsyncIterator,
-    P: PredicateFn<I::Item>,
+    P: PredicateFn<I::Item> + ?Sized,
     <P as PredicateFn<I::Item>>::Output: IntoFuture<Output = bool>,
 {
     type Item = I::Item;
@@ -67,13 +68,10 @@ where
         let mut state_slot = this.state;
 
         Poll::Ready(loop {
-            match state_slot.as_mut().get_future() {
+            match task::ready!(state_slot.as_mut().try_poll(cx)) {
                 None => {}
-                Some(fut) => {
-                    let filter_result = task::ready!(fut.poll(cx));
-                    let item = state_slot.as_mut().take_item().unwrap();
-
-                    if filter_result {
+                Some((result, item)) => {
+                    if result {
                         break Some(item);
                     }
                 }
@@ -105,7 +103,7 @@ where
 impl<I, P> FusedAsyncIterator for FilterAsync<I, P>
 where
     I: FusedAsyncIterator,
-    P: PredicateFn<I::Item>,
+    P: PredicateFn<I::Item> + ?Sized,
     <P as PredicateFn<I::Item>>::Output: IntoFuture<Output = bool>,
     <<P as PredicateFn<I::Item>>::Output as IntoFuture>::IntoFuture: FusedFuture,
 {

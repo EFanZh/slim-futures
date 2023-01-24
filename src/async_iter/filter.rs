@@ -5,13 +5,16 @@ use core::task::{Context, Poll};
 use fn_traits::FnMut;
 
 #[derive(Clone)]
-struct FilterFn<P> {
+struct FilterFn<P>
+where
+    P: ?Sized,
+{
     predicate: P,
 }
 
 impl<T, P> FnMut<(T,)> for FilterFn<P>
 where
-    P: for<'a> FnMut<(&'a T,), Output = bool>,
+    P: for<'a> FnMut<(&'a T,), Output = bool> + ?Sized,
 {
     type Output = Option<T>;
 
@@ -21,7 +24,10 @@ where
 }
 
 pin_project_lite::pin_project! {
-    pub struct Filter<I, P> {
+    pub struct Filter<I, P>
+    where
+        P: ?Sized,
+    {
         #[pin]
         inner: FilterMap<I, FilterFn<P>>,
     }
@@ -50,7 +56,7 @@ where
 impl<I, P> AsyncIterator for Filter<I, P>
 where
     I: AsyncIterator,
-    P: for<'a> FnMut<(&'a I::Item,), Output = bool>,
+    P: for<'a> FnMut<(&'a I::Item,), Output = bool> + ?Sized,
 {
     type Item = I::Item;
 
@@ -66,7 +72,7 @@ where
 impl<I, P> FusedAsyncIterator for Filter<I, P>
 where
     I: FusedAsyncIterator,
-    P: for<'a> FnMut<(&'a I::Item,), Output = bool>,
+    P: for<'a> FnMut<(&'a I::Item,), Output = bool> + ?Sized,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

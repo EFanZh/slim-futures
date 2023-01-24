@@ -1,4 +1,4 @@
-use crate::async_iter::FindMap;
+use crate::async_iter::Filter;
 use crate::support::{AsyncIterator, FusedAsyncIterator};
 use core::future::Future;
 use core::pin::Pin;
@@ -6,33 +6,17 @@ use core::task::{Context, Poll};
 use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
-#[derive(Clone)]
-struct FindFn<P> {
-    predicate: P,
-}
-
-impl<T, P> FnMut<(T,)> for FindFn<P>
-where
-    P: for<'a> FnMut<(&'a T,), Output = bool>,
-{
-    type Output = Option<T>;
-
-    fn call_mut(&mut self, args: (T,)) -> Self::Output {
-        self.predicate.call_mut((&args.0,)).then_some(args.0)
-    }
-}
-
 pin_project_lite::pin_project! {
     pub struct Find<I, P> {
         #[pin]
-        inner: FindMap<I, FindFn<P>>
+        inner: Filter<I, P>
     }
 }
 
 impl<I, P> Find<I, P> {
     pub(crate) fn new(iter: I, predicate: P) -> Self {
         Self {
-            inner: FindMap::new(iter, FindFn { predicate }),
+            inner: Filter::new(iter, predicate),
         }
     }
 }
@@ -57,7 +41,7 @@ where
     type Output = Option<I::Item>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
-        self.project().inner.poll(cx)
+        self.project().inner.poll_next(cx)
     }
 }
 

@@ -1,9 +1,8 @@
-use crate::support::states::PredicateState;
-use crate::support::{AsyncIterator, FusedAsyncIterator, PredicateFn};
+use crate::async_iter::FilterAsync;
+use crate::support::{AsyncIterator, PredicateFn};
 use core::future::{Future, IntoFuture};
 use core::pin::Pin;
-use core::task::{self, Context, Poll};
-use futures_core::FusedFuture;
+use core::task::{Context, Poll};
 
 pin_project_lite::pin_project! {
     pub struct FindAsync<I, P>
@@ -14,10 +13,7 @@ pin_project_lite::pin_project! {
         <P as PredicateFn<I::Item>>::Output: IntoFuture,
     {
         #[pin]
-        iter: I,
-        #[pin]
-        state: PredicateState<I::Item, <<P as PredicateFn<I::Item>>::Output as IntoFuture>::IntoFuture>,
-        predicate: P,
+        inner: FilterAsync<I, P>,
     }
 }
 
@@ -29,9 +25,7 @@ where
 {
     pub(crate) fn new(iter: I, predicate: P) -> Self {
         Self {
-            iter,
-            state: PredicateState::Empty,
-            predicate,
+            inner: FilterAsync::new(iter, predicate),
         }
     }
 }
@@ -46,9 +40,7 @@ where
 {
     fn clone(&self) -> Self {
         Self {
-            iter: self.iter.clone(),
-            state: self.state.clone(),
-            predicate: self.predicate.clone(),
+            inner: self.inner.clone(),
         }
     }
 }
@@ -62,40 +54,7 @@ where
     type Output = Option<I::Item>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
-        let this = self.project();
-        let mut iter = this.iter;
-        let predicate = this.predicate;
-        let mut state_slot = this.state;
-
-        Poll::Ready(loop {
-            if let Some((result, item)) = task::ready!(state_slot.as_mut().try_poll(cx)) {
-                if result {
-                    break Some(item);
-                }
-            } else if let Some(item) = task::ready!(iter.as_mut().poll_next(cx)) {
-                let fut = predicate.call_mut((&item,)).into_future();
-
-                state_slot.set(PredicateState::Polling { item, fut });
-            } else {
-                break None;
-            }
-        })
-    }
-}
-
-impl<I, P> FusedFuture for FindAsync<I, P>
-where
-    I: FusedAsyncIterator,
-    P: PredicateFn<I::Item> + ?Sized,
-    <P as PredicateFn<I::Item>>::Output: IntoFuture<Output = bool>,
-    <<P as PredicateFn<I::Item>>::Output as IntoFuture>::IntoFuture: FusedFuture,
-{
-    fn is_terminated(&self) -> bool {
-        if let PredicateState::Polling { fut, .. } = &self.state {
-            fut.is_terminated()
-        } else {
-            self.iter.is_terminated()
-        }
+        self.project().inner.poll_next(cx)
     }
 }
 

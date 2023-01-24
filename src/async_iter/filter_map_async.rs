@@ -10,13 +10,14 @@ pin_project_lite::pin_project! {
     where
         I: AsyncIterator,
         F: FnMut<(I::Item,)>,
+        F: ?Sized,
         F::Output: IntoFuture,
     {
         #[pin]
         iter: I,
-        f: F,
         #[pin]
         fut: Option<<F::Output as IntoFuture>::IntoFuture>,
+        f: F,
     }
 }
 
@@ -50,7 +51,7 @@ where
 impl<I, F, T> AsyncIterator for FilterMapAsync<I, F>
 where
     I: AsyncIterator,
-    F: FnMut<(I::Item,)>,
+    F: FnMut<(I::Item,)> + ?Sized,
     F::Output: IntoFuture<Output = Option<T>>,
 {
     type Item = T;
@@ -97,7 +98,7 @@ where
 impl<I, F, T> FusedAsyncIterator for FilterMapAsync<I, F>
 where
     I: FusedAsyncIterator,
-    F: FnMut<(I::Item,)>,
+    F: FnMut<(I::Item,)> + ?Sized,
     F::Output: IntoFuture<Output = Option<T>>,
     <F::Output as IntoFuture>::IntoFuture: FusedFuture,
 {

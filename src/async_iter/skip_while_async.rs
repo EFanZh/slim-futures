@@ -1,6 +1,6 @@
 use crate::support::states::PredicateState;
 use crate::support::{AsyncIterator, FusedAsyncIterator, PredicateFn};
-use core::future::{Future, IntoFuture};
+use core::future::IntoFuture;
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
 use futures_core::FusedFuture;
@@ -85,10 +85,7 @@ where
             let mut fut_slot = state.polling_state;
 
             loop {
-                if let Some(fut) = fut_slot.as_mut().get_future() {
-                    let result = task::ready!(fut.poll(cx));
-                    let item = fut_slot.as_mut().take_item().unwrap();
-
+                if let Some((result, item)) = task::ready!(fut_slot.as_mut().try_poll(cx)) {
                     if !result {
                         state_slot.set(None);
 

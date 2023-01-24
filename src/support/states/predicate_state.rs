@@ -17,13 +17,6 @@ pin_project_lite::pin_project! {
 }
 
 impl<T, Fut> PredicateState<T, Fut> {
-    pub fn get_future(self: Pin<&mut Self>) -> Option<Pin<&mut Fut>> {
-        match self.project() {
-            PredicateStateProject::Empty => None,
-            PredicateStateProject::Polling { fut, .. } => Some(fut),
-        }
-    }
-
     pub fn try_poll(mut self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<(Fut::Output, T)>>
     where
         Fut: Future,
@@ -39,12 +32,5 @@ impl<T, Fut> PredicateState<T, Fut> {
                 }
             }),
         })
-    }
-
-    pub fn take_item(self: Pin<&mut Self>) -> Option<T> {
-        match self.project_replace(Self::Empty) {
-            PredicateStateReplace::Empty => None,
-            PredicateStateReplace::Polling { item, .. } => Some(item),
-        }
     }
 }

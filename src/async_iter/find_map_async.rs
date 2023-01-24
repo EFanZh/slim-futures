@@ -1,55 +1,21 @@
-use crate::async_iter::try_fold_async::TryFoldAsync;
-use crate::future::Map;
-use crate::support::{AsyncIterator, FusedAsyncIterator, OptionFuture};
+use crate::async_iter::FilterMapAsync;
+use crate::support::{AsyncIterator, OptionFuture};
 use core::future::{Future, IntoFuture};
-use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{Context, Poll};
-use fn_traits::fns::{ControlFlowBreakValueFn, CopyFn};
 use fn_traits::FnMut;
-use futures_core::FusedFuture;
-
-#[derive(Clone)]
-struct BreakIfSome;
-
-impl<T> FnMut<(Option<T>,)> for BreakIfSome {
-    type Output = ControlFlow<T>;
-
-    fn call_mut(&mut self, args: (Option<T>,)) -> Self::Output {
-        match args.0 {
-            None => ControlFlow::Continue(()),
-            Some(value) => ControlFlow::Break(value),
-        }
-    }
-}
-
-#[derive(Clone)]
-struct FindMapAsyncFn<F> {
-    f: F,
-}
-
-impl<T, F> FnMut<((), T)> for FindMapAsyncFn<F>
-where
-    F: FnMut<(T,)>,
-    F::Output: IntoFuture,
-{
-    type Output = Map<<F::Output as IntoFuture>::IntoFuture, BreakIfSome>;
-
-    fn call_mut(&mut self, args: ((), T)) -> Self::Output {
-        Map::new(self.f.call_mut((args.1,)).into_future(), BreakIfSome)
-    }
-}
 
 pin_project_lite::pin_project! {
     pub struct FindMapAsync<I, F>
     where
         I: AsyncIterator,
         F: FnMut<(I::Item,)>,
+        F: ?Sized,
         F::Output: IntoFuture,
         <F::Output as IntoFuture>::IntoFuture: OptionFuture,
     {
         #[pin]
-        inner: Map<TryFoldAsync<I, (), CopyFn, FindMapAsyncFn<F>>, ControlFlowBreakValueFn>
+        inner: FilterMapAsync<I, F>
     }
 }
 
@@ -62,10 +28,7 @@ where
 {
     pub(crate) fn new(iter: I, f: F) -> Self {
         Self {
-            inner: Map::new(
-                TryFoldAsync::new(iter, (), CopyFn::default(), FindMapAsyncFn { f }),
-                ControlFlowBreakValueFn::default(),
-            ),
+            inner: FilterMapAsync::new(iter, f),
         }
     }
 }
@@ -87,24 +50,13 @@ where
 impl<I, F, T> Future for FindMapAsync<I, F>
 where
     I: AsyncIterator,
-    F: FnMut<(I::Item,)>,
+    F: FnMut<(I::Item,)> + ?Sized,
     F::Output: IntoFuture<Output = Option<T>>,
 {
     type Output = Option<T>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
-        self.project().inner.poll(cx)
-    }
-}
-
-impl<I, F, T> FusedFuture for FindMapAsync<I, F>
-where
-    I: FusedAsyncIterator,
-    F: FnMut<(I::Item,)>,
-    F::Output: FusedFuture<Output = Option<T>>,
-{
-    fn is_terminated(&self) -> bool {
-        self.inner.is_terminated()
+        self.project().inner.poll_next(cx)
     }
 }
 

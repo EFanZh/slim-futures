@@ -1,47 +1,25 @@
-use crate::async_iter::try_fold::TryFold;
-use crate::future::Map;
+use crate::async_iter::filter_map::FilterMap;
 use crate::support::{AsyncIterator, FusedAsyncIterator};
 use core::future::Future;
-use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{Context, Poll};
-use fn_traits::fns::{ControlFlowBreakValueFn, CopyFn};
 use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
-#[derive(Clone)]
-struct FindMapFn<F> {
-    inner: F,
-}
-
-impl<T, F, U> FnMut<((), T)> for FindMapFn<F>
-where
-    F: FnMut<(T,), Output = Option<U>>,
-{
-    type Output = ControlFlow<U>;
-
-    fn call_mut(&mut self, args: ((), T)) -> Self::Output {
-        match self.inner.call_mut((args.1,)) {
-            None => ControlFlow::Continue(()),
-            Some(item) => ControlFlow::Break(item),
-        }
-    }
-}
-
 pin_project_lite::pin_project! {
-    pub struct FindMap<I, F> {
+    pub struct FindMap<I, F>
+    where
+        F: ?Sized,
+    {
         #[pin]
-        inner: Map<TryFold<I, (), CopyFn, FindMapFn<F>>, ControlFlowBreakValueFn>
+        inner: FilterMap<I, F>
     }
 }
 
 impl<I, F> FindMap<I, F> {
     pub(crate) fn new(iter: I, f: F) -> Self {
         Self {
-            inner: Map::new(
-                TryFold::new(iter, (), CopyFn::default(), FindMapFn { inner: f }),
-                ControlFlowBreakValueFn::default(),
-            ),
+            inner: FilterMap::new(iter, f),
         }
     }
 }
@@ -61,19 +39,19 @@ where
 impl<I, F, T> Future for FindMap<I, F>
 where
     I: AsyncIterator,
-    F: FnMut<(I::Item,), Output = Option<T>>,
+    F: FnMut<(I::Item,), Output = Option<T>> + ?Sized,
 {
     type Output = Option<T>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
-        self.project().inner.poll(cx)
+        self.project().inner.poll_next(cx)
     }
 }
 
 impl<I, F, T> FusedFuture for FindMap<I, F>
 where
     I: FusedAsyncIterator,
-    F: FnMut<(I::Item,), Output = Option<T>>,
+    F: FnMut<(I::Item,), Output = Option<T>> + ?Sized,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()
