@@ -16,6 +16,7 @@ Async combinators that focus on small binary sizes.
 | `AsyncIteratorExt::slim_filter_async`       | [`StreamExt::filter`]            |
 | `AsyncIteratorExt::slim_filter_map`         |                                  |
 | `AsyncIteratorExt::slim_filter_map_async`   | [`StreamExt::filter_map`]        |
+| `AsyncIteratorExt::slim_find`               |                                  |
 | `AsyncIteratorExt::slim_find_map`           |                                  |
 | `AsyncIteratorExt::slim_find_map_async`     |                                  |
 | `AsyncIteratorExt::slim_flat_map`           |                                  |

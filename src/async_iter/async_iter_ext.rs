@@ -6,6 +6,7 @@ use crate::async_iter::filter::Filter;
 use crate::async_iter::filter_async::FilterAsync;
 use crate::async_iter::filter_map::FilterMap;
 use crate::async_iter::filter_map_async::FilterMapAsync;
+use crate::async_iter::find::Find;
 use crate::async_iter::find_map::FindMap;
 use crate::async_iter::find_map_async::FindMapAsync;
 use crate::async_iter::flat_map::FlatMap;
@@ -103,6 +104,14 @@ pub trait AsyncIteratorExt: AsyncIterator {
         Fut: IntoFuture<Output = Option<T>>,
     {
         crate::support::assert_async_iter::<_, T>(FilterMapAsync::new(self, f))
+    }
+
+    fn slim_find<P>(self, predicate: P) -> Find<Self, P>
+    where
+        Self: Sized,
+        P: FnMut(&Self::Item) -> bool,
+    {
+        crate::support::assert_future::<_, Option<Self::Item>>(Find::new(self, predicate))
     }
 
     fn slim_find_map<F, T>(self, f: F) -> FindMap<Self, F>
