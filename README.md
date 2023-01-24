@@ -31,6 +31,7 @@ Async combinators that focus on small binary sizes.
 | `AsyncIteratorExt::slim_map_async`          | [`StreamExt::then`]              |
 | `AsyncIteratorExt::slim_map_while`          |                                  |
 | `AsyncIteratorExt::slim_map_while_async`    |                                  |
+| `AsyncIteratorExt::slim_scan`               |                                  |
 | `AsyncIteratorExt::slim_skip_while`         |                                  |
 | `AsyncIteratorExt::slim_skip_while_async`   | [`StreamExt::skip_while`]        |
 | `AsyncIteratorExt::slim_take_while`         |                                  |

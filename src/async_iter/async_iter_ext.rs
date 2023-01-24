@@ -21,6 +21,7 @@ use crate::async_iter::map::Map;
 use crate::async_iter::map_async::MapAsync;
 use crate::async_iter::map_while::MapWhile;
 use crate::async_iter::map_while_async::MapWhileAsync;
+use crate::async_iter::scan::Scan;
 use crate::async_iter::skip_while::SkipWhile;
 use crate::async_iter::skip_while_async::SkipWhileAsync;
 use crate::async_iter::take_while::TakeWhile;
@@ -289,6 +290,14 @@ pub trait AsyncIteratorExt: AsyncIterator {
         Fut: IntoFuture<Output = Option<T>>,
     {
         crate::support::assert_async_iter::<_, T>(MapWhileAsync::new(self, f))
+    }
+
+    fn slim_scan<S, F, T>(self, state: S, f: F) -> Scan<Self, S, F>
+    where
+        Self: Sized,
+        F: FnMut(&mut S, Self::Item) -> Option<T>,
+    {
+        crate::support::assert_async_iter::<_, T>(Scan::new(self, state, f))
     }
 
     fn slim_skip_while<P>(self, predicate: P) -> SkipWhile<Self, P>
