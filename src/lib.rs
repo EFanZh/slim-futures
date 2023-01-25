@@ -62,6 +62,9 @@
 #![no_std]
 
 #[cfg(test)]
+use criterion as _;
+
+#[cfg(test)]
 extern crate std;
 
 pub mod async_iter;

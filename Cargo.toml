@@ -8,6 +8,10 @@ name = "slim-futures"
 repository = "https://github.com/EFanZh/slim-futures"
 version = "0.1.0"
 
+[[bench]]
+harness = false
+name = "future-performance"
+
 [dependencies]
 fn-traits = "0.1"
 futures-core = "0.3"
@@ -15,4 +19,5 @@ futures-util = "0.3"
 pin-project-lite = "0.2"
 
 [dev-dependencies]
+criterion = { version = "0.4", features = ["async_futures"] }
 tokio = { version = "1", features = ["macros", "rt"] }
