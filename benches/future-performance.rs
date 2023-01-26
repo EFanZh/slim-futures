@@ -1,10 +1,9 @@
-use core::future::{self, Future};
 use criterion::async_executor::FuturesExecutor;
 use criterion::measurement::Measurement;
 use criterion::{BenchmarkGroup, Criterion};
 use futures_util::{FutureExt, TryFutureExt};
 use slim_futures::future::FutureExt as SlimFutureExt;
-use std::future::Ready;
+use std::future::{self, Future, Ready};
 use std::{convert, hint};
 
 // `and_then_async`.
@@ -176,7 +175,7 @@ fn benchmark_map_ok(c: &mut Criterion) {
     benchmark_group.finish()
 }
 
-// `map_chain`.
+// map chain.
 
 fn benchmark_map_chain_with<Fut>(
     benchmark_group: &mut BenchmarkGroup<impl Measurement>,
