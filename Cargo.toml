@@ -19,5 +19,5 @@ futures-util = "0.3"
 pin-project-lite = "0.2"
 
 [dev-dependencies]
-criterion = { version = "0.4", features = ["async_futures"] }
+criterion = { version = "0.4", features = ["async_futures", "html_reports"] }
 tokio = { version = "1", features = ["macros", "rt"] }
