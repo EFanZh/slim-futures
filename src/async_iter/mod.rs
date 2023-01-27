@@ -1,5 +1,7 @@
 pub use self::all::All;
 pub use self::all_async::AllAsync;
+pub use self::and_then::AndThen;
+pub use self::and_then_async::AndThenAsync;
 pub use self::any::Any;
 pub use self::any_async::AnyAsync;
 pub use self::async_iter_ext::AsyncIteratorExt;
@@ -41,6 +43,7 @@ pub use self::zip::Zip;
 mod all;
 mod all_async;
 mod and_then;
+mod and_then_async;
 mod any;
 mod any_async;
 mod async_iter_ext;

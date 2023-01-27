@@ -11,6 +11,7 @@ Async combinators that focus on small binary sizes.
 | `AsyncIteratorExt::slim_all`                |                                  |
 | `AsyncIteratorExt::slim_all_async`          | [`StreamExt::all`]               |
 | `AsyncIteratorExt::slim_and_then`           |                                  |
+| `AsyncIteratorExt::slim_and_then_async`     | [`TryStreamExt::and_then`]       |
 | `AsyncIteratorExt::slim_any`                |                                  |
 | `AsyncIteratorExt::slim_any_async`          | [`StreamExt::any`]               |
 | `AsyncIteratorExt::slim_filter`             |                                  |
@@ -119,6 +120,7 @@ Async combinators that focus on small binary sizes.
 [`TryFutureExt::or_else`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.or_else
 [`TryFutureExt::try_flatten`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.try_flatten
 [`TryFutureExt::unwrap_or_else`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.unwrap_or_else
+[`TryStreamExt::and_then`]: https://docs.rs/futures/latest/futures/stream/trait.TryStreamExt.html#method.and_then
 [`TryStreamExt::try_fold`]: https://docs.rs/futures/latest/futures/stream/trait.TryStreamExt.html#method.try_fold
 [`err`]: https://docs.rs/futures/latest/futures/future/fn.err.html
 [`lazy`]: https://docs.rs/futures/latest/futures/future/fn.lazy.html

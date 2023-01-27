@@ -9,14 +9,17 @@ use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
 #[derive(Clone)]
-struct AndThenAsyncFn<F> {
-    inner: F,
+struct AndThenAsyncFn<F>
+where
+    F: ?Sized,
+{
+    f: F,
 }
 
 impl<T, F> FnMut<(T,)> for AndThenAsyncFn<F>
 where
     T: Try,
-    F: FnMut<(T::Output,)>,
+    F: FnMut<(T::Output,)> + ?Sized,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::Output: FromResidual<T::Residual>,
 {
@@ -24,7 +27,7 @@ where
 
     fn call_mut(&mut self, args: (T,)) -> Self::Output {
         match args.0.branch() {
-            ControlFlow::Continue(output) => RawResidual::from_output(self.inner.call_mut((output,))),
+            ControlFlow::Continue(output) => RawResidual::from_output(self.f.call_mut((output,))),
             ControlFlow::Break(residual) => RawResidual::from_residual(residual),
         }
     }
@@ -55,7 +58,7 @@ where
 {
     pub(crate) fn new(fut: Fut, f: F) -> Self {
         Self {
-            inner: TryFlatten::new(Map::new(fut, AndThenAsyncFn { inner: f })),
+            inner: TryFlatten::new(Map::new(fut, AndThenAsyncFn { f })),
         }
     }
 }
