@@ -6,6 +6,13 @@ use slim_futures::future::FutureExt as SlimFutureExt;
 use std::future::{self, Future, Ready};
 use std::{convert, hint};
 
+fn benchmark_with<Fut>(benchmark_group: &mut BenchmarkGroup<impl Measurement>, name: &str, mut f: impl FnMut() -> Fut)
+where
+    Fut: Future,
+{
+    benchmark_group.bench_function(name, |b| b.to_async(FuturesExecutor).iter(&mut f));
+}
+
 // `and_then_async`.
 
 fn benchmark_and_then_async_with<Fut>(
@@ -15,13 +22,11 @@ fn benchmark_and_then_async_with<Fut>(
 ) where
     Fut: Future<Output = Result<u32, ()>>,
 {
-    benchmark_group.bench_function(name, |b| {
-        b.to_async(FuturesExecutor).iter(|| {
-            f(
-                future::ready(hint::black_box(Ok(2))),
-                hint::black_box::<fn(_) -> _>(|x| future::ready(Ok(x))),
-            )
-        })
+    benchmark_with(benchmark_group, name, || {
+        f(
+            future::ready(hint::black_box(Ok(2))),
+            hint::black_box::<fn(_) -> _>(|x| future::ready(Ok(x))),
+        )
     });
 }
 
@@ -48,13 +53,11 @@ fn benchmark_map_with<Fut>(
 ) where
     Fut: Future<Output = u32>,
 {
-    benchmark_group.bench_function(name, |b| {
-        b.to_async(FuturesExecutor).iter(|| {
-            f(
-                future::ready(hint::black_box(2)),
-                hint::black_box::<fn(_) -> _>(convert::identity),
-            )
-        })
+    benchmark_with(benchmark_group, name, || {
+        f(
+            future::ready(hint::black_box(2)),
+            hint::black_box::<fn(_) -> _>(convert::identity),
+        )
     });
 }
 
@@ -83,13 +86,11 @@ fn benchmark_map_async_with<Fut>(
 ) where
     Fut: Future<Output = u32>,
 {
-    benchmark_group.bench_function(name, |b| {
-        b.to_async(FuturesExecutor).iter(|| {
-            f(
-                future::ready(hint::black_box(2)),
-                hint::black_box::<fn(_) -> _>(future::ready),
-            )
-        })
+    benchmark_with(benchmark_group, name, || {
+        f(
+            future::ready(hint::black_box(2)),
+            hint::black_box::<fn(_) -> _>(future::ready),
+        )
     });
 }
 
@@ -116,13 +117,11 @@ fn benchmark_map_err_with<Fut>(
 ) where
     Fut: Future<Output = Result<(), u32>>,
 {
-    benchmark_group.bench_function(name, |b| {
-        b.to_async(FuturesExecutor).iter(|| {
-            f(
-                future::ready(hint::black_box(Err(2))),
-                hint::black_box::<fn(_) -> _>(convert::identity),
-            )
-        })
+    benchmark_with(benchmark_group, name, || {
+        f(
+            future::ready(hint::black_box(Err(2))),
+            hint::black_box::<fn(_) -> _>(convert::identity),
+        )
     });
 }
 
@@ -149,13 +148,11 @@ fn benchmark_map_ok_with<Fut>(
 ) where
     Fut: Future<Output = Result<u32, ()>>,
 {
-    benchmark_group.bench_function(name, |b| {
-        b.to_async(FuturesExecutor).iter(|| {
-            f(
-                future::ready(hint::black_box(Ok(2))),
-                hint::black_box::<fn(_) -> _>(convert::identity),
-            )
-        })
+    benchmark_with(benchmark_group, name, || {
+        f(
+            future::ready(hint::black_box(Ok(2))),
+            hint::black_box::<fn(_) -> _>(convert::identity),
+        )
     });
 }
 
@@ -184,12 +181,11 @@ fn benchmark_map_chain_with<Fut>(
 ) where
     Fut: Future<Output = u32>,
 {
-    benchmark_group.bench_function(name, |b| {
-        b.to_async(FuturesExecutor).iter(|| {
-            let identity = hint::black_box::<fn(_) -> _>(convert::identity);
-
-            f(future::ready(hint::black_box(2)), identity)
-        })
+    benchmark_with(benchmark_group, name, || {
+        f(
+            future::ready(hint::black_box(2)),
+            hint::black_box::<fn(_) -> _>(convert::identity),
+        )
     });
 }
 

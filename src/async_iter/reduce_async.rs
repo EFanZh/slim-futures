@@ -97,10 +97,7 @@ where
                 let state = match state_slot.as_ref().get_ref() {
                     State::Empty => State::Single { acc: item },
                     State::Single { .. } => {
-                        let acc = match state_slot.as_mut().project_replace(State::Empty) {
-                            StateProjectReplace::Single { acc } => acc,
-                            _ => unreachable!(),
-                        };
+                        let StateProjectReplace::Single { acc } = state_slot.as_mut().project_replace(State::Empty) else { unreachable!() };
 
                         State::Future {
                             fut: f.call_mut((acc, item)).into_future(),
