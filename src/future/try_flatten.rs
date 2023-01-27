@@ -50,7 +50,7 @@ where
     Fut: Future,
     Fut::Output: Try,
     <Fut::Output as Try>::Output: IntoFuture,
-    <<Fut::Output as Try>::Output as IntoFuture>::Output: FromResidual<<Fut::Output as Try>::Residual> + Try,
+    <<Fut::Output as Try>::Output as IntoFuture>::Output: FromResidual<<Fut::Output as Try>::Residual>,
 {
     type Output = <<Fut::Output as Try>::Output as IntoFuture>::Output;
 
@@ -59,7 +59,7 @@ where
         where
             T1: Try,
             <T1 as Try>::Output: IntoFuture,
-            T2: FromResidual<T1::Residual> + Try,
+            T2: FromResidual<T1::Residual>,
         {
             match result.branch() {
                 ControlFlow::Continue(output) => ControlFlow::Continue(output.into_future()),
@@ -80,7 +80,7 @@ where
     Fut: FusedFuture,
     Fut::Output: Try,
     <Fut::Output as Try>::Output: IntoFuture,
-    <<Fut::Output as Try>::Output as IntoFuture>::Output: FromResidual<<Fut::Output as Try>::Residual> + Try,
+    <<Fut::Output as Try>::Output as IntoFuture>::Output: FromResidual<<Fut::Output as Try>::Residual>,
     <<Fut::Output as Try>::Output as IntoFuture>::IntoFuture: FusedFuture,
 {
     fn is_terminated(&self) -> bool {

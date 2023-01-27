@@ -65,7 +65,7 @@ pub trait AsyncIteratorExt: AsyncIterator {
         Self: Sized,
         Self::Item: Try,
         F: FnMut(<Self::Item as Try>::Output) -> R,
-        R: Try + FromResidual<<Self::Item as Try>::Residual>,
+        R: FromResidual<<Self::Item as Try>::Residual>,
     {
         crate::support::assert_async_iter::<_, R>(AndThen::new(self, f))
     }
@@ -76,7 +76,7 @@ pub trait AsyncIteratorExt: AsyncIterator {
         Self::Item: Try,
         F: FnMut(<Self::Item as Try>::Output) -> Fut,
         Fut: IntoFuture,
-        Fut::Output: Try + FromResidual<<Self::Item as Try>::Residual>,
+        Fut::Output: FromResidual<<Self::Item as Try>::Residual>,
     {
         crate::support::assert_async_iter::<_, Fut::Output>(AndThenAsync::new(self, f))
     }

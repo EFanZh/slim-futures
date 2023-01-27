@@ -40,7 +40,7 @@ where
     I: AsyncIterator,
     I::Item: Try,
     F: FnMut<(<I::Item as Try>::Output,)> + ?Sized,
-    F::Output: Try + FromResidual<<I::Item as Try>::Residual>,
+    F::Output: FromResidual<<I::Item as Try>::Residual>,
 {
     type Item = F::Output;
 
@@ -58,7 +58,7 @@ where
     I: FusedAsyncIterator,
     I::Item: Try,
     F: FnMut<(<I::Item as Try>::Output,)> + ?Sized,
-    F::Output: Try + FromResidual<<I::Item as Try>::Residual>,
+    F::Output: FromResidual<<I::Item as Try>::Residual>,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

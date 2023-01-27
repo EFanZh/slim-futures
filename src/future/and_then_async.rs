@@ -41,7 +41,6 @@ pin_project_lite::pin_project! {
         F: FnMut<(<Fut::Output as Try>::Output,)>,
         F::Output: IntoFuture,
         <F::Output as IntoFuture>::Output: FromResidual<<Fut::Output as Try>::Residual>,
-        <F::Output as IntoFuture>::Output: Try,
     {
         #[pin]
         inner: TryFlatten<Map<Fut, AndThenAsyncFn<F>>>
@@ -54,7 +53,7 @@ where
     Fut::Output: Try,
     F: FnMut<(<Fut::Output as Try>::Output,)>,
     F::Output: IntoFuture,
-    <F::Output as IntoFuture>::Output: FromResidual<<Fut::Output as Try>::Residual> + Try,
+    <F::Output as IntoFuture>::Output: FromResidual<<Fut::Output as Try>::Residual>,
 {
     pub(crate) fn new(fut: Fut, f: F) -> Self {
         Self {
@@ -69,7 +68,7 @@ where
     Fut::Output: Try,
     F: FnMut<(<Fut::Output as Try>::Output,)> + Clone,
     F::Output: IntoFuture,
-    <F::Output as IntoFuture>::Output: FromResidual<<Fut::Output as Try>::Residual> + Try,
+    <F::Output as IntoFuture>::Output: FromResidual<<Fut::Output as Try>::Residual>,
     <F::Output as IntoFuture>::IntoFuture: Clone,
 {
     fn clone(&self) -> Self {
@@ -85,7 +84,7 @@ where
     Fut::Output: Try,
     F: FnMut<(<Fut::Output as Try>::Output,)>,
     F::Output: IntoFuture,
-    <F::Output as IntoFuture>::Output: FromResidual<<Fut::Output as Try>::Residual> + Try,
+    <F::Output as IntoFuture>::Output: FromResidual<<Fut::Output as Try>::Residual>,
 {
     type Output = <F::Output as IntoFuture>::Output;
 
@@ -100,7 +99,7 @@ where
     Fut::Output: Try,
     F: FnMut<(<Fut::Output as Try>::Output,)>,
     F::Output: IntoFuture,
-    <F::Output as IntoFuture>::Output: FromResidual<<Fut::Output as Try>::Residual> + Try,
+    <F::Output as IntoFuture>::Output: FromResidual<<Fut::Output as Try>::Residual>,
     <F::Output as IntoFuture>::IntoFuture: FusedFuture,
 {
     fn is_terminated(&self) -> bool {

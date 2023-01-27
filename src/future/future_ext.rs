@@ -37,7 +37,7 @@ pub trait FutureExt: Future {
         Self: Sized,
         Self::Output: Try,
         F: FnMut(<Self::Output as Try>::Output) -> R,
-        R: FromResidual<<Self::Output as Try>::Residual> + Try,
+        R: FromResidual<<Self::Output as Try>::Residual>,
     {
         support::assert_future::<_, R>(AndThen::new(self, f))
     }
@@ -48,7 +48,7 @@ pub trait FutureExt: Future {
         Self::Output: Try,
         F: FnMut(<Self::Output as Try>::Output) -> Fut,
         Fut: IntoFuture,
-        Fut::Output: FromResidual<<Self::Output as Try>::Residual> + Try,
+        Fut::Output: FromResidual<<Self::Output as Try>::Residual>,
     {
         support::assert_future::<_, Fut::Output>(AndThenAsync::new(self, f))
     }
@@ -234,7 +234,7 @@ pub trait FutureExt: Future {
         Self: Sized,
         Self::Output: Try,
         <Self::Output as Try>::Output: IntoFuture,
-        <<Self::Output as Try>::Output as IntoFuture>::Output: FromResidual<<Self::Output as Try>::Residual> + Try,
+        <<Self::Output as Try>::Output as IntoFuture>::Output: FromResidual<<Self::Output as Try>::Residual>,
     {
         support::assert_future::<_, <<Self::Output as Try>::Output as IntoFuture>::Output>(TryFlatten::new(self))
     }

@@ -28,7 +28,7 @@ where
     Fut: Future,
     Fut::Output: Try,
     F: FnMut<(<Fut::Output as Try>::Output,)>,
-    F::Output: FromResidual<<Fut::Output as Try>::Residual> + Try,
+    F::Output: FromResidual<<Fut::Output as Try>::Residual>,
 {
     type Output = F::Output;
 
@@ -42,7 +42,7 @@ where
     Fut: FusedFuture,
     Fut::Output: Try,
     F: FnMut<(<Fut::Output as Try>::Output,)>,
-    F::Output: FromResidual<<Fut::Output as Try>::Residual> + Try,
+    F::Output: FromResidual<<Fut::Output as Try>::Residual>,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

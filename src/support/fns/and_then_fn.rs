@@ -20,7 +20,7 @@ impl<T, F> FnMut<(T,)> for AndThenFn<F>
 where
     T: Try,
     F: FnMut<(T::Output,)> + ?Sized,
-    F::Output: FromResidual<T::Residual> + Try,
+    F::Output: FromResidual<T::Residual>,
 {
     type Output = F::Output;
 
