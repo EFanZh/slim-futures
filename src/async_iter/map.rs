@@ -4,7 +4,10 @@ use core::task::{self, Context, Poll};
 use fn_traits::FnMut;
 
 pin_project_lite::pin_project! {
-    pub struct Map<I, F> {
+    pub struct Map<I, F>
+    where
+        F: ?Sized,
+    {
         #[pin]
         iter: I,
         f: F,
@@ -33,7 +36,7 @@ where
 impl<I, F> AsyncIterator for Map<I, F>
 where
     I: AsyncIterator,
-    F: FnMut<(I::Item,)>,
+    F: FnMut<(I::Item,)> + ?Sized,
 {
     type Item = F::Output;
 
@@ -51,7 +54,7 @@ where
 impl<I, F> FusedAsyncIterator for Map<I, F>
 where
     I: FusedAsyncIterator,
-    F: FnMut<(I::Item,)>,
+    F: FnMut<(I::Item,)> + ?Sized,
 {
     fn is_terminated(&self) -> bool {
         self.iter.is_terminated()

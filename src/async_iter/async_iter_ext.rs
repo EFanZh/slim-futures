@@ -1,5 +1,6 @@
 use crate::async_iter::all::All;
 use crate::async_iter::all_async::AllAsync;
+use crate::async_iter::and_then::AndThen;
 use crate::async_iter::any::Any;
 use crate::async_iter::any_async::AnyAsync;
 use crate::async_iter::filter::Filter;
@@ -36,7 +37,7 @@ use crate::async_iter::try_fold_async::TryFoldAsync;
 use crate::async_iter::try_for_each::TryForEach;
 use crate::async_iter::try_for_each_async::TryForEachAsync;
 use crate::async_iter::zip::Zip;
-use crate::support::{AsyncIterator, IntoAsyncIterator, Try};
+use crate::support::{AsyncIterator, FromResidual, IntoAsyncIterator, Try};
 use core::future::IntoFuture;
 use fn_traits::fns::{CloneFn, CopyFn, MemTakeFn};
 
@@ -56,6 +57,16 @@ pub trait AsyncIteratorExt: AsyncIterator {
         Fut: IntoFuture<Output = bool>,
     {
         crate::support::assert_future::<_, bool>(AllAsync::new(self, predicate))
+    }
+
+    fn slim_and_then<F, R>(self, f: F) -> AndThen<Self, F>
+    where
+        Self: Sized,
+        Self::Item: Try,
+        F: FnMut(<Self::Item as Try>::Output) -> R,
+        R: Try + FromResidual<<Self::Item as Try>::Residual>,
+    {
+        crate::support::assert_async_iter::<_, R>(AndThen::new(self, f))
     }
 
     fn slim_any<P>(self, predicate: P) -> Any<Self, P>

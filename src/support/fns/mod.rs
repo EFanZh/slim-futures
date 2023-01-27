@@ -1,3 +1,4 @@
+pub use self::and_then_fn::AndThenFn;
 pub use self::control_flow_is_break_fn::ControlFlowIsBreakFn;
 pub use self::control_flow_is_continue_fn::ControlFlowIsContinueFn;
 pub use self::either_left_fn::EitherLeftFn;
@@ -7,6 +8,7 @@ pub use self::inspect_fn::InspectFn;
 pub use self::map_ok_or_else_fn::MapOkOrElseFn;
 pub use self::unwrap_continue_value_fn::UnwrapContinueValueFn;
 
+mod and_then_fn;
 mod control_flow_is_break_fn;
 mod control_flow_is_continue_fn;
 mod either_left_fn;

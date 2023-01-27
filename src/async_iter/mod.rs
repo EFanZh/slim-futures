@@ -40,6 +40,7 @@ pub use self::zip::Zip;
 
 mod all;
 mod all_async;
+mod and_then;
 mod any;
 mod any_async;
 mod async_iter_ext;

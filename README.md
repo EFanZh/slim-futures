@@ -10,6 +10,7 @@ Async combinators that focus on small binary sizes.
 | ------------------------------------------- | -------------------------------- |
 | `AsyncIteratorExt::slim_all`                |                                  |
 | `AsyncIteratorExt::slim_all_async`          | [`StreamExt::all`]               |
+| `AsyncIteratorExt::slim_and_then`           |                                  |
 | `AsyncIteratorExt::slim_any`                |                                  |
 | `AsyncIteratorExt::slim_any_async`          | [`StreamExt::any`]               |
 | `AsyncIteratorExt::slim_filter`             |                                  |

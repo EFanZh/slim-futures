@@ -1,32 +1,11 @@
 use crate::future::map::Map;
+use crate::support::fns::AndThenFn;
 use crate::support::{FromResidual, Try};
 use core::future::Future;
-use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use fn_traits::FnMut;
 use futures_core::FusedFuture;
-
-#[derive(Clone)]
-struct AndThenFn<F> {
-    inner: F,
-}
-
-impl<T, F> FnMut<(T,)> for AndThenFn<F>
-where
-    T: Try,
-    F: FnMut<(T::Output,)>,
-    F::Output: FromResidual<T::Residual> + Try,
-{
-    type Output = F::Output;
-
-    fn call_mut(&mut self, args: (T,)) -> Self::Output {
-        match args.0.branch() {
-            ControlFlow::Continue(output) => self.inner.call_mut((output,)),
-            ControlFlow::Break(residual) => Self::Output::from_residual(residual),
-        }
-    }
-}
 
 pin_project_lite::pin_project! {
     #[derive(Clone)]
@@ -39,7 +18,7 @@ pin_project_lite::pin_project! {
 impl<Fut, F> AndThen<Fut, F> {
     pub(crate) fn new(fut: Fut, f: F) -> Self {
         Self {
-            inner: Map::new(fut, AndThenFn { inner: f }),
+            inner: Map::new(fut, AndThenFn::new(f)),
         }
     }
 }
