@@ -10,6 +10,10 @@ version = "0.1.0"
 
 [[bench]]
 harness = false
+name = "async-iter-performance"
+
+[[bench]]
+harness = false
 name = "future-performance"
 
 [dependencies]

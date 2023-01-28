@@ -6,89 +6,89 @@
 
 Async combinators that focus on small binary sizes.
 
-| slim-futures                                | [`futures`]                      |
-| ------------------------------------------- | -------------------------------- |
-| `AsyncIteratorExt::slim_all`                |                                  |
-| `AsyncIteratorExt::slim_all_async`          | [`StreamExt::all`]               |
-| `AsyncIteratorExt::slim_and_then`           |                                  |
-| `AsyncIteratorExt::slim_and_then_async`     | [`TryStreamExt::and_then`]       |
-| `AsyncIteratorExt::slim_any`                |                                  |
-| `AsyncIteratorExt::slim_any_async`          | [`StreamExt::any`]               |
-| `AsyncIteratorExt::slim_filter`             |                                  |
-| `AsyncIteratorExt::slim_filter_async`       | [`StreamExt::filter`]            |
-| `AsyncIteratorExt::slim_filter_map`         |                                  |
-| `AsyncIteratorExt::slim_filter_map_async`   | [`StreamExt::filter_map`]        |
-| `AsyncIteratorExt::slim_find`               |                                  |
-| `AsyncIteratorExt::slim_find_async`         |                                  |
-| `AsyncIteratorExt::slim_find_map`           |                                  |
-| `AsyncIteratorExt::slim_find_map_async`     |                                  |
-| `AsyncIteratorExt::slim_flat_map`           |                                  |
-| `AsyncIteratorExt::slim_flat_map_async`     | [`StreamExt::flat_map`]          |
-| `AsyncIteratorExt::slim_flatten`            | [`StreamExt::flatten`]           |
-| `AsyncIteratorExt::slim_fold`               |                                  |
-| `AsyncIteratorExt::slim_fold_async`         | [`StreamExt::fold`]              |
-| `AsyncIteratorExt::slim_for_each`           |                                  |
-| `AsyncIteratorExt::slim_for_each_async`     | [`StreamExt::for_each`]          |
-| `AsyncIteratorExt::slim_fuse`               | [`StreamExt::fuse`]              |
-| `AsyncIteratorExt::slim_inspect`            | [`StreamExt::inspect`]           |
-| `AsyncIteratorExt::slim_map`                | [`StreamExt::map`]               |
-| `AsyncIteratorExt::slim_map_async`          | [`StreamExt::then`]              |
-| `AsyncIteratorExt::slim_map_err`            | [`TryStreamExt::map_err`]        |
-| `AsyncIteratorExt::slim_map_err_async`      |                                  |
-| `AsyncIteratorExt::slim_map_ok`             | [`TryStreamExt::map_ok`]         |
-| `AsyncIteratorExt::slim_map_ok_async`       |                                  |
-| `AsyncIteratorExt::slim_map_while`          |                                  |
-| `AsyncIteratorExt::slim_map_while_async`    |                                  |
-| `AsyncIteratorExt::slim_or_else`            |                                  |
-| `AsyncIteratorExt::slim_or_else_async`      | [`TryStreamExt::or_else`]        |
-| `AsyncIteratorExt::slim_reduce`             |                                  |
-| `AsyncIteratorExt::slim_reduce_async`       |                                  |
-| `AsyncIteratorExt::slim_scan`               |                                  |
-| `AsyncIteratorExt::slim_scan_async`         | [`StreamExt::scan`]              |
-| `AsyncIteratorExt::slim_skip_while`         |                                  |
-| `AsyncIteratorExt::slim_skip_while_async`   | [`StreamExt::skip_while`]        |
-| `AsyncIteratorExt::slim_take_while`         |                                  |
-| `AsyncIteratorExt::slim_take_while_async`   | [`StreamExt::take_while`]        |
-| `AsyncIteratorExt::slim_try_fold`           |                                  |
-| `AsyncIteratorExt::slim_try_fold_async`     | [`TryStreamExt::try_fold`]       |
-| `AsyncIteratorExt::slim_try_for_each`       |                                  |
-| `AsyncIteratorExt::slim_try_for_each_async` |                                  |
-| `AsyncIteratorExt::slim_zip`                | [`StreamExt::zip`]               |
-| `FutureExt::slim_and_then`                  |                                  |
-| `FutureExt::slim_and_then_async`            | [`TryFutureExt::and_then`]       |
-| `FutureExt::slim_err_into`                  | [`TryFutureExt::err_into`]       |
-| `FutureExt::slim_flatten`                   | [`FutureExt::flatten`]           |
-| `FutureExt::slim_flatten_async_iter`        | [`FutureExt::flatten_stream`]    |
-| `FutureExt::slim_inspect`                   | [`FutureExt::inspect`]           |
-| `FutureExt::slim_inspect_err`               | [`TryFutureExt::inspect_err`]    |
-| `FutureExt::slim_inspect_ok`                | [`TryFutureExt::inspect_ok`]     |
-| `FutureExt::slim_into_result_future`        |                                  |
-| `FutureExt::slim_map`                       | [`FutureExt::map`]               |
-| `FutureExt::slim_map_async`                 | [`FutureExt::then`]              |
-| `FutureExt::slim_map_err`                   | [`TryFutureExt::map_err`]        |
-| `FutureExt::slim_map_err_async`             |                                  |
-| `FutureExt::slim_map_into`                  | [`FutureExt::map_into`]          |
-| `FutureExt::slim_map_ok`                    | [`TryFutureExt::map_ok`]         |
-| `FutureExt::slim_map_ok_async`              |                                  |
-| `FutureExt::slim_map_ok_or_else`            | [`TryFutureExt::map_ok_or_else`] |
-| `FutureExt::slim_map_ok_or_else_async`      |                                  |
-| `FutureExt::slim_never_error`               | [`FutureExt::never_error`]       |
-| `FutureExt::slim_ok_into`                   | [`TryFutureExt::ok_into`]        |
-| `FutureExt::slim_or_else`                   |                                  |
-| `FutureExt::slim_or_else_async`             | [`TryFutureExt::or_else`]        |
-| `FutureExt::slim_raw_map_ok_or_else_async`  |                                  |
-| `FutureExt::slim_try_flatten`               | [`TryFutureExt::try_flatten`]    |
-| `FutureExt::slim_try_flatten_err`           |                                  |
-| `FutureExt::slim_unit_error`                | [`FutureExt::unit_error`]        |
-| `FutureExt::slim_unwrap_or_else`            | [`TryFutureExt::unwrap_or_else`] |
-| `FutureExt::slim_unwrap_or_else_async`      |                                  |
-| `err`                                       | [`err`]                          |
-| `lazy`                                      | [`lazy`]                         |
-| `ok`                                        | [`ok`]                           |
-| `raw_select`                                |                                  |
-| `ready`                                     | [`ready`]                        |
-| `select_either`                             |                                  |
-| `try_select_either`                         |                                  |
+| slim-futures                                | [`futures`]                      | Notes                 |
+| ------------------------------------------- | -------------------------------- | --------------------- |
+| `AsyncIteratorExt::slim_all`                |                                  |                       |
+| `AsyncIteratorExt::slim_all_async`          | [`StreamExt::all`]               |                       |
+| `AsyncIteratorExt::slim_and_then`           |                                  |                       |
+| `AsyncIteratorExt::slim_and_then_async`     | [`TryStreamExt::and_then`]       |                       |
+| `AsyncIteratorExt::slim_any`                |                                  |                       |
+| `AsyncIteratorExt::slim_any_async`          | [`StreamExt::any`]               |                       |
+| `AsyncIteratorExt::slim_filter`             |                                  |                       |
+| `AsyncIteratorExt::slim_filter_async`       | [`StreamExt::filter`]            |                       |
+| `AsyncIteratorExt::slim_filter_map`         |                                  |                       |
+| `AsyncIteratorExt::slim_filter_map_async`   | [`StreamExt::filter_map`]        |                       |
+| `AsyncIteratorExt::slim_find`               |                                  |                       |
+| `AsyncIteratorExt::slim_find_async`         |                                  |                       |
+| `AsyncIteratorExt::slim_find_map`           |                                  |                       |
+| `AsyncIteratorExt::slim_find_map_async`     |                                  |                       |
+| `AsyncIteratorExt::slim_flat_map`           |                                  |                       |
+| `AsyncIteratorExt::slim_flat_map_async`     | [`StreamExt::flat_map`]          |                       |
+| `AsyncIteratorExt::slim_flatten`            | [`StreamExt::flatten`]           |                       |
+| `AsyncIteratorExt::slim_fold`               |                                  |                       |
+| `AsyncIteratorExt::slim_fold_async`         | [`StreamExt::fold`]              |                       |
+| `AsyncIteratorExt::slim_for_each`           |                                  |                       |
+| `AsyncIteratorExt::slim_for_each_async`     | [`StreamExt::for_each`]          |                       |
+| `AsyncIteratorExt::slim_fuse`               | [`StreamExt::fuse`]              |                       |
+| `AsyncIteratorExt::slim_inspect`            | [`StreamExt::inspect`]           |                       |
+| `AsyncIteratorExt::slim_map`                | [`StreamExt::map`]               |                       |
+| `AsyncIteratorExt::slim_map_async`          | [`StreamExt::then`]              |                       |
+| `AsyncIteratorExt::slim_map_err`            | [`TryStreamExt::map_err`]        |                       |
+| `AsyncIteratorExt::slim_map_err_async`      |                                  |                       |
+| `AsyncIteratorExt::slim_map_ok`             | [`TryStreamExt::map_ok`]         |                       |
+| `AsyncIteratorExt::slim_map_ok_async`       |                                  |                       |
+| `AsyncIteratorExt::slim_map_while`          |                                  |                       |
+| `AsyncIteratorExt::slim_map_while_async`    |                                  |                       |
+| `AsyncIteratorExt::slim_or_else`            |                                  |                       |
+| `AsyncIteratorExt::slim_or_else_async`      | [`TryStreamExt::or_else`]        |                       |
+| `AsyncIteratorExt::slim_reduce`             |                                  |                       |
+| `AsyncIteratorExt::slim_reduce_async`       |                                  |                       |
+| `AsyncIteratorExt::slim_scan`               |                                  |                       |
+| `AsyncIteratorExt::slim_scan_async`         | [`StreamExt::scan`]              |                       |
+| `AsyncIteratorExt::slim_skip_while`         |                                  |                       |
+| `AsyncIteratorExt::slim_skip_while_async`   | [`StreamExt::skip_while`]        |                       |
+| `AsyncIteratorExt::slim_take_while`         |                                  |                       |
+| `AsyncIteratorExt::slim_take_while_async`   | [`StreamExt::take_while`]        |                       |
+| `AsyncIteratorExt::slim_try_fold`           |                                  |                       |
+| `AsyncIteratorExt::slim_try_fold_async`     | [`TryStreamExt::try_fold`]       | Not exactly the same. |
+| `AsyncIteratorExt::slim_try_for_each`       |                                  |                       |
+| `AsyncIteratorExt::slim_try_for_each_async` | [`TryStreamExt::try_for_each`]   | Not exactly the same. |
+| `AsyncIteratorExt::slim_zip`                | [`StreamExt::zip`]               |                       |
+| `FutureExt::slim_and_then`                  |                                  |                       |
+| `FutureExt::slim_and_then_async`            | [`TryFutureExt::and_then`]       |                       |
+| `FutureExt::slim_err_into`                  | [`TryFutureExt::err_into`]       |                       |
+| `FutureExt::slim_flatten`                   | [`FutureExt::flatten`]           |                       |
+| `FutureExt::slim_flatten_async_iter`        | [`FutureExt::flatten_stream`]    |                       |
+| `FutureExt::slim_inspect`                   | [`FutureExt::inspect`]           |                       |
+| `FutureExt::slim_inspect_err`               | [`TryFutureExt::inspect_err`]    |                       |
+| `FutureExt::slim_inspect_ok`                | [`TryFutureExt::inspect_ok`]     |                       |
+| `FutureExt::slim_into_result_future`        |                                  |                       |
+| `FutureExt::slim_map`                       | [`FutureExt::map`]               |                       |
+| `FutureExt::slim_map_async`                 | [`FutureExt::then`]              |                       |
+| `FutureExt::slim_map_err`                   | [`TryFutureExt::map_err`]        |                       |
+| `FutureExt::slim_map_err_async`             |                                  |                       |
+| `FutureExt::slim_map_into`                  | [`FutureExt::map_into`]          |                       |
+| `FutureExt::slim_map_ok`                    | [`TryFutureExt::map_ok`]         |                       |
+| `FutureExt::slim_map_ok_async`              |                                  |                       |
+| `FutureExt::slim_map_ok_or_else`            | [`TryFutureExt::map_ok_or_else`] |                       |
+| `FutureExt::slim_map_ok_or_else_async`      |                                  |                       |
+| `FutureExt::slim_never_error`               | [`FutureExt::never_error`]       |                       |
+| `FutureExt::slim_ok_into`                   | [`TryFutureExt::ok_into`]        |                       |
+| `FutureExt::slim_or_else`                   |                                  |                       |
+| `FutureExt::slim_or_else_async`             | [`TryFutureExt::or_else`]        |                       |
+| `FutureExt::slim_raw_map_ok_or_else_async`  |                                  |                       |
+| `FutureExt::slim_try_flatten`               | [`TryFutureExt::try_flatten`]    |                       |
+| `FutureExt::slim_try_flatten_err`           |                                  |                       |
+| `FutureExt::slim_unit_error`                | [`FutureExt::unit_error`]        |                       |
+| `FutureExt::slim_unwrap_or_else`            | [`TryFutureExt::unwrap_or_else`] |                       |
+| `FutureExt::slim_unwrap_or_else_async`      |                                  |                       |
+| `err`                                       | [`err`]                          |                       |
+| `lazy`                                      | [`lazy`]                         |                       |
+| `ok`                                        | [`ok`]                           |                       |
+| `raw_select`                                |                                  |                       |
+| `ready`                                     | [`ready`]                        |                       |
+| `select_either`                             |                                  |                       |
+| `try_select_either`                         |                                  |                       |
 
 [`futures`]: https://docs.rs/futures/latest/futures/
 [`FutureExt::flatten`]: https://docs.rs/futures/latest/futures/future/trait.FutureExt.html#method.flatten
@@ -131,6 +131,7 @@ Async combinators that focus on small binary sizes.
 [`TryStreamExt::map_ok`]: https://docs.rs/futures/latest/futures/stream/trait.TryStreamExt.html#method.map_ok
 [`TryStreamExt::or_else`]: https://docs.rs/futures/latest/futures/stream/trait.TryStreamExt.html#method.or_else
 [`TryStreamExt::try_fold`]: https://docs.rs/futures/latest/futures/stream/trait.TryStreamExt.html#method.try_fold
+[`TryStreamExt::try_for_each`]: https://docs.rs/futures/latest/futures/stream/trait.TryStreamExt.html#method.try_for_each
 [`err`]: https://docs.rs/futures/latest/futures/future/fn.err.html
 [`lazy`]: https://docs.rs/futures/latest/futures/future/fn.lazy.html
 [`ok`]: https://docs.rs/futures/latest/futures/future/fn.ok.html
