@@ -1,6 +1,6 @@
 use crate::future::and_then_async::AndThenAsync;
 use crate::support::fns::MapOkAsyncFn;
-use crate::support::ResultFuture;
+use crate::support::{Residual, Try};
 use core::future::{Future, IntoFuture};
 use core::pin::Pin;
 use core::task::{Context, Poll};
@@ -10,19 +10,23 @@ use futures_core::FusedFuture;
 pin_project_lite::pin_project! {
     pub struct MapOkAsync<Fut, F>
     where
-        Fut: ResultFuture,
-        F: FnMut<(Fut::Ok,)>,
+        Fut: Future,
+        Fut::Output: Try,
+        <Fut::Output as Try>::Residual: Residual<<F::Output as IntoFuture>::Output>,
+        F: FnMut<(<Fut::Output as Try>::Output,)>,
         F::Output: IntoFuture,
     {
         #[pin]
-        inner: AndThenAsync<Fut, MapOkAsyncFn<F, Fut::Error>>,
+        inner: AndThenAsync<Fut, MapOkAsyncFn<F, <Fut::Output as Try>::Residual>>,
     }
 }
 
 impl<Fut, F> MapOkAsync<Fut, F>
 where
-    Fut: ResultFuture,
-    F: FnMut<(Fut::Ok,)>,
+    Fut: Future,
+    Fut::Output: Try,
+    <Fut::Output as Try>::Residual: Residual<<F::Output as IntoFuture>::Output>,
+    F: FnMut<(<Fut::Output as Try>::Output,)>,
     F::Output: IntoFuture,
 {
     pub(crate) fn new(fut: Fut, f: F) -> Self {
@@ -34,8 +38,10 @@ where
 
 impl<Fut, F> Clone for MapOkAsync<Fut, F>
 where
-    Fut: ResultFuture + Clone,
-    F: FnMut<(Fut::Ok,)> + Clone,
+    Fut: Future + Clone,
+    Fut::Output: Try,
+    <Fut::Output as Try>::Residual: Residual<<F::Output as IntoFuture>::Output>,
+    F: FnMut<(<Fut::Output as Try>::Output,)> + Clone,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::IntoFuture: Clone,
 {
@@ -48,11 +54,13 @@ where
 
 impl<Fut, F> Future for MapOkAsync<Fut, F>
 where
-    Fut: ResultFuture,
-    F: FnMut<(Fut::Ok,)>,
+    Fut: Future,
+    Fut::Output: Try,
+    <Fut::Output as Try>::Residual: Residual<<F::Output as IntoFuture>::Output>,
+    F: FnMut<(<Fut::Output as Try>::Output,)>,
     F::Output: IntoFuture,
 {
-    type Output = Result<<F::Output as IntoFuture>::Output, Fut::Error>;
+    type Output = <<Fut::Output as Try>::Residual as Residual<<F::Output as IntoFuture>::Output>>::TryType;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         self.project().inner.poll(cx)
@@ -61,8 +69,10 @@ where
 
 impl<Fut, F> FusedFuture for MapOkAsync<Fut, F>
 where
-    Fut: ResultFuture + FusedFuture,
-    F: FnMut<(Fut::Ok,)>,
+    Fut: FusedFuture,
+    Fut::Output: Try,
+    <Fut::Output as Try>::Residual: Residual<<F::Output as IntoFuture>::Output>,
+    F: FnMut<(<Fut::Output as Try>::Output,)>,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::IntoFuture: FusedFuture,
 {

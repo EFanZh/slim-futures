@@ -1,18 +1,19 @@
 use crate::future::Map;
+use crate::support::fns::try_from_output_fn::TryFromOutputFn;
+use crate::support::try_::Residual;
 use core::future::IntoFuture;
 use core::marker::PhantomData;
-use fn_traits::fns::ResultOkFn;
 use fn_traits::FnMut;
 
-pub struct MapOkAsyncFn<F, E>
+pub struct MapOkAsyncFn<F, R>
 where
     F: ?Sized,
 {
-    phantom: PhantomData<fn() -> E>,
+    phantom: PhantomData<R>,
     f: F,
 }
 
-impl<F, E> MapOkAsyncFn<F, E> {
+impl<F, R> MapOkAsyncFn<F, R> {
     pub fn new(f: F) -> Self {
         Self {
             phantom: PhantomData,
@@ -21,7 +22,7 @@ impl<F, E> MapOkAsyncFn<F, E> {
     }
 }
 
-impl<F, E> Clone for MapOkAsyncFn<F, E>
+impl<F, R> Clone for MapOkAsyncFn<F, R>
 where
     F: Clone,
 {
@@ -33,14 +34,15 @@ where
     }
 }
 
-impl<T, F, E> FnMut<(T,)> for MapOkAsyncFn<F, E>
+impl<T, F, R> FnMut<(T,)> for MapOkAsyncFn<F, R>
 where
     F: FnMut<(T,)> + ?Sized,
     F::Output: IntoFuture,
+    R: Residual<<F::Output as IntoFuture>::Output>,
 {
-    type Output = Map<<F::Output as IntoFuture>::IntoFuture, ResultOkFn<E>>;
+    type Output = Map<<F::Output as IntoFuture>::IntoFuture, TryFromOutputFn<R::TryType>>;
 
     fn call_mut(&mut self, args: (T,)) -> Self::Output {
-        Map::new(self.f.call_mut(args).into_future(), ResultOkFn::default())
+        Map::new(self.f.call_mut(args).into_future(), TryFromOutputFn::default())
     }
 }

@@ -1,3 +1,5 @@
+use crate::support::try_::{FromResidual, Residual, Try};
+use core::ops::ControlFlow;
 use fn_traits::FnMut;
 
 #[derive(Clone)]
@@ -14,13 +16,18 @@ impl<F> MapOkFn<F> {
     }
 }
 
-impl<T, E, F> FnMut<(Result<T, E>,)> for MapOkFn<F>
+impl<T, F> FnMut<(T,)> for MapOkFn<F>
 where
-    F: FnMut<(T,)> + ?Sized,
+    T: Try,
+    T::Residual: Residual<F::Output>,
+    F: FnMut<(T::Output,)> + ?Sized,
 {
-    type Output = Result<F::Output, E>;
+    type Output = <T::Residual as Residual<F::Output>>::TryType;
 
-    fn call_mut(&mut self, args: (Result<T, E>,)) -> Self::Output {
-        args.0.map(|value| self.f.call_mut((value,)))
+    fn call_mut(&mut self, args: (T,)) -> Self::Output {
+        match args.0.branch() {
+            ControlFlow::Continue(output) => Self::Output::from_output(self.f.call_mut((output,))),
+            ControlFlow::Break(residual) => Self::Output::from_residual(residual),
+        }
     }
 }

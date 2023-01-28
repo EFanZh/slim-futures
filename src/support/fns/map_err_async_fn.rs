@@ -8,7 +8,7 @@ pub struct MapErrAsyncFn<F, T>
 where
     F: ?Sized,
 {
-    phantom: PhantomData<fn() -> T>,
+    phantom: PhantomData<T>,
     f: F,
 }
 

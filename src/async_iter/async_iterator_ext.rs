@@ -44,7 +44,7 @@ use crate::async_iter::try_fold_async::TryFoldAsync;
 use crate::async_iter::try_for_each::TryForEach;
 use crate::async_iter::try_for_each_async::TryForEachAsync;
 use crate::async_iter::zip::Zip;
-use crate::support::{AsyncIterator, FromResidual, IntoAsyncIterator, ResultAsyncIterator, Try};
+use crate::support::{AsyncIterator, FromResidual, IntoAsyncIterator, Residual, ResultAsyncIterator, Try};
 use core::future::IntoFuture;
 use fn_traits::fns::{CloneFn, CopyFn, MemTakeFn};
 
@@ -345,19 +345,27 @@ pub trait AsyncIteratorExt: AsyncIterator {
 
     fn slim_map_ok<F, T>(self, f: F) -> MapOk<Self, F>
     where
-        Self: ResultAsyncIterator + Sized,
-        F: FnMut(Self::Ok) -> T,
+        Self: Sized,
+        Self::Item: Try,
+        <Self::Item as Try>::Residual: Residual<T>,
+        F: FnMut(<Self::Item as Try>::Output) -> T,
     {
-        crate::support::assert_async_iter::<_, Result<T, Self::Error>>(MapOk::new(self, f))
+        crate::support::assert_async_iter::<_, <<Self::Item as Try>::Residual as Residual<T>>::TryType>(MapOk::new(
+            self, f,
+        ))
     }
 
     fn slim_map_ok_async<F, Fut>(self, f: F) -> MapOkAsync<Self, F>
     where
-        Self: ResultAsyncIterator + Sized,
-        F: FnMut(Self::Ok) -> Fut,
+        Self: Sized,
+        Self::Item: Try,
+        <Self::Item as Try>::Residual: Residual<Fut::Output>,
+        F: FnMut(<Self::Item as Try>::Output) -> Fut,
         Fut: IntoFuture,
     {
-        crate::support::assert_async_iter::<_, Result<Fut::Output, Self::Error>>(MapOkAsync::new(self, f))
+        crate::support::assert_async_iter::<_, <<Self::Item as Try>::Residual as Residual<Fut::Output>>::TryType>(
+            MapOkAsync::new(self, f),
+        )
     }
 
     fn slim_map_while<F, T>(self, f: F) -> MapWhile<Self, F>

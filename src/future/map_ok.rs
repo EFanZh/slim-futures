@@ -1,6 +1,6 @@
 use crate::future::map::Map;
 use crate::support::fns::MapOkFn;
-use crate::support::ResultFuture;
+use crate::support::{Residual, Try};
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
@@ -9,7 +9,10 @@ use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
     #[derive(Clone)]
-    pub struct MapOk<Fut, F> {
+    pub struct MapOk<Fut, F>
+    where
+        F: ?Sized,
+    {
         #[pin]
         inner: Map<Fut, MapOkFn<F>>,
     }
@@ -25,10 +28,12 @@ impl<Fut, F> MapOk<Fut, F> {
 
 impl<Fut, F> Future for MapOk<Fut, F>
 where
-    Fut: ResultFuture,
-    F: FnMut<(Fut::Ok,)>,
+    Fut: Future,
+    Fut::Output: Try,
+    <Fut::Output as Try>::Residual: Residual<F::Output>,
+    F: FnMut<(<Fut::Output as Try>::Output,)> + ?Sized,
 {
-    type Output = Result<F::Output, Fut::Error>;
+    type Output = <<Fut::Output as Try>::Residual as Residual<F::Output>>::TryType;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         self.project().inner.poll(cx)
@@ -37,8 +42,10 @@ where
 
 impl<Fut, F> FusedFuture for MapOk<Fut, F>
 where
-    Fut: ResultFuture + FusedFuture,
-    F: FnMut<(Fut::Ok,)>,
+    Fut: FusedFuture,
+    Fut::Output: Try,
+    <Fut::Output as Try>::Residual: Residual<F::Output>,
+    F: FnMut<(<Fut::Output as Try>::Output,)> + ?Sized,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

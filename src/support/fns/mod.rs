@@ -11,6 +11,7 @@ pub use self::map_ok_async_fn::MapOkAsyncFn;
 pub use self::map_ok_fn::MapOkFn;
 pub use self::map_ok_or_else_fn::MapOkOrElseFn;
 pub use self::or_else_fn::OrElseFn;
+pub use self::try_from_output_fn::TryFromOutputFn;
 pub use self::unwrap_continue_value_fn::UnwrapContinueValueFn;
 
 mod and_then_fn;
@@ -26,4 +27,5 @@ mod map_ok_async_fn;
 mod map_ok_fn;
 mod map_ok_or_else_fn;
 mod or_else_fn;
+mod try_from_output_fn;
 mod unwrap_continue_value_fn;

@@ -4,7 +4,18 @@
 [![codecov](https://codecov.io/gh/EFanZh/slim-futures/branch/main/graph/badge.svg)](https://codecov.io/gh/EFanZh/slim-futures)
 [![Coverage Status](https://coveralls.io/repos/github/EFanZh/slim-futures/badge.svg?branch=main)](https://coveralls.io/github/EFanZh/slim-futures?branch=main)
 
-Async combinators that focus on small binary sizes.
+Provides asynchronous combinators that have the following features:
+
+1. Supports more `Try` types, rather than `Result<T, E>`.
+2. Supports values with custom take function.
+3. Provides both asynchronous and synchronous functions.
+4. Have minimal memory occupation.
+5. Provides extra combinators.
+
+Disadvantages:
+
+1. Does not support for [`FnOnce`] functions.
+2. Does not implement [`FusedStream`] and [`FusedFuture`], unless its free.
 
 | slim-futures                                | [`futures`]                      | Notes                 |
 | ------------------------------------------- | -------------------------------- | --------------------- |

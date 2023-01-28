@@ -3,7 +3,7 @@ use fn_traits::FnMut;
 use futures_util::future::Either;
 
 pub struct EitherLeftFn<B> {
-    phantom: PhantomData<fn() -> B>,
+    phantom: PhantomData<B>,
 }
 
 impl<B> Default for EitherLeftFn<B> {

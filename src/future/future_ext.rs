@@ -24,7 +24,7 @@ use crate::future::try_flatten::TryFlatten;
 use crate::future::try_flatten_err::TryFlattenErr;
 use crate::future::unwrap_or_else::UnwrapOrElse;
 use crate::future::unwrap_or_else_async::UnwrapOrElseAsync;
-use crate::support::{self, FromResidual, IntoAsyncIterator, Never, ResultFuture, Try};
+use crate::support::{self, FromResidual, IntoAsyncIterator, Never, Residual, ResultFuture, Try};
 use core::future::{Future, IntoFuture};
 
 pub trait FutureExt: Future {
@@ -152,19 +152,25 @@ pub trait FutureExt: Future {
 
     fn slim_map_ok<F, T>(self, f: F) -> MapOk<Self, F>
     where
-        Self: ResultFuture + Sized,
-        F: FnMut(Self::Ok) -> T,
+        Self: Sized,
+        Self::Output: Try,
+        <Self::Output as Try>::Residual: Residual<T>,
+        F: FnMut(<Self::Output as Try>::Output) -> T,
     {
-        support::assert_future::<_, Result<T, Self::Error>>(MapOk::new(self, f))
+        support::assert_future::<_, <<Self::Output as Try>::Residual as Residual<T>>::TryType>(MapOk::new(self, f))
     }
 
     fn slim_map_ok_async<F, Fut>(self, f: F) -> MapOkAsync<Self, F>
     where
-        Self: ResultFuture + Sized,
-        F: FnMut(Self::Ok) -> Fut,
+        Self: Sized,
+        Self::Output: Try,
+        <Self::Output as Try>::Residual: Residual<Fut::Output>,
+        F: FnMut(<Self::Output as Try>::Output) -> Fut,
         Fut: IntoFuture,
     {
-        support::assert_future::<_, Result<Fut::Output, Self::Error>>(MapOkAsync::new(self, f))
+        support::assert_future::<_, <<Self::Output as Try>::Residual as Residual<Fut::Output>>::TryType>(
+            MapOkAsync::new(self, f),
+        )
     }
 
     fn slim_map_ok_or_else<D, F, T>(self, default: D, f: F) -> MapOkOrElse<Self, D, F>

@@ -1,6 +1,6 @@
 use crate::async_iter::and_then_async::AndThenAsync;
 use crate::support::fns::MapOkAsyncFn;
-use crate::support::{AsyncIterator, FusedAsyncIterator, ResultAsyncIterator};
+use crate::support::{AsyncIterator, FusedAsyncIterator, Residual, Try};
 use core::future::IntoFuture;
 use core::pin::Pin;
 use core::task::{Context, Poll};
@@ -10,20 +10,24 @@ use futures_core::FusedFuture;
 pin_project_lite::pin_project! {
     pub struct MapOkAsync<I, F>
     where
-        I: ResultAsyncIterator,
-        F: FnMut<(I::Ok,)>,
+        I: AsyncIterator,
+        I::Item: Try,
+        <I::Item as Try>::Residual: Residual<<F::Output as IntoFuture>::Output>,
+        F: FnMut<(<I::Item as Try>::Output,)>,
         F: ?Sized,
         F::Output: IntoFuture,
     {
         #[pin]
-        inner: AndThenAsync<I, MapOkAsyncFn<F, I::Error>>,
+        inner: AndThenAsync<I, MapOkAsyncFn<F, <I::Item as Try>::Residual>>,
     }
 }
 
 impl<I, F> MapOkAsync<I, F>
 where
-    I: ResultAsyncIterator,
-    F: FnMut<(I::Ok,)>,
+    I: AsyncIterator,
+    I::Item: Try,
+    <I::Item as Try>::Residual: Residual<<F::Output as IntoFuture>::Output>,
+    F: FnMut<(<I::Item as Try>::Output,)>,
     F::Output: IntoFuture,
 {
     pub(crate) fn new(iter: I, f: F) -> Self {
@@ -35,8 +39,10 @@ where
 
 impl<I, F> Clone for MapOkAsync<I, F>
 where
-    I: ResultAsyncIterator + Clone,
-    F: FnMut<(I::Ok,)> + Clone,
+    I: AsyncIterator + Clone,
+    I::Item: Try,
+    <I::Item as Try>::Residual: Residual<<F::Output as IntoFuture>::Output>,
+    F: FnMut<(<I::Item as Try>::Output,)> + Clone,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::IntoFuture: Clone,
 {
@@ -49,11 +55,13 @@ where
 
 impl<I, F> AsyncIterator for MapOkAsync<I, F>
 where
-    I: ResultAsyncIterator,
-    F: FnMut<(I::Ok,)> + ?Sized,
+    I: AsyncIterator,
+    I::Item: Try,
+    <I::Item as Try>::Residual: Residual<<F::Output as IntoFuture>::Output>,
+    F: FnMut<(<I::Item as Try>::Output,)> + ?Sized,
     F::Output: IntoFuture,
 {
-    type Item = Result<<F::Output as IntoFuture>::Output, I::Error>;
+    type Item = <<I::Item as Try>::Residual as Residual<<F::Output as IntoFuture>::Output>>::TryType;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         self.project().inner.poll_next(cx)
@@ -66,8 +74,10 @@ where
 
 impl<I, F> FusedAsyncIterator for MapOkAsync<I, F>
 where
-    I: ResultAsyncIterator + FusedAsyncIterator,
-    F: FnMut<(I::Ok,)> + ?Sized,
+    I: FusedAsyncIterator,
+    I::Item: Try,
+    <I::Item as Try>::Residual: Residual<<F::Output as IntoFuture>::Output>,
+    F: FnMut<(<I::Item as Try>::Output,)> + ?Sized,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::IntoFuture: FusedFuture,
 {

@@ -14,6 +14,10 @@ pub trait Try: FromResidual<Self::Residual> {
     fn branch(self) -> ControlFlow<Self::Residual, Self::Output>;
 }
 
+pub trait Residual<O> {
+    type TryType: Try<Output = O, Residual = Self>;
+}
+
 fn infallible_into<T>(value: Infallible) -> T {
     match value {}
 }
@@ -45,6 +49,10 @@ impl<B, C> Try for ControlFlow<B, C> {
     }
 }
 
+impl<B, C> Residual<C> for ControlFlow<B, Infallible> {
+    type TryType = ControlFlow<B, C>;
+}
+
 // `Option<T>`.
 
 impl<T> FromResidual<<Self as Try>::Residual> for Option<T> {
@@ -64,6 +72,10 @@ impl<T> Try for Option<T> {
     fn branch(self) -> ControlFlow<Self::Residual, Self::Output> {
         self.map_or(ControlFlow::Break(None), ControlFlow::Continue)
     }
+}
+
+impl<T> Residual<T> for Option<Infallible> {
+    type TryType = Option<T>;
 }
 
 // `Result<T, E>`.
@@ -91,6 +103,10 @@ impl<T, E> Try for Result<T, E> {
             Err(residual) => ControlFlow::Break(Err(residual)),
         }
     }
+}
+
+impl<T, E> Residual<T> for Result<Infallible, E> {
+    type TryType = Result<T, E>;
 }
 
 // `Poll<Option<Result<T, E>>>`.

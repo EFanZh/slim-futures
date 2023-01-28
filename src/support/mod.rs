@@ -6,7 +6,7 @@ pub use self::predicate_fn::PredicateFn;
 pub use self::raw_residual::RawResidual;
 pub use self::result_async_iterator::ResultAsyncIterator;
 pub use self::result_future::ResultFuture;
-pub use self::try_::{FromResidual, Try};
+pub use self::try_::{FromResidual, Residual, Try};
 pub use core::convert::Infallible as Never;
 use futures_core::Future;
 pub use futures_core::{FusedStream as FusedAsyncIterator, Stream as AsyncIterator};

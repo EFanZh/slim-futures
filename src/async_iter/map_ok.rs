@@ -1,6 +1,6 @@
 use crate::async_iter::map::Map;
 use crate::support::fns::MapOkFn;
-use crate::support::{AsyncIterator, FusedAsyncIterator, ResultAsyncIterator};
+use crate::support::{AsyncIterator, FusedAsyncIterator, Residual, Try};
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use fn_traits::FnMut;
@@ -37,10 +37,12 @@ where
 
 impl<I, F> AsyncIterator for MapOk<I, F>
 where
-    I: ResultAsyncIterator,
-    F: FnMut<(I::Ok,)> + ?Sized,
+    I: AsyncIterator,
+    I::Item: Try,
+    <I::Item as Try>::Residual: Residual<F::Output>,
+    F: FnMut<(<I::Item as Try>::Output,)> + ?Sized,
 {
-    type Item = Result<F::Output, I::Error>;
+    type Item = <<I::Item as Try>::Residual as Residual<F::Output>>::TryType;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         self.project().inner.poll_next(cx)
@@ -53,8 +55,10 @@ where
 
 impl<I, F> FusedAsyncIterator for MapOk<I, F>
 where
-    I: ResultAsyncIterator + FusedAsyncIterator,
-    F: FnMut<(I::Ok,)> + ?Sized,
+    I: FusedAsyncIterator,
+    I::Item: Try,
+    <I::Item as Try>::Residual: Residual<F::Output>,
+    F: FnMut<(<I::Item as Try>::Output,)> + ?Sized,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()
