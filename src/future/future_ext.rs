@@ -215,7 +215,8 @@ pub trait FutureExt: Future {
     where
         Self: ResultFuture + Sized,
         F: FnMut(Self::Error) -> Fut,
-        Fut: support::IntoResultFuture<Ok = Self::Ok>,
+        Fut: IntoFuture,
+        Fut::Output: Try<Output = Self::Ok>,
     {
         support::assert_future::<_, Fut::Output>(OrElseAsync::new(self, f))
     }
@@ -243,11 +244,10 @@ pub trait FutureExt: Future {
     fn slim_try_flatten_err(self) -> TryFlattenErr<Self>
     where
         Self: ResultFuture + Sized,
-        Self::Error: support::IntoResultFuture<Ok = Self::Ok>,
+        Self::Error: IntoFuture,
+        <Self::Error as IntoFuture>::Output: Try<Output = Self::Ok>,
     {
-        support::assert_future::<_, <<Self::Error as IntoFuture>::IntoFuture as Future>::Output>(TryFlattenErr::new(
-            self,
-        ))
+        support::assert_future::<_, <Self::Error as IntoFuture>::Output>(TryFlattenErr::new(self))
     }
 
     fn slim_unit_error(self) -> IntoResultFuture<Self, ()>

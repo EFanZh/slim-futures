@@ -1,6 +1,6 @@
 use crate::future::map_err::MapErr;
 use crate::future::try_flatten_err::TryFlattenErr;
-use crate::support::{IntoResultFuture, ResultFuture};
+use crate::support::{ResultFuture, Try};
 use core::future::{Future, IntoFuture};
 use core::pin::Pin;
 use core::task::{Context, Poll};
@@ -50,9 +50,10 @@ impl<Fut, F> Future for OrElseAsync<Fut, F>
 where
     Fut: ResultFuture,
     F: FnMut<(Fut::Error,)>,
-    F::Output: IntoResultFuture<Ok = Fut::Ok>,
+    F::Output: IntoFuture,
+    <F::Output as IntoFuture>::Output: Try<Output = Fut::Ok>,
 {
-    type Output = <<F::Output as IntoFuture>::IntoFuture as Future>::Output;
+    type Output = <F::Output as IntoFuture>::Output;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         self.project().inner.poll(cx)
@@ -63,7 +64,8 @@ impl<Fut, F> FusedFuture for OrElseAsync<Fut, F>
 where
     Fut: ResultFuture + FusedFuture,
     F: FnMut<(Fut::Error,)>,
-    F::Output: IntoResultFuture<Ok = Fut::Ok>,
+    F::Output: IntoFuture,
+    <F::Output as IntoFuture>::Output: Try<Output = Fut::Ok>,
     <F::Output as IntoFuture>::IntoFuture: FusedFuture,
 {
     fn is_terminated(&self) -> bool {

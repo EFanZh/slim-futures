@@ -1,5 +1,5 @@
 use crate::support::states::TwoPhases;
-use crate::support::{IntoResultFuture, ResultFuture};
+use crate::support::{ResultFuture, Try};
 use core::future::{Future, IntoFuture};
 use core::ops::ControlFlow;
 use core::pin::Pin;
@@ -45,18 +45,19 @@ where
 impl<Fut> Future for TryFlattenErr<Fut>
 where
     Fut: ResultFuture,
-    Fut::Error: IntoResultFuture<Ok = Fut::Ok>,
+    Fut::Error: IntoFuture,
+    <Fut::Error as IntoFuture>::Output: Try<Output = Fut::Ok>,
 {
     type Output = <Fut::Error as IntoFuture>::Output;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         fn dispatch<T, E>(result: Result<T, E>) -> ControlFlow<E::Output, E::IntoFuture>
         where
-            E: IntoResultFuture<Ok = T>,
-            E::IntoFuture: ResultFuture<Ok = T>,
+            E: IntoFuture,
+            <E as IntoFuture>::Output: Try<Output = T>,
         {
             match result {
-                Ok(value) => ControlFlow::Break(Ok(value)),
+                Ok(value) => ControlFlow::Break(<E as IntoFuture>::Output::from_output(value)),
                 Err(error) => ControlFlow::Continue(error.into_future()),
             }
         }
@@ -70,7 +71,8 @@ where
 impl<Fut> FusedFuture for TryFlattenErr<Fut>
 where
     Fut: ResultFuture + FusedFuture,
-    Fut::Error: IntoResultFuture<Ok = Fut::Ok>,
+    Fut::Error: IntoFuture,
+    <Fut::Error as IntoFuture>::Output: Try<Output = Fut::Ok>,
     <Fut::Error as IntoFuture>::IntoFuture: FusedFuture,
 {
     fn is_terminated(&self) -> bool {
