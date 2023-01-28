@@ -1,30 +1,18 @@
 use crate::future::map::Map;
-use crate::support::ResultFuture;
+use crate::support::fns::OrElseFn;
+use crate::support::{ResultFuture, Try};
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
-#[derive(Clone)]
-struct OrElseFn<F> {
-    inner: F,
-}
-
-impl<T, E, F, U> FnMut<(Result<T, E>,)> for OrElseFn<F>
-where
-    F: FnMut<(E,), Output = Result<T, U>>,
-{
-    type Output = Result<T, U>;
-
-    fn call_mut(&mut self, args: (Result<T, E>,)) -> Self::Output {
-        args.0.or_else(|value| self.inner.call_mut((value,)))
-    }
-}
-
 pin_project_lite::pin_project! {
     #[derive(Clone)]
-    pub struct OrElse<Fut, F> {
+    pub struct OrElse<Fut, F>
+    where
+        F: ?Sized,
+    {
         #[pin]
         inner: Map<Fut, OrElseFn<F>>,
     }
@@ -33,27 +21,29 @@ pin_project_lite::pin_project! {
 impl<Fut, F> OrElse<Fut, F> {
     pub(crate) fn new(fut: Fut, f: F) -> Self {
         Self {
-            inner: Map::new(fut, OrElseFn { inner: f }),
+            inner: Map::new(fut, OrElseFn::new(f)),
         }
     }
 }
 
-impl<Fut, F, E> Future for OrElse<Fut, F>
+impl<Fut, F> Future for OrElse<Fut, F>
 where
     Fut: ResultFuture,
-    F: FnMut<(Fut::Error,), Output = Result<Fut::Ok, E>>,
+    F: FnMut<(Fut::Error,)> + ?Sized,
+    F::Output: Try<Output = Fut::Ok>,
 {
-    type Output = Result<Fut::Ok, E>;
+    type Output = F::Output;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         self.project().inner.poll(cx)
     }
 }
 
-impl<Fut, F, E> FusedFuture for OrElse<Fut, F>
+impl<Fut, F> FusedFuture for OrElse<Fut, F>
 where
     Fut: ResultFuture + FusedFuture,
-    F: FnMut<(Fut::Error,), Output = Result<Fut::Ok, E>>,
+    F: FnMut<(Fut::Error,)> + ?Sized,
+    F::Output: Try<Output = Fut::Ok>,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

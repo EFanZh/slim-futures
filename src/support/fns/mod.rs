@@ -7,6 +7,7 @@ pub use self::for_each_fn::ForEachFn;
 pub use self::inspect_fn::InspectFn;
 pub use self::map_ok_fn::MapOkFn;
 pub use self::map_ok_or_else_fn::MapOkOrElseFn;
+pub use self::or_else_fn::OrElseFn;
 pub use self::unwrap_continue_value_fn::UnwrapContinueValueFn;
 
 mod and_then_fn;
@@ -18,4 +19,5 @@ mod for_each_fn;
 mod inspect_fn;
 mod map_ok_fn;
 mod map_ok_or_else_fn;
+mod or_else_fn;
 mod unwrap_continue_value_fn;
