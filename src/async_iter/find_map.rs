@@ -49,7 +49,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::async_iter::async_iter_ext::AsyncIteratorExt;
+    use crate::async_iter::async_iterator_ext::AsyncIteratorExt;
     use futures_util::stream;
 
     fn find_3_then_mul_10(x: u32) -> Option<u64> {

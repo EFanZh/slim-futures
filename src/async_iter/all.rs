@@ -73,7 +73,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::async_iter::async_iter_ext::AsyncIteratorExt;
+    use crate::async_iter::async_iterator_ext::AsyncIteratorExt;
     use futures_util::stream;
 
     fn less_than_10(x: u32) -> bool {

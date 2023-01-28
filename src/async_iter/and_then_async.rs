@@ -1,6 +1,5 @@
 use crate::support::{AsyncIterator, FromResidual, FusedAsyncIterator, Try};
-use core::future::Future;
-use core::future::IntoFuture;
+use core::future::{Future, IntoFuture};
 use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
@@ -122,7 +121,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::async_iter::async_iter_ext::AsyncIteratorExt;
+    use crate::async_iter::async_iterator_ext::AsyncIteratorExt;
     use futures_util::future::Ready;
     use futures_util::{future, stream, StreamExt};
     use std::vec::Vec;

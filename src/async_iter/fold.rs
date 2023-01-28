@@ -57,7 +57,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::async_iter::async_iter_ext::AsyncIteratorExt;
+    use crate::async_iter::async_iterator_ext::AsyncIteratorExt;
     use futures_util::stream;
 
     fn accumulate(state: u64, item: u32) -> u64 {

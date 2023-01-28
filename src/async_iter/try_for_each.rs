@@ -49,7 +49,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::async_iter::async_iter_ext::AsyncIteratorExt;
+    use crate::async_iter::async_iterator_ext::AsyncIteratorExt;
     use futures_util::stream;
     use std::sync::Mutex;
     use std::vec::Vec;
