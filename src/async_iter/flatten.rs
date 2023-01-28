@@ -16,10 +16,9 @@ where
     type Output = ControlFlow<U>;
 
     fn call_mut(&mut self, args: ((), T)) -> Self::Output {
-        match self.inner.call_mut((args.1,)) {
-            None => ControlFlow::Continue(()),
-            Some(item) => ControlFlow::Break(item),
-        }
+        self.inner
+            .call_mut((args.1,))
+            .map_or(ControlFlow::Continue(()), ControlFlow::Break)
     }
 }
 
@@ -102,10 +101,9 @@ where
     <I::Item as IntoAsyncIterator>::IntoAsyncIter: FusedAsyncIterator,
 {
     fn is_terminated(&self) -> bool {
-        match &self.sub_iter {
-            None => self.iter.is_terminated(),
-            Some(sub_iter) => sub_iter.is_terminated(),
-        }
+        self.sub_iter
+            .as_ref()
+            .map_or_else(|| self.iter.is_terminated(), FusedAsyncIterator::is_terminated)
     }
 }
 

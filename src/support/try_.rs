@@ -62,10 +62,7 @@ impl<T> Try for Option<T> {
     }
 
     fn branch(self) -> ControlFlow<Self::Residual, Self::Output> {
-        match self {
-            None => ControlFlow::Break(None),
-            Some(output) => ControlFlow::Continue(output),
-        }
+        self.map_or(ControlFlow::Break(None), ControlFlow::Continue)
     }
 }
 

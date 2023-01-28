@@ -112,10 +112,9 @@ where
     <F::Output as IntoFuture>::IntoFuture: FusedFuture,
 {
     fn is_terminated(&self) -> bool {
-        match &self.fut {
-            None => self.iter.is_terminated(),
-            Some(fut) => fut.is_terminated(),
-        }
+        self.fut
+            .as_ref()
+            .map_or_else(|| self.iter.is_terminated(), FusedFuture::is_terminated)
     }
 }
 
