@@ -79,6 +79,68 @@ fn benchmark_and_then_async(c: &mut Criterion) {
     benchmark_group.finish()
 }
 
+// `filter_async`.
+
+fn benchmark_filter_async_with<I>(
+    benchmark_group: &mut BenchmarkGroup<impl Measurement>,
+    name: &str,
+    mut f: impl FnMut(Iter<IntoIter<u32, 6>>, fn(&u32) -> Ready<bool>) -> I,
+) where
+    I: Stream<Item = u32>,
+{
+    benchmark_async_iter_with(benchmark_group, name, || {
+        f(
+            stream::iter(hint::black_box([2, 3, 5, 7, 11, 13])),
+            hint::black_box::<fn(&_) -> _>(|&x| future::ready(x != 7)),
+        )
+    });
+}
+
+fn benchmark_filter_async(c: &mut Criterion) {
+    let mut benchmark_group = c.benchmark_group("async iter/filter_async");
+
+    benchmark_filter_async_with(&mut benchmark_group, "futures", StreamExt::filter);
+
+    benchmark_filter_async_with(
+        &mut benchmark_group,
+        "slim-futures",
+        AsyncIteratorExt::slim_filter_async,
+    );
+
+    benchmark_group.finish()
+}
+
+// `filter_map_async`.
+
+fn benchmark_filter_map_async_with<I>(
+    benchmark_group: &mut BenchmarkGroup<impl Measurement>,
+    name: &str,
+    mut f: impl FnMut(Iter<IntoIter<u32, 6>>, fn(u32) -> Ready<Option<u32>>) -> I,
+) where
+    I: Stream<Item = u32>,
+{
+    benchmark_async_iter_with(benchmark_group, name, || {
+        f(
+            stream::iter(hint::black_box([2, 3, 5, 7, 11, 13])),
+            hint::black_box::<fn(_) -> _>(|x| future::ready((x != 7).then_some(x))),
+        )
+    });
+}
+
+fn benchmark_filter_map_async(c: &mut Criterion) {
+    let mut benchmark_group = c.benchmark_group("async iter/filter_map_async");
+
+    benchmark_filter_map_async_with(&mut benchmark_group, "futures", StreamExt::filter_map);
+
+    benchmark_filter_map_async_with(
+        &mut benchmark_group,
+        "slim-futures",
+        AsyncIteratorExt::slim_filter_map_async,
+    );
+
+    benchmark_group.finish()
+}
+
 // `fold_async`.
 
 fn benchmark_fold_async_with<Fut>(
@@ -432,6 +494,8 @@ fn benchmark_try_for_each_async(c: &mut Criterion) {
 criterion::criterion_group!(
     benchmarks,
     benchmark_and_then_async,
+    benchmark_filter_async,
+    benchmark_filter_map_async,
     benchmark_fold_async,
     benchmark_for_each_async,
     benchmark_map,
