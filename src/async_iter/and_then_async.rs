@@ -68,26 +68,24 @@ where
         let mut fut_slot = this.fut;
         let f = this.f;
 
-        Poll::Ready('block: {
-            let fut = match fut_slot.as_mut().as_pin_mut() {
-                None => match task::ready!(iter.as_mut().poll_next(cx)) {
-                    None => break 'block None,
-                    Some(item) => match item.branch() {
-                        ControlFlow::Continue(output) => {
-                            fut_slot.as_mut().insert_pinned(f.call_mut((output,)).into_future())
-                        }
-                        ControlFlow::Break(residual) => return Poll::Ready(Some(Self::Item::from_residual(residual))),
-                    },
+        let fut = match fut_slot.as_mut().as_pin_mut() {
+            None => match task::ready!(iter.as_mut().poll_next(cx)) {
+                None => return Poll::Ready(None),
+                Some(item) => match item.branch() {
+                    ControlFlow::Continue(output) => {
+                        fut_slot.as_mut().insert_pinned(f.call_mut((output,)).into_future())
+                    }
+                    ControlFlow::Break(residual) => return Poll::Ready(Some(Self::Item::from_residual(residual))),
                 },
-                Some(fut) => fut,
-            };
+            },
+            Some(fut) => fut,
+        };
 
-            let item = task::ready!(fut.poll(cx));
+        let item = task::ready!(fut.poll(cx));
 
-            fut_slot.set(None);
+        fut_slot.set(None);
 
-            Some(item)
-        })
+        Poll::Ready(Some(item))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {

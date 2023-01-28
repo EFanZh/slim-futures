@@ -82,21 +82,19 @@ where
         let mut fut_slot = this.fut;
         let f = this.f;
 
-        Poll::Ready('block: {
-            let fut = match fut_slot.as_mut().as_pin_mut() {
-                None => match task::ready!(iter.as_mut().poll_next(cx)) {
-                    None => break 'block None,
-                    Some(item) => fut_slot.as_mut().insert_pinned(f.call_mut((state, item)).into_future()),
-                },
-                Some(fut) => fut,
-            };
+        let fut = match fut_slot.as_mut().as_pin_mut() {
+            None => match task::ready!(iter.as_mut().poll_next(cx)) {
+                None => return Poll::Ready(None),
+                Some(item) => fut_slot.as_mut().insert_pinned(f.call_mut((state, item)).into_future()),
+            },
+            Some(fut) => fut,
+        };
 
-            let item = task::ready!(fut.poll(cx));
+        let item = task::ready!(fut.poll(cx));
 
-            fut_slot.set(None);
+        fut_slot.set(None);
 
-            item
-        })
+        Poll::Ready(item)
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
