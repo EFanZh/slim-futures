@@ -1,6 +1,5 @@
 use crate::support::{AsyncIterator, FusedAsyncIterator, OptionExt, ResultAsyncIterator, Try};
 use core::future::{Future, IntoFuture};
-use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
 use fn_traits::FnMut;
@@ -64,29 +63,24 @@ where
         let mut fut_slot = this.fut;
         let f = this.f;
 
-        match fut_slot.as_mut().get_or_try_insert_with_pinned(|| {
-            ControlFlow::Break(match iter.as_mut().poll_next(cx) {
-                Poll::Ready(item) => Poll::Ready({
-                    match item {
-                        None => None,
-                        Some(item) => match item {
-                            Ok(value) => Some(Self::Item::from_output(value)),
-                            Err(error) => return ControlFlow::Continue(f.call_mut((error,)).into_future()),
-                        },
-                    }
-                }),
-                Poll::Pending => Poll::Pending,
-            })
-        }) {
-            ControlFlow::Continue(fut) => {
-                let item = task::ready!(fut.poll(cx));
+        Poll::Ready('block: {
+            let fut = match fut_slot.as_mut().as_pin_mut() {
+                None => match task::ready!(iter.as_mut().poll_next(cx)) {
+                    None => break 'block None,
+                    Some(item) => match item {
+                        Ok(value) => break 'block Some(Self::Item::from_output(value)),
+                        Err(error) => fut_slot.as_mut().insert_pinned(f.call_mut((error,)).into_future()),
+                    },
+                },
+                Some(fut) => fut,
+            };
 
-                fut_slot.set(None);
+            let item = task::ready!(fut.poll(cx));
 
-                Poll::Ready(Some(item))
-            }
-            ControlFlow::Break(result) => result,
-        }
+            fut_slot.set(None);
+
+            Some(item)
+        })
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {

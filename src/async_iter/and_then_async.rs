@@ -68,31 +68,26 @@ where
         let mut fut_slot = this.fut;
         let f = this.f;
 
-        match fut_slot.as_mut().get_or_try_insert_with_pinned(|| {
-            ControlFlow::Break(match iter.as_mut().poll_next(cx) {
-                Poll::Ready(item) => Poll::Ready({
-                    match item {
-                        None => None,
-                        Some(item) => match item.branch() {
-                            ControlFlow::Continue(output) => {
-                                return ControlFlow::Continue(f.call_mut((output,)).into_future())
-                            }
-                            ControlFlow::Break(residual) => Some(Self::Item::from_residual(residual)),
-                        },
-                    }
-                }),
-                Poll::Pending => Poll::Pending,
-            })
-        }) {
-            ControlFlow::Continue(fut) => {
-                let item = task::ready!(fut.poll(cx));
+        Poll::Ready('block: {
+            let fut = match fut_slot.as_mut().as_pin_mut() {
+                None => match task::ready!(iter.as_mut().poll_next(cx)) {
+                    None => break 'block None,
+                    Some(item) => match item.branch() {
+                        ControlFlow::Continue(output) => {
+                            fut_slot.as_mut().insert_pinned(f.call_mut((output,)).into_future())
+                        }
+                        ControlFlow::Break(residual) => return Poll::Ready(Some(Self::Item::from_residual(residual))),
+                    },
+                },
+                Some(fut) => fut,
+            };
 
-                fut_slot.set(None);
+            let item = task::ready!(fut.poll(cx));
 
-                Poll::Ready(Some(item))
-            }
-            ControlFlow::Break(result) => result,
-        }
+            fut_slot.set(None);
+
+            Some(item)
+        })
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {

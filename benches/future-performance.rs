@@ -31,7 +31,7 @@ fn benchmark_and_then_async_with<Fut>(
 }
 
 fn benchmark_and_then_async(c: &mut Criterion) {
-    let mut benchmark_group = c.benchmark_group("future - and_then_async");
+    let mut benchmark_group = c.benchmark_group("future/and_then_async");
 
     benchmark_and_then_async_with(&mut benchmark_group, "async block", |fut, f| async move {
         f(fut.await?).await
@@ -62,7 +62,7 @@ fn benchmark_map_with<Fut>(
 }
 
 fn benchmark_map(c: &mut Criterion) {
-    let mut benchmark_group = c.benchmark_group("future - map");
+    let mut benchmark_group = c.benchmark_group("future/map");
 
     benchmark_map_with(
         &mut benchmark_group,
@@ -95,7 +95,7 @@ fn benchmark_map_async_with<Fut>(
 }
 
 fn benchmark_map_async(c: &mut Criterion) {
-    let mut benchmark_group = c.benchmark_group("future - map_async");
+    let mut benchmark_group = c.benchmark_group("future/map_async");
 
     benchmark_map_async_with(&mut benchmark_group, "async block", |fut, f| async move {
         f(fut.await).await
@@ -126,7 +126,7 @@ fn benchmark_map_err_with<Fut>(
 }
 
 fn benchmark_map_err(c: &mut Criterion) {
-    let mut benchmark_group = c.benchmark_group("future - map_err");
+    let mut benchmark_group = c.benchmark_group("future/map_err");
 
     benchmark_map_err_with(&mut benchmark_group, "async block", |fut, f| async move {
         fut.await.map_err(f)
@@ -157,7 +157,7 @@ fn benchmark_map_ok_with<Fut>(
 }
 
 fn benchmark_map_ok(c: &mut Criterion) {
-    let mut benchmark_group = c.benchmark_group("future - map_ok");
+    let mut benchmark_group = c.benchmark_group("future/map_ok");
 
     benchmark_map_ok_with(
         &mut benchmark_group,
@@ -190,7 +190,7 @@ fn benchmark_map_chain_with<Fut>(
 }
 
 fn benchmark_map_chain(c: &mut Criterion) {
-    let mut benchmark_group = c.benchmark_group("future - map chain");
+    let mut benchmark_group = c.benchmark_group("future/map chain");
 
     benchmark_map_chain_with(&mut benchmark_group, "async block", |fut, f| async move {
         f(f(f(f(fut.await))))
