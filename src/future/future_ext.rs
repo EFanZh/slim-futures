@@ -202,12 +202,13 @@ pub trait FutureExt: Future {
         support::assert_future::<_, Result<T, Self::Error>>(OkInto::new(self))
     }
 
-    fn slim_or_else<F, T>(self, f: F) -> OrElse<Self, F>
+    fn slim_or_else<F, R>(self, f: F) -> OrElse<Self, F>
     where
         Self: ResultFuture + Sized,
-        F: FnMut(Self::Error) -> Result<Self::Ok, T>,
+        F: FnMut(Self::Error) -> R,
+        R: Try<Output = Self::Ok>,
     {
-        support::assert_future::<_, Result<Self::Ok, T>>(OrElse::new(self, f))
+        support::assert_future::<_, R>(OrElse::new(self, f))
     }
 
     fn slim_or_else_async<F, Fut>(self, f: F) -> OrElseAsync<Self, F>
