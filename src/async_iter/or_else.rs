@@ -79,7 +79,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_or_else() {
-        let iter = stream::iter([Ok(2), Ok(3), Err(5_u32), Err(7), Ok(11), Ok(13)]).slim_or_else(or_else_fn);
+        let iter = stream::iter([Ok(2), Ok(3), Err(5), Err(7), Ok(11), Ok(13)]).slim_or_else(or_else_fn);
 
         assert_eq!(
             iter.collect::<Vec<_>>().await,
@@ -89,7 +89,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_or_else_clone() {
-        let iter = stream::iter([Ok(2), Ok(3), Err(5_u32), Err(7), Ok(11), Ok(13)]).slim_or_else(or_else_fn);
+        let iter = stream::iter([Ok(2), Ok(3), Err(5), Err(7), Ok(11), Ok(13)]).slim_or_else(or_else_fn);
         let iter_2 = iter.clone();
 
         assert_eq!(

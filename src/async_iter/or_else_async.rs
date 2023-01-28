@@ -1,17 +1,15 @@
-use crate::support::{AsyncIterator, FromResidual, FusedAsyncIterator, Try};
+use crate::support::{AsyncIterator, FusedAsyncIterator, ResultAsyncIterator, Try};
 use core::future::{Future, IntoFuture};
-use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
 use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
-    pub struct AndThenAsync<I, F>
+    pub struct OrElseAsync<I, F>
     where
-        I: AsyncIterator,
-        I::Item: Try,
-        F: FnMut<(<I::Item as Try>::Output,)>,
+        I: ResultAsyncIterator,
+        F: FnMut<(I::Error,)>,
         F: ?Sized,
         F::Output: IntoFuture,
     {
@@ -23,11 +21,10 @@ pin_project_lite::pin_project! {
     }
 }
 
-impl<I, F> AndThenAsync<I, F>
+impl<I, F> OrElseAsync<I, F>
 where
-    I: AsyncIterator,
-    I::Item: Try,
-    F: FnMut<(<I::Item as Try>::Output,)>,
+    I: ResultAsyncIterator,
+    F: FnMut<(I::Error,)>,
     F::Output: IntoFuture,
 {
     pub(crate) fn new(iter: I, f: F) -> Self {
@@ -35,11 +32,10 @@ where
     }
 }
 
-impl<I, F> Clone for AndThenAsync<I, F>
+impl<I, F> Clone for OrElseAsync<I, F>
 where
-    I: AsyncIterator + Clone,
-    I::Item: Try,
-    F: FnMut<(<I::Item as Try>::Output,)> + Clone,
+    I: ResultAsyncIterator + Clone,
+    F: FnMut<(I::Error,)> + Clone,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::IntoFuture: Clone,
 {
@@ -52,13 +48,12 @@ where
     }
 }
 
-impl<I, F> AsyncIterator for AndThenAsync<I, F>
+impl<I, F> AsyncIterator for OrElseAsync<I, F>
 where
-    I: AsyncIterator,
-    I::Item: Try,
-    F: FnMut<(<I::Item as Try>::Output,)> + ?Sized,
+    I: ResultAsyncIterator,
+    F: FnMut<(I::Error,)> + ?Sized,
     F::Output: IntoFuture,
-    <F::Output as IntoFuture>::Output: FromResidual<<I::Item as Try>::Residual>,
+    <F::Output as IntoFuture>::Output: Try<Output = I::Ok>,
 {
     type Item = <F::Output as IntoFuture>::Output;
 
@@ -82,9 +77,9 @@ where
 
             match task::ready!(iter.as_mut().poll_next(cx)) {
                 None => break None,
-                Some(item) => match item.branch() {
-                    ControlFlow::Continue(output) => fut_slot.set(Some(f.call_mut((output,)).into_future())),
-                    ControlFlow::Break(residual) => break Some(Self::Item::from_residual(residual)),
+                Some(item) => match item {
+                    Ok(value) => break Some(Self::Item::from_output(value)),
+                    Err(error) => fut_slot.set(Some(f.call_mut((error,)).into_future())),
                 },
             }
         })
@@ -102,13 +97,12 @@ where
     }
 }
 
-impl<I, F> FusedAsyncIterator for AndThenAsync<I, F>
+impl<I, F> FusedAsyncIterator for OrElseAsync<I, F>
 where
-    I: FusedAsyncIterator,
-    I::Item: Try,
-    F: FnMut<(<I::Item as Try>::Output,)> + ?Sized,
+    I: ResultAsyncIterator + FusedAsyncIterator,
+    F: FnMut<(I::Error,)> + ?Sized,
     F::Output: IntoFuture,
-    <F::Output as IntoFuture>::Output: FromResidual<<I::Item as Try>::Residual>,
+    <F::Output as IntoFuture>::Output: Try<Output = I::Ok>,
     <F::Output as IntoFuture>::IntoFuture: FusedFuture,
 {
     fn is_terminated(&self) -> bool {
@@ -125,8 +119,8 @@ mod tests {
     use futures_util::{future, stream, StreamExt};
     use std::vec::Vec;
 
-    fn and_then_async_fn(x: u32) -> Ready<Result<u64, u64>> {
-        if x < 12 {
+    fn or_else_async_fn(x: u32) -> Ready<Result<u64, u64>> {
+        if x < 7 {
             future::ok(u64::from(x * 100))
         } else {
             future::err(u64::from(x * 1000))
@@ -134,30 +128,29 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn test_and_then_async() {
-        let iter = stream::iter([Ok::<_, u32>(2), Ok(3), Err(5), Err(7), Ok(11), Ok(13)])
-            .slim_and_then_async(and_then_async_fn);
+    async fn test_or_else_async() {
+        let iter = stream::iter([Ok(2), Ok(3), Err(5), Err(7), Ok(11), Ok(13)]).slim_or_else_async(or_else_async_fn);
 
         assert_eq!(
             iter.collect::<Vec<_>>().await,
-            [Ok(200), Ok(300), Err(5), Err(7), Ok(1100), Err(13000)],
+            [Ok(2), Ok(3), Ok(500), Err(7000), Ok(11), Ok(13)],
         );
     }
 
     #[tokio::test]
-    async fn test_and_then_async_clone() {
-        let iter = stream::iter([Ok::<_, u32>(2), Ok(3), Err(5), Err(7), Ok(11), Ok(13)])
-            .slim_and_then_async(and_then_async_fn);
+    async fn test_or_else_async_clone() {
+        let iter =
+            stream::iter([Ok(2), Ok(3), Err(5_u32), Err(7), Ok(11), Ok(13)]).slim_or_else_async(or_else_async_fn);
         let iter_2 = iter.clone();
 
         assert_eq!(
             iter.collect::<Vec<_>>().await,
-            [Ok(200), Ok(300), Err(5), Err(7), Ok(1100), Err(13000)],
+            [Ok(2), Ok(3), Ok(500), Err(7000), Ok(11), Ok(13)],
         );
 
         assert_eq!(
             iter_2.collect::<Vec<_>>().await,
-            [Ok(200), Ok(300), Err(5), Err(7), Ok(1100), Err(13000)],
+            [Ok(2), Ok(3), Ok(500), Err(7000), Ok(11), Ok(13)],
         );
     }
 }

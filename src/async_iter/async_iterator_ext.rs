@@ -27,6 +27,7 @@ use crate::async_iter::map_ok::MapOk;
 use crate::async_iter::map_while::MapWhile;
 use crate::async_iter::map_while_async::MapWhileAsync;
 use crate::async_iter::or_else::OrElse;
+use crate::async_iter::or_else_async::OrElseAsync;
 use crate::async_iter::reduce::Reduce;
 use crate::async_iter::reduce_async::ReduceAsync;
 use crate::async_iter::scan::Scan;
@@ -354,6 +355,16 @@ pub trait AsyncIteratorExt: AsyncIterator {
         R: Try<Output = Self::Ok>,
     {
         crate::support::assert_async_iter::<_, R>(OrElse::new(self, f))
+    }
+
+    fn slim_or_else_async<F, Fut>(self, f: F) -> OrElseAsync<Self, F>
+    where
+        Self: ResultAsyncIterator + Sized,
+        F: FnMut(Self::Error) -> Fut,
+        Fut: IntoFuture,
+        Fut::Output: Try<Output = Self::Ok>,
+    {
+        crate::support::assert_async_iter::<_, Fut::Output>(OrElseAsync::new(self, f))
     }
 
     fn slim_reduce<F>(self, f: F) -> Reduce<Self, F>
