@@ -202,10 +202,12 @@ pub trait FutureExt: Future {
 
     fn slim_ok_into<T>(self) -> OkInto<Self, T>
     where
-        Self: ResultFuture + Sized,
-        Self::Ok: Into<T>,
+        Self: Sized,
+        Self::Output: Try,
+        <Self::Output as Try>::Residual: Residual<T>,
+        <Self::Output as Try>::Output: Into<T>,
     {
-        support::assert_future::<_, Result<T, Self::Error>>(OkInto::new(self))
+        support::assert_future::<_, <<Self::Output as Try>::Residual as Residual<T>>::TryType>(OkInto::new(self))
     }
 
     fn slim_or_else<F, R>(self, f: F) -> OrElse<Self, F>

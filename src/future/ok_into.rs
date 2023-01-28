@@ -1,5 +1,5 @@
 use crate::future::map_ok::MapOk;
-use crate::support::ResultFuture;
+use crate::support::{Residual, Try};
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
@@ -34,10 +34,12 @@ where
 
 impl<Fut, T> Future for OkInto<Fut, T>
 where
-    Fut: ResultFuture,
-    Fut::Ok: Into<T>,
+    Fut: Future,
+    Fut::Output: Try,
+    <Fut::Output as Try>::Output: Into<T>,
+    <Fut::Output as Try>::Residual: Residual<T>,
 {
-    type Output = Result<T, Fut::Error>;
+    type Output = <<Fut::Output as Try>::Residual as Residual<T>>::TryType;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         self.project().inner.poll(cx)
@@ -46,8 +48,10 @@ where
 
 impl<Fut, T> FusedFuture for OkInto<Fut, T>
 where
-    Fut: FusedFuture + ResultFuture,
-    Fut::Ok: Into<T>,
+    Fut: FusedFuture,
+    Fut::Output: Try,
+    <Fut::Output as Try>::Output: Into<T>,
+    <Fut::Output as Try>::Residual: Residual<T>,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()
