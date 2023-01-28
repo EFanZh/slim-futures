@@ -41,7 +41,7 @@ impl<A, B> TwoPhases<A, B> {
         if let TwoPhasesProject::Second { state } = self.project() {
             f2(state, cx)
         } else {
-            unreachable!() // TODO: Is `unreachable_unchecked()` necessary for compiler to optimize away this branch?
+            unreachable!()
         }
     }
 

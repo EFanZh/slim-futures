@@ -1,42 +1,11 @@
 use crate::future::and_then_async::AndThenAsync;
-use crate::future::map::Map;
+use crate::support::fns::MapOkAsyncFn;
 use crate::support::ResultFuture;
 use core::future::{Future, IntoFuture};
-use core::marker::PhantomData;
 use core::pin::Pin;
 use core::task::{Context, Poll};
-use fn_traits::fns::ResultOkFn;
 use fn_traits::FnMut;
 use futures_core::FusedFuture;
-
-struct MapOkAsyncFn<F, E> {
-    inner: F,
-    phantom: PhantomData<fn() -> E>,
-}
-
-impl<F, E> Clone for MapOkAsyncFn<F, E>
-where
-    F: Clone,
-{
-    fn clone(&self) -> Self {
-        Self {
-            inner: self.inner.clone(),
-            phantom: self.phantom,
-        }
-    }
-}
-
-impl<T, F, E> FnMut<(T,)> for MapOkAsyncFn<F, E>
-where
-    F: FnMut<(T,)>,
-    F::Output: IntoFuture,
-{
-    type Output = Map<<F::Output as IntoFuture>::IntoFuture, ResultOkFn<E>>;
-
-    fn call_mut(&mut self, args: (T,)) -> Self::Output {
-        Map::new(self.inner.call_mut(args).into_future(), ResultOkFn::default())
-    }
-}
 
 pin_project_lite::pin_project! {
     pub struct MapOkAsync<Fut, F>
@@ -58,13 +27,7 @@ where
 {
     pub(crate) fn new(fut: Fut, f: F) -> Self {
         Self {
-            inner: AndThenAsync::new(
-                fut,
-                MapOkAsyncFn {
-                    inner: f,
-                    phantom: PhantomData,
-                },
-            ),
+            inner: AndThenAsync::new(fut, MapOkAsyncFn::new(f)),
         }
     }
 }
