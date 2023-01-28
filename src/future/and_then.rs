@@ -9,7 +9,10 @@ use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
     #[derive(Clone)]
-    pub struct AndThen<Fut, F> {
+    pub struct AndThen<Fut, F>
+    where
+        F: ?Sized,
+    {
         #[pin]
         inner: Map<Fut, AndThenFn<F>>,
     }
@@ -27,7 +30,7 @@ impl<Fut, F> Future for AndThen<Fut, F>
 where
     Fut: Future,
     Fut::Output: Try,
-    F: FnMut<(<Fut::Output as Try>::Output,)>,
+    F: FnMut<(<Fut::Output as Try>::Output,)> + ?Sized,
     F::Output: FromResidual<<Fut::Output as Try>::Residual>,
 {
     type Output = F::Output;
@@ -41,7 +44,7 @@ impl<Fut, F> FusedFuture for AndThen<Fut, F>
 where
     Fut: FusedFuture,
     Fut::Output: Try,
-    F: FnMut<(<Fut::Output as Try>::Output,)>,
+    F: FnMut<(<Fut::Output as Try>::Output,)> + ?Sized,
     F::Output: FromResidual<<Fut::Output as Try>::Residual>,
 {
     fn is_terminated(&self) -> bool {

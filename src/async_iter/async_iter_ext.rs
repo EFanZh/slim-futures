@@ -23,6 +23,7 @@ use crate::async_iter::fuse::Fuse;
 use crate::async_iter::inspect::Inspect;
 use crate::async_iter::map::Map;
 use crate::async_iter::map_async::MapAsync;
+use crate::async_iter::map_ok::MapOk;
 use crate::async_iter::map_while::MapWhile;
 use crate::async_iter::map_while_async::MapWhileAsync;
 use crate::async_iter::reduce::Reduce;
@@ -38,7 +39,7 @@ use crate::async_iter::try_fold_async::TryFoldAsync;
 use crate::async_iter::try_for_each::TryForEach;
 use crate::async_iter::try_for_each_async::TryForEachAsync;
 use crate::async_iter::zip::Zip;
-use crate::support::{AsyncIterator, FromResidual, IntoAsyncIterator, Try};
+use crate::support::{AsyncIterator, FromResidual, IntoAsyncIterator, ResultAsyncIterator, Try};
 use core::future::IntoFuture;
 use fn_traits::fns::{CloneFn, CopyFn, MemTakeFn};
 
@@ -318,6 +319,14 @@ pub trait AsyncIteratorExt: AsyncIterator {
         Fut: IntoFuture,
     {
         crate::support::assert_async_iter::<_, Fut::Output>(MapAsync::new(self, f))
+    }
+
+    fn slim_map_ok<F, T>(self, f: F) -> MapOk<Self, F>
+    where
+        Self: ResultAsyncIterator + Sized,
+        F: FnMut(Self::Ok) -> T,
+    {
+        crate::support::assert_async_iter::<_, Result<T, Self::Error>>(MapOk::new(self, f))
     }
 
     fn slim_map_while<F, T>(self, f: F) -> MapWhile<Self, F>

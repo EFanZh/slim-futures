@@ -6,7 +6,10 @@ use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
     #[derive(Clone)]
-    pub struct Map<Fut, F> {
+    pub struct Map<Fut, F>
+    where
+        F: ?Sized,
+    {
         #[pin]
         fut: Fut,
         f: F,
@@ -22,7 +25,7 @@ impl<Fut, F> Map<Fut, F> {
 impl<Fut, F> Future for Map<Fut, F>
 where
     Fut: Future,
-    F: FnMut<(Fut::Output,)>,
+    F: FnMut<(Fut::Output,)> + ?Sized,
 {
     type Output = F::Output;
 
@@ -36,7 +39,7 @@ where
 impl<Fut, F> FusedFuture for Map<Fut, F>
 where
     Fut: FusedFuture,
-    F: FnMut<(Fut::Output,)>,
+    F: FnMut<(Fut::Output,)> + ?Sized,
 {
     fn is_terminated(&self) -> bool {
         self.fut.is_terminated()

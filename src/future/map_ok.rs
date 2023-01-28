@@ -1,26 +1,11 @@
 use crate::future::map::Map;
+use crate::support::fns::MapOkFn;
 use crate::support::ResultFuture;
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use fn_traits::FnMut;
 use futures_core::FusedFuture;
-
-#[derive(Clone)]
-struct MapOkFn<F> {
-    inner: F,
-}
-
-impl<T, E, F> FnMut<(Result<T, E>,)> for MapOkFn<F>
-where
-    F: FnMut<(T,)>,
-{
-    type Output = Result<F::Output, E>;
-
-    fn call_mut(&mut self, args: (Result<T, E>,)) -> Self::Output {
-        args.0.map(|value| self.inner.call_mut((value,)))
-    }
-}
 
 pin_project_lite::pin_project! {
     #[derive(Clone)]
@@ -33,7 +18,7 @@ pin_project_lite::pin_project! {
 impl<Fut, F> MapOk<Fut, F> {
     pub(crate) fn new(fut: Fut, f: F) -> Self {
         Self {
-            inner: Map::new(fut, MapOkFn { inner: f }),
+            inner: Map::new(fut, MapOkFn::new(f)),
         }
     }
 }
