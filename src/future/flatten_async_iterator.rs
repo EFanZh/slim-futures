@@ -63,6 +63,13 @@ where
             <Fut::Output as IntoAsyncIterator>::IntoAsyncIter::poll_next,
         )
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        match &self.inner {
+            TwoPhases::First { .. } => (0, None),
+            TwoPhases::Second { state } => state.size_hint(),
+        }
+    }
 }
 
 impl<Fut> FusedAsyncIterator for FlattenAsyncIterator<Fut>

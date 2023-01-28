@@ -89,6 +89,10 @@ where
             }
         })
     }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (0, None)
+    }
 }
 
 impl<I> FusedAsyncIterator for Flatten<I>
