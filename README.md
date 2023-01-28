@@ -33,6 +33,8 @@ Async combinators that focus on small binary sizes.
 | `AsyncIteratorExt::slim_inspect`            | [`StreamExt::inspect`]           |
 | `AsyncIteratorExt::slim_map`                | [`StreamExt::map`]               |
 | `AsyncIteratorExt::slim_map_async`          | [`StreamExt::then`]              |
+| `AsyncIteratorExt::slim_map_err`            | [`TryStreamExt::map_err`]        |
+| `AsyncIteratorExt::slim_map_err_async`      |                                  |
 | `AsyncIteratorExt::slim_map_ok`             | [`TryStreamExt::map_ok`]         |
 | `AsyncIteratorExt::slim_map_ok_async`       |                                  |
 | `AsyncIteratorExt::slim_map_while`          |                                  |
@@ -125,6 +127,7 @@ Async combinators that focus on small binary sizes.
 [`TryFutureExt::try_flatten`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.try_flatten
 [`TryFutureExt::unwrap_or_else`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.unwrap_or_else
 [`TryStreamExt::and_then`]: https://docs.rs/futures/latest/futures/stream/trait.TryStreamExt.html#method.and_then
+[`TryStreamExt::map_err`]: https://docs.rs/futures/latest/futures/stream/trait.TryStreamExt.html#method.map_err
 [`TryStreamExt::map_ok`]: https://docs.rs/futures/latest/futures/stream/trait.TryStreamExt.html#method.map_ok
 [`TryStreamExt::or_else`]: https://docs.rs/futures/latest/futures/stream/trait.TryStreamExt.html#method.or_else
 [`TryStreamExt::try_fold`]: https://docs.rs/futures/latest/futures/stream/trait.TryStreamExt.html#method.try_fold

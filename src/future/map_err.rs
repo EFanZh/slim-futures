@@ -1,26 +1,11 @@
 use crate::future::map::Map;
+use crate::support::fns::MapErrFn;
 use crate::support::ResultFuture;
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use fn_traits::FnMut;
 use futures_core::FusedFuture;
-
-#[derive(Clone)]
-struct MapErrFn<F> {
-    inner: F,
-}
-
-impl<T, E, F> FnMut<(Result<T, E>,)> for MapErrFn<F>
-where
-    F: FnMut<(E,)>,
-{
-    type Output = Result<T, F::Output>;
-
-    fn call_mut(&mut self, args: (Result<T, E>,)) -> Self::Output {
-        args.0.map_err(|value| self.inner.call_mut((value,)))
-    }
-}
 
 pin_project_lite::pin_project! {
     #[derive(Clone)]
@@ -33,7 +18,7 @@ pin_project_lite::pin_project! {
 impl<Fut, F> MapErr<Fut, F> {
     pub(crate) fn new(fut: Fut, f: F) -> Self {
         Self {
-            inner: Map::new(fut, MapErrFn { inner: f }),
+            inner: Map::new(fut, MapErrFn::new(f)),
         }
     }
 }
