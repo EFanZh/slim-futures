@@ -1,5 +1,6 @@
-use crate::support::{AsyncIterator, FusedAsyncIterator};
+use crate::support::{AsyncIterator, FusedAsyncIterator, OptionExt};
 use core::future::IntoFuture;
+use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
 use fn_traits::FnMut;
@@ -59,30 +60,38 @@ where
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         let this = self.project();
         let mut iter = this.iter;
-        let f = this.f;
         let mut fut_slot = this.fut;
+        let f = this.f;
 
-        Poll::Ready(loop {
-            match fut_slot.as_mut().as_pin_mut() {
-                None => {}
-                Some(fut) => {
-                    let item = task::ready!(fut.poll(cx));
+        match fut_slot.as_mut().get_or_try_insert_with_pinned(|| {
+            ControlFlow::Break(match iter.as_mut().poll_next(cx) {
+                Poll::Ready(item) => match item {
+                    None => Poll::Ready(None),
+                    Some(item) => return ControlFlow::Continue(f.call_mut((item,)).into_future()),
+                },
+                Poll::Pending => Poll::Pending,
+            })
+        }) {
+            ControlFlow::Continue(fut) => {
+                let item = task::ready!(fut.poll(cx));
 
-                    fut_slot.set(None);
+                fut_slot.set(None);
 
-                    break Some(item);
-                }
+                Poll::Ready(Some(item))
             }
-
-            match task::ready!(iter.as_mut().poll_next(cx)) {
-                None => break None,
-                Some(item) => fut_slot.set(Some(f.call_mut((item,)).into_future())),
-            }
-        })
+            ControlFlow::Break(result) => result,
+        }
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        self.iter.size_hint()
+        let mut candidate = self.iter.size_hint();
+
+        if self.fut.is_some() {
+            candidate.0 = candidate.0.saturating_add(1);
+            candidate.1 = candidate.1.and_then(|high| high.checked_add(1));
+        }
+
+        candidate
     }
 }
 

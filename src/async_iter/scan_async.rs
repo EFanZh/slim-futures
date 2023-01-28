@@ -1,5 +1,6 @@
-use crate::support::AsyncIterator;
+use crate::support::{AsyncIterator, OptionExt};
 use core::future::IntoFuture;
+use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
 use fn_traits::FnMut;
@@ -76,22 +77,32 @@ where
     type Item = T;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
-        let mut this = self.project();
+        let this = self.project();
+        let mut iter = this.iter;
+        let state = this.state;
         let mut fut_slot = this.fut;
+        let f = this.f;
 
-        Poll::Ready(loop {
-            if let Some(fut) = fut_slot.as_mut().as_pin_mut() {
+        match fut_slot.as_mut().get_or_try_insert_with_pinned(|| {
+            ControlFlow::Break(match iter.as_mut().poll_next(cx) {
+                Poll::Ready(item) => Poll::Ready({
+                    match item {
+                        None => None,
+                        Some(item) => return ControlFlow::Continue(f.call_mut((state, item)).into_future()),
+                    }
+                }),
+                Poll::Pending => Poll::Pending,
+            })
+        }) {
+            ControlFlow::Continue(fut) => {
                 let item = task::ready!(fut.poll(cx));
 
                 fut_slot.set(None);
 
-                break item;
-            } else if let Some(item) = task::ready!(this.iter.as_mut().poll_next(cx)) {
-                fut_slot.set(Some(this.f.call_mut((this.state, item)).into_future()));
-            } else {
-                break None;
+                Poll::Ready(item)
             }
-        })
+            ControlFlow::Break(result) => result,
+        }
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {

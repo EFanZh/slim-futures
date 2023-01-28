@@ -1,4 +1,4 @@
-use crate::support::{AsyncIterator, FusedAsyncIterator, IntoAsyncIterator};
+use crate::support::{AsyncIterator, FusedAsyncIterator, IntoAsyncIterator, OptionExt};
 use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
@@ -72,20 +72,21 @@ where
         let mut sub_iter_slot = this.sub_iter;
 
         Poll::Ready(loop {
-            if let Some(sub_iter) = sub_iter_slot.as_mut().as_pin_mut() {
-                let item = task::ready!(sub_iter.poll_next(cx));
+            let sub_iter = match sub_iter_slot.as_mut().as_pin_mut() {
+                None => match task::ready!(iter.as_mut().poll_next(cx)) {
+                    None => break None,
+                    Some(into_sub_iter) => sub_iter_slot.as_mut().insert_pinned(into_sub_iter.into_async_iter()),
+                },
+                Some(sub_iter) => sub_iter,
+            };
 
-                if item.is_some() {
-                    break item;
-                }
+            let item = task::ready!(sub_iter.poll_next(cx));
 
-                sub_iter_slot.set(None);
+            if item.is_some() {
+                break item;
             }
 
-            match task::ready!(iter.as_mut().poll_next(cx)) {
-                None => break None,
-                Some(into_sub_iter) => sub_iter_slot.set(Some(into_sub_iter.into_async_iter())),
-            }
+            sub_iter_slot.set(None);
         })
     }
 

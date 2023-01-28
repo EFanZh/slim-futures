@@ -100,6 +100,18 @@ fn benchmark_fold_async_with<Fut>(
 fn benchmark_fold_async(c: &mut Criterion) {
     let mut benchmark_group = c.benchmark_group("async iter - fold_async");
 
+    benchmark_fold_async_with(
+        &mut benchmark_group,
+        "async block",
+        |mut iter, mut init, f| async move {
+            while let Some(item) = iter.next().await {
+                init = f(init, item).await;
+            }
+
+            init
+        },
+    );
+
     benchmark_fold_async_with(&mut benchmark_group, "futures", StreamExt::fold);
 
     benchmark_fold_async_with(
@@ -142,6 +154,12 @@ fn benchmark_for_each_async_with<Fut>(
 
 fn benchmark_for_each_async(c: &mut Criterion) {
     let mut benchmark_group = c.benchmark_group("async iter - for_each_async");
+
+    benchmark_for_each_async_with(&mut benchmark_group, "async block", |mut iter, f| async move {
+        while let Some(item) = iter.next().await {
+            f(item).await;
+        }
+    });
 
     benchmark_for_each_async_with(&mut benchmark_group, "futures", StreamExt::for_each);
 
@@ -343,6 +361,18 @@ fn benchmark_try_fold_async(c: &mut Criterion) {
 
     let mut benchmark_group = c.benchmark_group("async iter - try_fold_async");
 
+    benchmark_try_fold_async_with(
+        &mut benchmark_group,
+        "async block",
+        |mut iter, mut init, f| async move {
+            while let Some(item) = iter.next().await {
+                init = f(init, item?).await?;
+            }
+
+            Ok(init)
+        },
+    );
+
     benchmark_try_fold_async_with(&mut benchmark_group, "futures", TryStreamExt::try_fold);
 
     benchmark_try_fold_async_with(&mut benchmark_group, "slim-futures - copy", |iter, init, f| {
@@ -379,6 +409,14 @@ fn benchmark_try_for_each_async_with<Fut>(
 
 fn benchmark_try_for_each_async(c: &mut Criterion) {
     let mut benchmark_group = c.benchmark_group("async iter - try_for_each_async");
+
+    benchmark_try_for_each_async_with(&mut benchmark_group, "async block", |mut iter, f| async move {
+        while let Some(item) = iter.next().await {
+            f(item?).await?;
+        }
+
+        Ok(())
+    });
 
     benchmark_try_for_each_async_with(&mut benchmark_group, "futures", TryStreamExt::try_for_each);
 

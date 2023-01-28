@@ -1,5 +1,6 @@
-use crate::support::{AsyncIterator, FusedAsyncIterator, ResultAsyncIterator, Try};
+use crate::support::{AsyncIterator, FusedAsyncIterator, OptionExt, ResultAsyncIterator, Try};
 use core::future::{Future, IntoFuture};
+use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
 use fn_traits::FnMut;
@@ -60,29 +61,32 @@ where
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         let this = self.project();
         let mut iter = this.iter;
-        let f = this.f;
         let mut fut_slot = this.fut;
+        let f = this.f;
 
-        Poll::Ready(loop {
-            match fut_slot.as_mut().as_pin_mut() {
-                None => {}
-                Some(fut) => {
-                    let item = task::ready!(fut.poll(cx));
+        match fut_slot.as_mut().get_or_try_insert_with_pinned(|| {
+            ControlFlow::Break(match iter.as_mut().poll_next(cx) {
+                Poll::Ready(item) => Poll::Ready({
+                    match item {
+                        None => None,
+                        Some(item) => match item {
+                            Ok(value) => Some(Self::Item::from_output(value)),
+                            Err(error) => return ControlFlow::Continue(f.call_mut((error,)).into_future()),
+                        },
+                    }
+                }),
+                Poll::Pending => Poll::Pending,
+            })
+        }) {
+            ControlFlow::Continue(fut) => {
+                let item = task::ready!(fut.poll(cx));
 
-                    fut_slot.set(None);
+                fut_slot.set(None);
 
-                    break Some(item);
-                }
+                Poll::Ready(Some(item))
             }
-
-            match task::ready!(iter.as_mut().poll_next(cx)) {
-                None => break None,
-                Some(item) => match item {
-                    Ok(value) => break Some(Self::Item::from_output(value)),
-                    Err(error) => fut_slot.set(Some(f.call_mut((error,)).into_future())),
-                },
-            }
-        })
+            ControlFlow::Break(result) => result,
+        }
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {

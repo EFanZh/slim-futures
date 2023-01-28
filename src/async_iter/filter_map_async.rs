@@ -1,4 +1,4 @@
-use crate::support::{AsyncIterator, FusedAsyncIterator};
+use crate::support::{AsyncIterator, FusedAsyncIterator, OptionExt};
 use core::future::IntoFuture;
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
@@ -63,35 +63,32 @@ where
         let mut fut_slot = this.fut;
 
         Poll::Ready(loop {
-            match fut_slot.as_mut().as_pin_mut() {
-                None => {}
-                Some(fut) => {
-                    let item = task::ready!(fut.poll(cx));
+            let fut = match fut_slot.as_mut().as_pin_mut() {
+                None => match task::ready!(iter.as_mut().poll_next(cx)) {
+                    None => break None,
+                    Some(item) => fut_slot.as_mut().insert_pinned(f.call_mut((item,)).into_future()),
+                },
+                Some(fut) => fut,
+            };
 
-                    fut_slot.set(None);
+            let item = task::ready!(fut.poll(cx));
 
-                    if item.is_some() {
-                        break item;
-                    }
-                }
-            }
+            fut_slot.set(None);
 
-            match task::ready!(iter.as_mut().poll_next(cx)) {
-                None => break None,
-                Some(item) => fut_slot.set(Some(f.call_mut((item,)).into_future())),
+            if item.is_some() {
+                break item;
             }
         })
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let high = self.iter.size_hint().1;
+        let mut candidate = (0, self.iter.size_hint().1);
 
-        let high = match &self.fut {
-            None => high,
-            Some(..) => high.and_then(|high| high.checked_add(1)),
-        };
+        if self.fut.is_some() {
+            candidate.1 = candidate.1.and_then(|high| high.checked_add(1));
+        }
 
-        (0, high)
+        candidate
     }
 }
 
