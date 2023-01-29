@@ -10,7 +10,7 @@ pub use self::future_ext::FutureExt;
 pub use self::inspect::Inspect;
 pub use self::inspect_err::InspectErr;
 pub use self::inspect_ok::InspectOk;
-pub use self::into_result_future::IntoResultFuture;
+pub use self::into_result_future::IntoTryFuture;
 pub use self::lazy::{lazy, Lazy};
 pub use self::map::Map;
 pub use self::map_async::MapAsync;

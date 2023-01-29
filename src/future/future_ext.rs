@@ -6,7 +6,7 @@ use crate::future::flatten_async_iterator::FlattenAsyncIterator;
 use crate::future::inspect::Inspect;
 use crate::future::inspect_err::InspectErr;
 use crate::future::inspect_ok::InspectOk;
-use crate::future::into_result_future::IntoResultFuture;
+use crate::future::into_result_future::IntoTryFuture;
 use crate::future::map::Map;
 use crate::future::map_async::MapAsync;
 use crate::future::map_err::MapErr;
@@ -101,11 +101,26 @@ pub trait FutureExt: Future {
         support::assert_future::<_, Self::Output>(InspectOk::new(self, f))
     }
 
-    fn slim_into_result_future<E>(self) -> IntoResultFuture<Self, E>
+    fn slim_into_option_future(self) -> IntoTryFuture<Self, Option<Self::Output>>
     where
         Self: Sized,
     {
-        support::assert_future::<_, Result<Self::Output, E>>(IntoResultFuture::new(self))
+        support::assert_future::<_, Option<Self::Output>>(self.slim_into_try_future())
+    }
+
+    fn slim_into_result_future<E>(self) -> IntoTryFuture<Self, Result<Self::Output, E>>
+    where
+        Self: Sized,
+    {
+        support::assert_future::<_, Result<Self::Output, E>>(self.slim_into_try_future())
+    }
+
+    fn slim_into_try_future<T>(self) -> IntoTryFuture<Self, T>
+    where
+        Self: Sized,
+        T: Try<Output = Self::Output>,
+    {
+        support::assert_future::<_, T>(IntoTryFuture::new(self))
     }
 
     fn slim_map<F, T>(self, f: F) -> Map<Self, F>
@@ -193,7 +208,7 @@ pub trait FutureExt: Future {
         support::assert_future::<_, Fut1::Output>(MapOkOrElseAsync::new(self, default, f))
     }
 
-    fn slim_never_error(self) -> IntoResultFuture<Self, Never>
+    fn slim_never_error(self) -> IntoTryFuture<Self, Result<Self::Output, Never>>
     where
         Self: Sized,
     {
@@ -258,7 +273,7 @@ pub trait FutureExt: Future {
         support::assert_future::<_, <Self::Error as IntoFuture>::Output>(TryFlattenErr::new(self))
     }
 
-    fn slim_unit_error(self) -> IntoResultFuture<Self, ()>
+    fn slim_unit_error(self) -> IntoTryFuture<Self, Result<Self::Output, ()>>
     where
         Self: Sized,
     {
