@@ -108,6 +108,16 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_map_ok_async_with_option() {
+        let iter = stream::iter([Some(2), Some(3), None, None, Some(5), Some(7)]).slim_map_ok_async(map_ok_async_fn);
+
+        assert_eq!(
+            iter.collect::<Vec<_>>().await,
+            [Some(200), Some(300), None, None, Some(500), Some(700)],
+        );
+    }
+
+    #[tokio::test]
     async fn test_map_ok_async_clone() {
         let iter = stream::iter([Ok(2), Ok(3), Err(5), Err(7), Ok(11), Ok(13)]).slim_map_ok_async(map_ok_async_fn);
         let iter_2 = iter.clone();

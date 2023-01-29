@@ -88,6 +88,17 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_or_else_with_option() {
+        let iter = stream::iter([Ok(2), Ok(3), Err(5), Err(7), Ok(11), Ok(13)])
+            .slim_or_else(|x: u32| (x < 7).then_some(u64::from(x * 100)));
+
+        assert_eq!(
+            iter.collect::<Vec<_>>().await,
+            [Some(2), Some(3), Some(500), None, Some(11), Some(13)],
+        );
+    }
+
+    #[tokio::test]
     async fn test_or_else_clone() {
         let iter = stream::iter([Ok(2), Ok(3), Err(5), Err(7), Ok(11), Ok(13)]).slim_or_else(or_else_fn);
         let iter_2 = iter.clone();

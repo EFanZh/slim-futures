@@ -90,6 +90,22 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_and_then_with_option() {
+        let iter = stream::iter([Some(2), Some(3), None, None, Some(5), Some(7)]).slim_and_then(|x| {
+            if x == 5 {
+                None
+            } else {
+                Some(x * 10)
+            }
+        });
+
+        assert_eq!(
+            iter.collect::<Vec<_>>().await,
+            [Some(20), Some(30), None, None, None, Some(70)],
+        );
+    }
+
+    #[tokio::test]
     async fn test_and_then_clone() {
         let iter = stream::iter([Ok::<_, u32>(2), Ok(3), Err(5), Err(7), Ok(11), Ok(13)]).slim_and_then(and_then_fn);
         let iter_2 = iter.clone();

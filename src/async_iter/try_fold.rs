@@ -88,6 +88,14 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_try_fold_async_with_option() {
+        let future =
+            stream::iter([2, 3, 5]).slim_try_fold_by_copy(1_u64, |state, item: u32| Some(state * u64::from(item)));
+
+        assert_eq!(future.await, Some(30_u64));
+    }
+
+    #[tokio::test]
     async fn test_try_fold_error() {
         let mut counter = 0;
 
