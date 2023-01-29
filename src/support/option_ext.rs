@@ -6,7 +6,7 @@ pub trait OptionExt<T> {
 
 impl<T> OptionExt<T> for Option<T> {
     fn insert_pinned(mut self: Pin<&mut Self>, value: T) -> Pin<&mut T> {
-        self.as_mut().set(Some(value));
+        self.set(Some(value));
         self.as_pin_mut().unwrap()
     }
 }

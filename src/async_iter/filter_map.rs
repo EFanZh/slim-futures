@@ -45,17 +45,14 @@ where
         let mut iter = this.iter;
         let f = this.f;
 
-        Poll::Ready(loop {
-            if let Some(item) = task::ready!(iter.as_mut().poll_next(cx)) {
-                let item = f.call_mut((item,));
+        loop {
+            let Some(item) = task::ready!(iter.as_mut().poll_next(cx)) else { break Poll::Ready(None) };
+            let item = f.call_mut((item,));
 
-                if item.is_some() {
-                    break item;
-                }
-            } else {
-                break None;
+            if item.is_some() {
+                break Poll::Ready(item);
             }
-        })
+        }
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {

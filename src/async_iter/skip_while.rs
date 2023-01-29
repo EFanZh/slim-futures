@@ -41,24 +41,21 @@ where
         let this = self.project();
         let mut iter = this.iter;
         let f_slot = this.f;
+        let Some(f) = f_slot else { return iter.poll_next(cx) };
 
-        if let Some(f) = f_slot {
-            loop {
-                let item = task::ready!(iter.as_mut().poll_next(cx));
+        loop {
+            let item = task::ready!(iter.as_mut().poll_next(cx));
 
-                if let Some(item) = &item {
-                    if f.call_mut((item,)) {
-                        continue;
-                    }
-
-                    *f_slot = None;
+            if let Some(item) = &item {
+                if f.call_mut((item,)) {
+                    continue;
                 }
 
-                return Poll::Ready(item);
+                *f_slot = None;
             }
-        }
 
-        iter.poll_next(cx)
+            break Poll::Ready(item);
+        }
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {

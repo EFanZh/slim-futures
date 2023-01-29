@@ -4,7 +4,7 @@ use core::pin::Pin;
 use core::task::{self, Context, Poll};
 
 #[derive(Clone)]
-enum Buffer<A, B> {
+enum State<A, B> {
     Empty,
     Left(A),
     Right(B),
@@ -20,7 +20,7 @@ pin_project_lite::pin_project! {
         left: A,
         #[pin]
         right: B,
-        buffer: Buffer<A::Item, B::Item>,
+        state: State<A::Item, B::Item>,
     }
 }
 
@@ -33,7 +33,7 @@ where
         Self {
             left,
             right,
-            buffer: Buffer::Empty,
+            state: State::Empty,
         }
     }
 }
@@ -49,7 +49,7 @@ where
         Self {
             left: self.left.clone(),
             right: self.right.clone(),
-            buffer: self.buffer.clone(),
+            state: self.state.clone(),
         }
     }
 }
@@ -62,54 +62,54 @@ where
     type Item = (A::Item, B::Item);
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
-        let mut this = self.project();
-        let buffer = this.buffer;
+        let this = self.project();
+        let mut left = this.left;
+        let mut right = this.right;
+        let state = this.state;
 
-        Poll::Ready(loop {
-            break match buffer {
-                Buffer::Empty => match this.left.as_mut().poll_next(cx) {
-                    Poll::Ready(None) => None,
-                    Poll::Ready(Some(item)) => {
-                        *buffer = Buffer::Left(item);
-
-                        continue;
+        loop {
+            match state {
+                State::Empty => {
+                    *state = match left.as_mut().poll_next(cx) {
+                        Poll::Ready(None) => break,
+                        Poll::Ready(Some(item)) => State::Left(item),
+                        Poll::Pending => match task::ready!(right.as_mut().poll_next(cx)) {
+                            None => break,
+                            Some(item) => State::Right(item),
+                        },
                     }
-                    Poll::Pending => match task::ready!(this.right.as_mut().poll_next(cx)) {
-                        None => None,
-                        Some(item) => {
-                            *buffer = Buffer::Right(item);
-
-                            continue;
-                        }
+                }
+                State::Left(_) => match task::ready!(right.poll_next(cx)) {
+                    None => break,
+                    Some(right_item) => match mem::replace(state, State::Empty) {
+                        State::Left(left_item) => return Poll::Ready(Some((left_item, right_item))),
+                        _ => unreachable!(),
                     },
                 },
-                Buffer::Left(_) => {
-                    task::ready!(this.right.poll_next(cx)).map(|right_item| match mem::replace(buffer, Buffer::Empty) {
-                        Buffer::Left(left_item) => (left_item, right_item),
+                State::Right(_) => match task::ready!(left.poll_next(cx)) {
+                    None => break,
+                    Some(left_item) => match mem::replace(state, State::Empty) {
+                        State::Right(right_item) => return Poll::Ready(Some((left_item, right_item))),
                         _ => unreachable!(),
-                    })
-                }
-                Buffer::Right(_) => {
-                    task::ready!(this.left.poll_next(cx)).map(|left_item| match mem::replace(buffer, Buffer::Empty) {
-                        Buffer::Right(right_item) => (left_item, right_item),
-                        _ => unreachable!(),
-                    })
-                }
+                    },
+                },
             };
-        })
+        }
+
+        Poll::Ready(None)
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
         let (mut left_low, mut left_high) = self.left.size_hint();
         let (mut right_low, mut right_high) = self.right.size_hint();
 
-        match &self.buffer {
-            Buffer::Empty => {}
-            Buffer::Left(_) => {
+        match &self.state {
+            State::Empty => {}
+            State::Left(_) => {
                 left_low = left_low.saturating_add(1);
                 left_high = left_high.and_then(|left_high| left_high.checked_add(1));
             }
-            Buffer::Right(_) => {
+            State::Right(_) => {
                 right_low = right_low.saturating_add(1);
                 right_high = right_high.and_then(|right_high| right_high.checked_add(1));
             }
@@ -134,10 +134,10 @@ where
     B: FusedAsyncIterator,
 {
     fn is_terminated(&self) -> bool {
-        match &self.buffer {
-            Buffer::Empty => self.left.is_terminated() || self.right.is_terminated(),
-            Buffer::Left(_) => self.right.is_terminated(),
-            Buffer::Right(_) => self.left.is_terminated(),
+        match &self.state {
+            State::Empty => self.left.is_terminated() || self.right.is_terminated(),
+            State::Left(_) => self.right.is_terminated(),
+            State::Right(_) => self.left.is_terminated(),
         }
     }
 }

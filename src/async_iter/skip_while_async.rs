@@ -1,6 +1,6 @@
-use crate::support::states::PredicateState;
+use crate::support::states::{PredicateState, PredicateStateProject, PredicateStateReplace};
 use crate::support::{AsyncIterator, FusedAsyncIterator, PredicateFn};
-use core::future::IntoFuture;
+use core::future::{Future, IntoFuture};
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
 use futures_core::FusedFuture;
@@ -8,9 +8,9 @@ use futures_core::FusedFuture;
 pin_project_lite::pin_project! {
     #[derive(Clone)]
     struct State<F, T, Fut> {
-        f: F,
         #[pin]
         polling_state: PredicateState<T, Fut>,
+        f: F,
     }
 }
 
@@ -79,32 +79,36 @@ where
         let this = self.project();
         let mut iter = this.iter;
         let mut state_slot = this.state;
+        let Some(state) = state_slot.as_mut().as_pin_mut().map(State::project) else { return iter.poll_next(cx) };
+        let mut fut_slot = state.polling_state;
+        let f = state.f;
 
-        if let Some(state) = state_slot.as_mut().as_pin_mut().map(State::project) {
-            let f = state.f;
-            let mut fut_slot = state.polling_state;
-
-            loop {
-                if let Some((result, item)) = task::ready!(fut_slot.as_mut().try_poll(cx)) {
-                    if !result {
-                        state_slot.set(None);
-
-                        return Poll::Ready(Some(item));
-                    }
-                }
-
-                match task::ready!(iter.as_mut().poll_next(cx)) {
+        loop {
+            let fut = match fut_slot.as_mut().project() {
+                PredicateStateProject::Empty => match task::ready!(iter.as_mut().poll_next(cx)) {
                     None => return Poll::Ready(None),
                     Some(item) => {
                         let fut = f.call_mut((&item,)).into_future();
 
-                        fut_slot.set(PredicateState::Polling { item, fut });
+                        fut_slot.as_mut().set_polling(item, fut)
                     }
-                }
+                },
+                PredicateStateProject::Polling { fut, .. } => fut,
+            };
+
+            let skip = task::ready!(fut.poll(cx));
+
+            let item = match fut_slot.as_mut().project_replace(PredicateState::Empty) {
+                PredicateStateReplace::Empty => unreachable!(),
+                PredicateStateReplace::Polling { item, .. } => item,
+            };
+
+            if !skip {
+                state_slot.set(None);
+
+                break Poll::Ready(Some(item));
             }
         }
-
-        iter.poll_next(cx)
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {

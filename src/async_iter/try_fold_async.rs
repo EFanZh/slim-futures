@@ -110,27 +110,26 @@ where
         let f = this.f;
 
         Poll::Ready(loop {
-            let acc = match state_slot.as_mut().project() {
-                StateProject::Accumulate { acc } => acc,
-                StateProject::Future { fut } => match task::ready!(fut.poll(cx)).branch() {
-                    ControlFlow::Continue(acc) => {
-                        state_slot.set(State::Accumulate { acc });
+            let fut = match state_slot.as_mut().project() {
+                StateProject::Accumulate { acc } => match task::ready!(iter.as_mut().poll_next(cx)) {
+                    None => break Self::Output::from_output(getter.call_mut((acc,))),
+                    Some(item) => {
+                        let fut = f.call_mut((getter.call_mut((acc,)), item)).into_future();
+
+                        state_slot.set(State::Future { fut });
 
                         match state_slot.as_mut().project() {
-                            StateProject::Accumulate { acc } => acc,
-                            StateProject::Future { .. } => unreachable!(),
+                            StateProject::Accumulate { .. } => unreachable!(),
+                            StateProject::Future { fut } => fut,
                         }
                     }
-                    ControlFlow::Break(residual) => break Self::Output::from_residual(residual),
                 },
+                StateProject::Future { fut } => fut,
             };
 
-            if let Some(item) = task::ready!(iter.as_mut().poll_next(cx)) {
-                let fut = f.call_mut((getter.call_mut((acc,)), item)).into_future();
-
-                state_slot.set(State::Future { fut });
-            } else {
-                break Self::Output::from_output(getter.call_mut((acc,)));
+            match task::ready!(fut.poll(cx)).branch() {
+                ControlFlow::Continue(acc) => state_slot.set(State::Accumulate { acc }),
+                ControlFlow::Break(residual) => break Self::Output::from_residual(residual),
             }
         })
     }

@@ -62,10 +62,10 @@ where
         let f = this.f;
         let mut fut_slot = this.fut;
 
-        Poll::Ready(loop {
+        loop {
             let fut = match fut_slot.as_mut().as_pin_mut() {
                 None => match task::ready!(iter.as_mut().poll_next(cx)) {
-                    None => break None,
+                    None => break Poll::Ready(None),
                     Some(item) => fut_slot.as_mut().insert_pinned(f.call_mut((item,)).into_future()),
                 },
                 Some(fut) => fut,
@@ -76,9 +76,9 @@ where
             fut_slot.set(None);
 
             if item.is_some() {
-                break item;
+                break Poll::Ready(item);
             }
-        })
+        }
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {

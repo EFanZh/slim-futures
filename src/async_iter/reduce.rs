@@ -18,10 +18,9 @@ where
     type Output = Option<T>;
 
     fn call_mut(&mut self, args: (Option<T>, T)) -> Self::Output {
-        Some(if let Some(acc) = args.0 {
-            self.f.call_mut((acc, args.1))
-        } else {
-            args.1
+        Some(match args.0 {
+            None => args.1,
+            Some(acc) => self.f.call_mut((acc, args.1)),
         })
     }
 }

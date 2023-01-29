@@ -13,9 +13,8 @@ pin_project_lite::pin_project! {
     where
         Fut: Future,
     {
-        Empty,
-        Single {
-            acc: Fut::Output,
+        Accumulate {
+            acc: Option<Fut::Output>,
         },
         Future {
             #[pin]
@@ -49,7 +48,7 @@ where
     pub(crate) fn new(iter: I, f: F) -> Self {
         Self {
             iter,
-            state: State::Empty,
+            state: State::Accumulate { acc: None },
             f,
         }
     }
@@ -86,34 +85,32 @@ where
         let mut state_slot = this.state;
         let f = this.f;
 
-        Poll::Ready(loop {
-            if let StateProject::Future { fut } = state_slot.as_mut().project() {
-                let acc = task::ready!(fut.poll(cx));
+        Poll::Ready('outer: loop {
+            let fut = match state_slot.as_mut().project() {
+                StateProject::Accumulate { acc } => loop {
+                    match task::ready!(iter.as_mut().poll_next(cx)) {
+                        None => break 'outer acc.take(),
+                        Some(item) => match acc.take() {
+                            None => *acc = Some(item),
+                            Some(acc) => {
+                                let fut = f.call_mut((acc, item)).into_future();
 
-                state_slot.set(State::Single { acc });
-            }
+                                state_slot.set(State::Future { fut });
 
-            if let Some(item) = task::ready!(iter.as_mut().poll_next(cx)) {
-                let state = match state_slot.as_ref().get_ref() {
-                    State::Empty => State::Single { acc: item },
-                    State::Single { .. } => {
-                        let StateProjectReplace::Single { acc } = state_slot.as_mut().project_replace(State::Empty) else { unreachable!() };
-
-                        State::Future {
-                            fut: f.call_mut((acc, item)).into_future(),
-                        }
+                                break match state_slot.as_mut().project() {
+                                    StateProject::Accumulate { .. } => unreachable!(),
+                                    StateProject::Future { fut } => fut,
+                                };
+                            }
+                        },
                     }
-                    State::Future { .. } => unreachable!(),
-                };
+                },
+                StateProject::Future { fut } => fut,
+            };
 
-                state_slot.set(state);
-            } else {
-                break match state_slot.as_mut().project_replace(State::Empty) {
-                    StateProjectReplace::Empty => None,
-                    StateProjectReplace::Single { acc } => Some(acc),
-                    StateProjectReplace::Future { .. } => unreachable!(),
-                };
-            }
+            let acc = task::ready!(fut.poll(cx));
+
+            state_slot.set(State::Accumulate { acc: Some(acc) });
         })
     }
 }
