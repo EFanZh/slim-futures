@@ -489,6 +489,32 @@ fn benchmark_try_for_each_async(c: &mut Criterion) {
     benchmark_group.finish()
 }
 
+// `zip`.
+
+fn benchmark_zip_with<I>(
+    benchmark_group: &mut BenchmarkGroup<impl Measurement>,
+    name: &str,
+    mut f: impl FnMut(Iter<IntoIter<u32, 6>>, Iter<IntoIter<u32, 6>>) -> I,
+) where
+    I: Stream<Item = (u32, u32)>,
+{
+    benchmark_async_iter_with(benchmark_group, name, || {
+        f(
+            stream::iter(hint::black_box([2, 3, 5, 7, 11, 13])),
+            stream::iter(hint::black_box([2, 3, 5, 7, 11, 13])),
+        )
+    });
+}
+
+fn benchmark_zip(c: &mut Criterion) {
+    let mut benchmark_group = c.benchmark_group("async iter/zip");
+
+    benchmark_zip_with(&mut benchmark_group, "futures", StreamExt::zip);
+    benchmark_zip_with(&mut benchmark_group, "slim-futures", AsyncIteratorExt::slim_zip);
+
+    benchmark_group.finish()
+}
+
 // Main.
 
 criterion::criterion_group!(
@@ -506,6 +532,7 @@ criterion::criterion_group!(
     benchmark_scan_async,
     benchmark_try_fold_async,
     benchmark_try_for_each_async,
+    benchmark_zip,
 );
 
 criterion::criterion_main!(benchmarks);
