@@ -95,6 +95,13 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_reduce_single() {
+        let future = stream::iter(Some(2)).slim_reduce(add);
+
+        assert_eq!(future.await, Some(2));
+    }
+
+    #[tokio::test]
     async fn test_reduce_clone() {
         let future = stream::iter([2, 3, 5]).slim_reduce(add);
         let future_2 = future.clone();

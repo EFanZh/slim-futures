@@ -97,9 +97,9 @@ where
 
                                 state_slot.set(State::Future { fut });
 
-                                break match state_slot.as_mut().project() {
+                                match state_slot.as_mut().project() {
                                     StateProject::Accumulate { .. } => unreachable!(),
-                                    StateProject::Future { fut } => fut,
+                                    StateProject::Future { fut } => break fut,
                                 };
                             }
                         },
@@ -153,6 +153,13 @@ mod tests {
         let future = stream::iter(None::<u32>).slim_reduce_async(add);
 
         assert_eq!(future.await, None);
+    }
+
+    #[tokio::test]
+    async fn test_reduce_async_single() {
+        let future = stream::iter(Some(2)).slim_reduce_async(add);
+
+        assert_eq!(future.await, Some(2));
     }
 
     #[tokio::test]

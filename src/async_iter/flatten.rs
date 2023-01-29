@@ -91,7 +91,20 @@ where
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        (0, None)
+        let has_more = self.iter.size_hint().1 != Some(0);
+
+        self.sub_iter.as_ref().map_or_else(
+            || (0, (!has_more).then_some(0)),
+            |sub_iter| {
+                let mut candidate = sub_iter.size_hint();
+
+                if has_more {
+                    candidate.1 = None;
+                }
+
+                candidate
+            },
+        )
     }
 }
 

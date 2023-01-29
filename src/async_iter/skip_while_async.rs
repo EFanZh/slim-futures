@@ -86,7 +86,7 @@ where
         loop {
             let fut = match fut_slot.as_mut().project() {
                 PredicateStateProject::Empty => match task::ready!(iter.as_mut().poll_next(cx)) {
-                    None => return Poll::Ready(None),
+                    None => break Poll::Ready(None),
                     Some(item) => {
                         let fut = f.call_mut((&item,)).into_future();
 

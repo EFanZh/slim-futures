@@ -67,36 +67,32 @@ where
         let mut right = this.right;
         let state = this.state;
 
-        loop {
+        Poll::Ready(Some(loop {
             match state {
-                State::Empty => {
-                    *state = match left.as_mut().poll_next(cx) {
-                        Poll::Ready(None) => break,
-                        Poll::Ready(Some(item)) => State::Left(item),
-                        Poll::Pending => match task::ready!(right.as_mut().poll_next(cx)) {
-                            None => break,
-                            Some(item) => State::Right(item),
-                        },
-                    }
-                }
+                State::Empty => match left.as_mut().poll_next(cx) {
+                    Poll::Ready(None) => return Poll::Ready(None),
+                    Poll::Ready(Some(item)) => *state = State::Left(item),
+                    Poll::Pending => match task::ready!(right.as_mut().poll_next(cx)) {
+                        None => return Poll::Ready(None),
+                        Some(item) => *state = State::Right(item),
+                    },
+                },
                 State::Left(_) => match task::ready!(right.poll_next(cx)) {
-                    None => break,
+                    None => return Poll::Ready(None),
                     Some(right_item) => match mem::replace(state, State::Empty) {
-                        State::Left(left_item) => return Poll::Ready(Some((left_item, right_item))),
+                        State::Left(left_item) => break (left_item, right_item),
                         _ => unreachable!(),
                     },
                 },
                 State::Right(_) => match task::ready!(left.poll_next(cx)) {
-                    None => break,
+                    None => return Poll::Ready(None),
                     Some(left_item) => match mem::replace(state, State::Empty) {
-                        State::Right(right_item) => return Poll::Ready(Some((left_item, right_item))),
+                        State::Right(right_item) => break (left_item, right_item),
                         _ => unreachable!(),
                     },
                 },
             };
-        }
-
-        Poll::Ready(None)
+        }))
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {

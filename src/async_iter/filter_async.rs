@@ -94,14 +94,13 @@ where
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let high = self.iter.size_hint().1;
+        let mut candidate = (0, self.iter.size_hint().1);
 
-        let high = match &self.state {
-            PredicateState::Empty => high,
-            PredicateState::Polling { .. } => high.and_then(|high| high.checked_add(1)),
-        };
+        if matches!(self.state, PredicateState::Polling { .. }) {
+            candidate.1 = candidate.1.and_then(|high| high.checked_add(1));
+        }
 
-        (0, high)
+        candidate
     }
 }
 

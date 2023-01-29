@@ -98,13 +98,13 @@ where
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        let mut high = self.iter.size_hint().1;
+        let mut candidate = (0, self.iter.size_hint().1);
 
         if self.fut.is_some() {
-            high = high.and_then(|high| high.checked_add(1));
+            candidate.1 = candidate.1.and_then(|high| high.checked_add(1));
         }
 
-        (0, high)
+        candidate
     }
 }
 
