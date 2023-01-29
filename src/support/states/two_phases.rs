@@ -38,11 +38,9 @@ impl<A, B> TwoPhases<A, B> {
             self.set(Self::Second { state: second_state });
         }
 
-        if let TwoPhasesProject::Second { state } = self.project() {
-            f2(state, cx)
-        } else {
-            unreachable!()
-        }
+        let TwoPhasesProject::Second { state } = self.project() else { unreachable!() };
+
+        f2(state, cx)
     }
 
     pub fn is_future_terminated(&self) -> bool

@@ -22,9 +22,8 @@ impl<T, Fut> PredicateState<T, Fut> {
     {
         self.set(Self::Polling { item, fut });
 
-        match self.project() {
-            PredicateStateProject::Empty => unreachable!(),
-            PredicateStateProject::Polling { fut, .. } => fut,
-        }
+        let PredicateStateProject::Polling { fut, .. } = self.project() else { unreachable!() };
+
+        fut
     }
 }

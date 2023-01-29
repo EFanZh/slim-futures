@@ -98,10 +98,7 @@ where
 
             let skip = task::ready!(fut.poll(cx));
 
-            let item = match fut_slot.as_mut().project_replace(PredicateState::Empty) {
-                PredicateStateReplace::Empty => unreachable!(),
-                PredicateStateReplace::Polling { item, .. } => item,
-            };
+            let PredicateStateReplace::Polling { item, .. } = fut_slot.as_mut().project_replace(PredicateState::Empty) else { unreachable!() };
 
             if !skip {
                 state_slot.set(None);

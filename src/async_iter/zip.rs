@@ -79,17 +79,19 @@ where
                 },
                 State::Left(_) => match task::ready!(right.poll_next(cx)) {
                     None => return Poll::Ready(None),
-                    Some(right_item) => match mem::replace(state, State::Empty) {
-                        State::Left(left_item) => break (left_item, right_item),
-                        _ => unreachable!(),
-                    },
+                    Some(right_item) => {
+                        let State::Left(left_item) = mem::replace(state, State::Empty) else { unreachable!() };
+
+                        break (left_item, right_item);
+                    }
                 },
                 State::Right(_) => match task::ready!(left.poll_next(cx)) {
                     None => return Poll::Ready(None),
-                    Some(left_item) => match mem::replace(state, State::Empty) {
-                        State::Right(right_item) => break (left_item, right_item),
-                        _ => unreachable!(),
-                    },
+                    Some(left_item) => {
+                        let State::Right(right_item) = mem::replace(state, State::Empty) else { unreachable!() };
+
+                        break (left_item, right_item);
+                    }
                 },
             };
         }))

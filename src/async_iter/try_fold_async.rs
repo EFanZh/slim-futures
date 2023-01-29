@@ -118,10 +118,9 @@ where
 
                         state_slot.set(State::Future { fut });
 
-                        match state_slot.as_mut().project() {
-                            StateProject::Accumulate { .. } => unreachable!(),
-                            StateProject::Future { fut } => fut,
-                        }
+                        let StateProject::Future { fut } = state_slot.as_mut().project() else { unreachable!() };
+
+                        fut
                     }
                 },
                 StateProject::Future { fut } => fut,
