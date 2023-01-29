@@ -70,6 +70,11 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_map_ok_with_option() {
+        assert_eq!(future::ready(Some(2)).slim_map_ok(plus_3).await, Some(5));
+    }
+
+    #[tokio::test]
     async fn test_map_ok_clone() {
         let future = future::ok::<_, u32>(2).slim_map_ok(plus_3);
         let future_2 = future.clone();

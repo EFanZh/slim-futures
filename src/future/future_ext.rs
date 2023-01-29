@@ -6,7 +6,7 @@ use crate::future::flatten_async_iterator::FlattenAsyncIterator;
 use crate::future::inspect::Inspect;
 use crate::future::inspect_err::InspectErr;
 use crate::future::inspect_ok::InspectOk;
-use crate::future::into_result_future::IntoTryFuture;
+use crate::future::into_try_future::IntoTryFuture;
 use crate::future::map::Map;
 use crate::future::map_async::MapAsync;
 use crate::future::map_err::MapErr;

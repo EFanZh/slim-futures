@@ -72,6 +72,11 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_ok_into_with_some() {
+        assert_eq!(future::ready(Some(7)).slim_ok_into::<Option<_>>().await, Some(Some(7)));
+    }
+
+    #[tokio::test]
     async fn test_ok_into_clone() {
         let future = future::ok::<u32, u32>(7).slim_ok_into::<Option<_>>();
         let future_2 = future.clone();

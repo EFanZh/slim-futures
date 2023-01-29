@@ -119,6 +119,14 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_try_flatten_with_option() {
+        assert_eq!(
+            future::ready(Some(future::ready(Some(2)))).slim_try_flatten().await,
+            Some(2),
+        );
+    }
+
+    #[tokio::test]
     async fn test_try_flatten_with_pending() {
         let future = Yield::new(1)
             .slim_map(|()| Ok::<_, u32>(future::ok::<u32, u32>(2)))

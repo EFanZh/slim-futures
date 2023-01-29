@@ -132,6 +132,16 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_and_then_async_with_option() {
+        assert_eq!(
+            future::ready(Some(2))
+                .slim_and_then_async(|x| future::ready(Some(x + 3)))
+                .await,
+            Some(5),
+        );
+    }
+
+    #[tokio::test]
     async fn test_and_then_async_clone() {
         let future = future::ok::<u32, u32>(2).slim_and_then_async(ok_plus_3);
         let future_2 = future.clone();

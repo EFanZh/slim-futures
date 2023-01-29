@@ -99,6 +99,14 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_or_else_async_with_option() {
+        assert_eq!(
+            future::err::<u32, _>(2).slim_or_else_async(|x| future::ready(Some(x + 3))).await,
+            Some(5),
+        );
+    }
+
+    #[tokio::test]
     async fn test_or_else_async_clone() {
         let future = future::err::<u32, _>(2).slim_or_else_async(err_plus_3);
         let future_2 = future.clone();

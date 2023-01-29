@@ -76,6 +76,11 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn test_or_else_with_option() {
+        assert_eq!(future::err::<u32, _>(2).slim_or_else(|x| Some(x + 3)).await, Some(5),);
+    }
+
+    #[tokio::test]
     async fn test_or_else_clone() {
         let future = future::err::<u32, _>(2).slim_or_else(err_plus_3);
         let future_2 = future.clone();
