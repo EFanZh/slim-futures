@@ -6,9 +6,16 @@ use futures_util::future::{self, Ready};
 use futures_util::stream::Iter;
 use futures_util::{stream, StreamExt, TryStreamExt};
 use slim_futures::async_iter::AsyncIteratorExt;
-use std::array::IntoIter;
 use std::future::Future;
+use std::iter::Map;
+use std::ops::Range;
 use std::{convert, hint};
+
+type StreamType<R> = Iter<Map<Range<u32>, fn(u32) -> R>>;
+
+fn gen_stream<R>(f: fn(u32) -> R) -> StreamType<R> {
+    hint::black_box(stream::iter((0..1_000_000).map(f)))
+}
 
 fn benchmark_async_iter_with<I>(
     benchmark_group: &mut BenchmarkGroup<impl Measurement>,
@@ -47,15 +54,15 @@ fn benchmark_future_with<Fut>(
 fn benchmark_and_then_async_with<I>(
     benchmark_group: &mut BenchmarkGroup<impl Measurement>,
     name: &str,
-    mut f: impl FnMut(Iter<IntoIter<Result<u32, u32>, 6>>, fn(u32) -> Ready<Result<u64, u32>>) -> I,
+    mut f: impl FnMut(Iter<Map<Range<u32>, fn(u32) -> Result<u32, u32>>>, fn(u32) -> Ready<Result<u64, u32>>) -> I,
 ) where
     I: Stream<Item = Result<u64, u32>>,
 {
     benchmark_async_iter_with(benchmark_group, name, || {
         f(
-            stream::iter(hint::black_box([Ok(2), Ok(3), Err(5), Err(7), Ok(11), Ok(13)])),
+            gen_stream(|x| if x % 2 == 0 { Ok(x) } else { Err(x) }),
             hint::black_box::<fn(_) -> _>(|x| {
-                if x < 12 {
+                if x % 4 == 0 {
                     future::ok(u64::from(x * 100))
                 } else {
                     future::err(x * 1000)
@@ -84,14 +91,14 @@ fn benchmark_and_then_async(c: &mut Criterion) {
 fn benchmark_filter_async_with<I>(
     benchmark_group: &mut BenchmarkGroup<impl Measurement>,
     name: &str,
-    mut f: impl FnMut(Iter<IntoIter<u32, 6>>, fn(&u32) -> Ready<bool>) -> I,
+    mut f: impl FnMut(StreamType<u32>, fn(&u32) -> Ready<bool>) -> I,
 ) where
     I: Stream<Item = u32>,
 {
     benchmark_async_iter_with(benchmark_group, name, || {
         f(
-            stream::iter(hint::black_box([2, 3, 5, 7, 11, 13])),
-            hint::black_box::<fn(&_) -> _>(|&x| future::ready(x != 7)),
+            gen_stream(convert::identity),
+            hint::black_box::<fn(&_) -> _>(|&x| future::ready(x % 2 == 0)),
         )
     });
 }
@@ -115,14 +122,14 @@ fn benchmark_filter_async(c: &mut Criterion) {
 fn benchmark_filter_map_async_with<I>(
     benchmark_group: &mut BenchmarkGroup<impl Measurement>,
     name: &str,
-    mut f: impl FnMut(Iter<IntoIter<u32, 6>>, fn(u32) -> Ready<Option<u32>>) -> I,
+    mut f: impl FnMut(StreamType<u32>, fn(u32) -> Ready<Option<u32>>) -> I,
 ) where
     I: Stream<Item = u32>,
 {
     benchmark_async_iter_with(benchmark_group, name, || {
         f(
-            stream::iter(hint::black_box([2, 3, 5, 7, 11, 13])),
-            hint::black_box::<fn(_) -> _>(|x| future::ready((x != 7).then_some(x))),
+            gen_stream(convert::identity),
+            hint::black_box::<fn(_) -> _>(|x| future::ready((x % 2 == 0).then_some(x))),
         )
     });
 }
@@ -146,15 +153,15 @@ fn benchmark_filter_map_async(c: &mut Criterion) {
 fn benchmark_fold_async_with<Fut>(
     benchmark_group: &mut BenchmarkGroup<impl Measurement>,
     name: &str,
-    mut f: impl FnMut(Iter<IntoIter<u32, 6>>, u32, fn(u32, u32) -> Ready<u32>) -> Fut,
+    mut f: impl FnMut(StreamType<u32>, u32, fn(u32, u32) -> Ready<u32>) -> Fut,
 ) where
     Fut: Future<Output = u32>,
 {
     benchmark_future_with(benchmark_group, name, || {
         f(
-            stream::iter(hint::black_box([2, 3, 5, 7, 11, 13])),
+            gen_stream(convert::identity),
             0,
-            hint::black_box::<fn(_, _) -> _>(|x, y| future::ready(x + y)),
+            hint::black_box::<fn(_, _) -> _>(|x, y| future::ready(x ^ y)),
         )
     });
 }
@@ -202,13 +209,13 @@ fn benchmark_fold_async(c: &mut Criterion) {
 fn benchmark_for_each_async_with<Fut>(
     benchmark_group: &mut BenchmarkGroup<impl Measurement>,
     name: &str,
-    mut f: impl FnMut(Iter<IntoIter<u32, 6>>, fn(u32) -> Ready<()>) -> Fut,
+    mut f: impl FnMut(StreamType<u32>, fn(u32) -> Ready<()>) -> Fut,
 ) where
     Fut: Future<Output = ()>,
 {
     benchmark_future_with(benchmark_group, name, || {
         f(
-            stream::iter(hint::black_box([2, 3, 5, 7, 11, 13])),
+            gen_stream(convert::identity),
             hint::black_box::<fn(_) -> _>(|_| future::ready(())),
         )
     });
@@ -239,13 +246,13 @@ fn benchmark_for_each_async(c: &mut Criterion) {
 fn benchmark_map_with<I>(
     benchmark_group: &mut BenchmarkGroup<impl Measurement>,
     name: &str,
-    mut f: impl FnMut(Iter<IntoIter<u32, 6>>, fn(u32) -> u32) -> I,
+    mut f: impl FnMut(StreamType<u32>, fn(u32) -> u32) -> I,
 ) where
     I: Stream<Item = u32>,
 {
     benchmark_async_iter_with(benchmark_group, name, || {
         f(
-            stream::iter(hint::black_box([2, 3, 5, 7, 11, 13])),
+            gen_stream(convert::identity),
             hint::black_box::<fn(_) -> _>(convert::identity),
         )
     });
@@ -265,13 +272,13 @@ fn benchmark_map(c: &mut Criterion) {
 fn benchmark_map_async_with<I>(
     benchmark_group: &mut BenchmarkGroup<impl Measurement>,
     name: &str,
-    mut f: impl FnMut(Iter<IntoIter<u32, 6>>, fn(u32) -> Ready<u32>) -> I,
+    mut f: impl FnMut(StreamType<u32>, fn(u32) -> Ready<u32>) -> I,
 ) where
     I: Stream<Item = u32>,
 {
     benchmark_async_iter_with(benchmark_group, name, || {
         f(
-            stream::iter(hint::black_box([2, 3, 5, 7, 11, 13])),
+            gen_stream(convert::identity),
             hint::black_box::<fn(_) -> _>(future::ready),
         )
     });
@@ -291,13 +298,13 @@ fn benchmark_map_async(c: &mut Criterion) {
 fn benchmark_map_err_with<I>(
     benchmark_group: &mut BenchmarkGroup<impl Measurement>,
     name: &str,
-    mut f: impl FnMut(Iter<IntoIter<Result<u32, u32>, 6>>, fn(u32) -> u32) -> I,
+    mut f: impl FnMut(StreamType<Result<u32, u32>>, fn(u32) -> u32) -> I,
 ) where
     I: Stream<Item = Result<u32, u32>>,
 {
     benchmark_async_iter_with(benchmark_group, name, || {
         f(
-            stream::iter(hint::black_box([Ok(2), Ok(3), Err(5), Err(7), Ok(11), Ok(13)])),
+            gen_stream(|i| if i % 2 == 0 { Ok(i) } else { Err(i) }),
             hint::black_box::<fn(_) -> _>(convert::identity),
         )
     });
@@ -317,13 +324,13 @@ fn benchmark_map_err(c: &mut Criterion) {
 fn benchmark_map_ok_with<I>(
     benchmark_group: &mut BenchmarkGroup<impl Measurement>,
     name: &str,
-    mut f: impl FnMut(Iter<IntoIter<Result<u32, u32>, 6>>, fn(u32) -> u32) -> I,
+    mut f: impl FnMut(StreamType<Result<u32, u32>>, fn(u32) -> u32) -> I,
 ) where
     I: Stream<Item = Result<u32, u32>>,
 {
     benchmark_async_iter_with(benchmark_group, name, || {
         f(
-            stream::iter(hint::black_box([Ok(2), Ok(3), Err(5), Err(7), Ok(11), Ok(13)])),
+            gen_stream(|i| if i % 2 == 0 { Ok(i) } else { Err(i) }),
             hint::black_box::<fn(_) -> _>(convert::identity),
         )
     });
@@ -343,13 +350,13 @@ fn benchmark_map_ok(c: &mut Criterion) {
 fn benchmark_map_chain_with<I>(
     benchmark_group: &mut BenchmarkGroup<impl Measurement>,
     name: &str,
-    mut f: impl FnMut(Iter<IntoIter<u32, 6>>, fn(u32) -> u32) -> I,
+    mut f: impl FnMut(StreamType<u32>, fn(u32) -> u32) -> I,
 ) where
     I: Stream<Item = u32>,
 {
     benchmark_async_iter_with(benchmark_group, name, || {
         f(
-            stream::iter(hint::black_box([2, 3, 5, 7, 11, 13])),
+            gen_stream(convert::identity),
             hint::black_box::<fn(_) -> _>(convert::identity),
         )
     });
@@ -374,13 +381,13 @@ fn benchmark_map_chain(c: &mut Criterion) {
 fn benchmark_scan_async_with<I>(
     benchmark_group: &mut BenchmarkGroup<impl Measurement>,
     name: &str,
-    mut f: impl FnMut(Iter<IntoIter<u32, 6>>, (), fn(&mut (), u32) -> Ready<Option<u32>>) -> I,
+    mut f: impl FnMut(StreamType<u32>, (), fn(&mut (), u32) -> Ready<Option<u32>>) -> I,
 ) where
     I: Stream<Item = u32>,
 {
     benchmark_async_iter_with(benchmark_group, name, || {
         f(
-            stream::iter(hint::black_box([2, 3, 5, 7, 11, 13])),
+            gen_stream(convert::identity),
             (),
             hint::black_box::<fn(&mut _, _) -> _>(|_, x| future::ready(Some(x))),
         )
@@ -401,15 +408,15 @@ fn benchmark_scan_async(c: &mut Criterion) {
 fn benchmark_try_fold_async_with<Fut>(
     benchmark_group: &mut BenchmarkGroup<impl Measurement>,
     name: &str,
-    mut f: impl FnMut(Iter<IntoIter<Result<u32, ()>, 6>>, u32, fn(u32, u32) -> Ready<Result<u32, ()>>) -> Fut,
+    mut f: impl FnMut(StreamType<Result<u32, ()>>, u32, fn(u32, u32) -> Ready<Result<u32, ()>>) -> Fut,
 ) where
     Fut: Future<Output = Result<u32, ()>>,
 {
     benchmark_future_with(benchmark_group, name, || {
         f(
-            stream::iter(hint::black_box([2, 3, 5, 7, 11, 13].map(Ok))),
+            gen_stream(Ok),
             0,
-            hint::black_box::<fn(_, _) -> _>(|x, y| future::ok(x + y)),
+            hint::black_box::<fn(_, _) -> _>(|x, y| future::ok(x ^ y)),
         )
     });
 }
@@ -457,15 +464,12 @@ fn benchmark_try_fold_async(c: &mut Criterion) {
 fn benchmark_try_for_each_async_with<Fut>(
     benchmark_group: &mut BenchmarkGroup<impl Measurement>,
     name: &str,
-    mut f: impl FnMut(Iter<IntoIter<Result<u32, ()>, 6>>, fn(u32) -> Ready<Result<(), ()>>) -> Fut,
+    mut f: impl FnMut(StreamType<Result<u32, ()>>, fn(u32) -> Ready<Result<(), ()>>) -> Fut,
 ) where
     Fut: Future<Output = Result<(), ()>>,
 {
     benchmark_future_with(benchmark_group, name, || {
-        f(
-            stream::iter(hint::black_box([2, 3, 5, 7, 11, 13].map(Ok))),
-            hint::black_box::<fn(_) -> _>(|_| future::ok(())),
-        )
+        f(gen_stream(Ok), hint::black_box::<fn(_) -> _>(|_| future::ok(())))
     });
 }
 
@@ -494,15 +498,12 @@ fn benchmark_try_for_each_async(c: &mut Criterion) {
 fn benchmark_zip_with<I>(
     benchmark_group: &mut BenchmarkGroup<impl Measurement>,
     name: &str,
-    mut f: impl FnMut(Iter<IntoIter<u32, 6>>, Iter<IntoIter<u32, 6>>) -> I,
+    mut f: impl FnMut(StreamType<u32>, StreamType<u32>) -> I,
 ) where
     I: Stream<Item = (u32, u32)>,
 {
     benchmark_async_iter_with(benchmark_group, name, || {
-        f(
-            stream::iter(hint::black_box([2, 3, 5, 7, 11, 13])),
-            stream::iter(hint::black_box([2, 3, 5, 7, 11, 13])),
-        )
+        f(gen_stream(convert::identity), gen_stream(convert::identity))
     });
 }
 
