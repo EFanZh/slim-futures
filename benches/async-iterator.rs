@@ -72,7 +72,7 @@ fn benchmark_and_then_async_with<I>(
     });
 }
 
-fn benchmark_and_then_async(c: &mut Criterion) {
+fn benchmark_and_then_async(c: &mut Criterion<impl Measurement>) {
     let mut benchmark_group = c.benchmark_group("async iter/and_then_async");
 
     benchmark_and_then_async_with(&mut benchmark_group, "futures", TryStreamExt::and_then);
@@ -103,7 +103,7 @@ fn benchmark_filter_async_with<I>(
     });
 }
 
-fn benchmark_filter_async(c: &mut Criterion) {
+fn benchmark_filter_async(c: &mut Criterion<impl Measurement>) {
     let mut benchmark_group = c.benchmark_group("async iter/filter_async");
 
     benchmark_filter_async_with(&mut benchmark_group, "futures", StreamExt::filter);
@@ -134,7 +134,7 @@ fn benchmark_filter_map_async_with<I>(
     });
 }
 
-fn benchmark_filter_map_async(c: &mut Criterion) {
+fn benchmark_filter_map_async(c: &mut Criterion<impl Measurement>) {
     let mut benchmark_group = c.benchmark_group("async iter/filter_map_async");
 
     benchmark_filter_map_async_with(&mut benchmark_group, "futures", StreamExt::filter_map);
@@ -166,7 +166,7 @@ fn benchmark_fold_async_with<Fut>(
     });
 }
 
-fn benchmark_fold_async(c: &mut Criterion) {
+fn benchmark_fold_async(c: &mut Criterion<impl Measurement>) {
     let mut benchmark_group = c.benchmark_group("async iter/fold_async");
 
     benchmark_fold_async_with(
@@ -221,7 +221,7 @@ fn benchmark_for_each_async_with<Fut>(
     });
 }
 
-fn benchmark_for_each_async(c: &mut Criterion) {
+fn benchmark_for_each_async(c: &mut Criterion<impl Measurement>) {
     let mut benchmark_group = c.benchmark_group("async iter/for_each_async");
 
     benchmark_for_each_async_with(&mut benchmark_group, "async block", |mut iter, f| async move {
@@ -258,7 +258,7 @@ fn benchmark_map_with<I>(
     });
 }
 
-fn benchmark_map(c: &mut Criterion) {
+fn benchmark_map(c: &mut Criterion<impl Measurement>) {
     let mut benchmark_group = c.benchmark_group("async iter/map");
 
     benchmark_map_with(&mut benchmark_group, "futures", StreamExt::map);
@@ -284,7 +284,7 @@ fn benchmark_map_async_with<I>(
     });
 }
 
-fn benchmark_map_async(c: &mut Criterion) {
+fn benchmark_map_async(c: &mut Criterion<impl Measurement>) {
     let mut benchmark_group = c.benchmark_group("async iter/map_async");
 
     benchmark_map_async_with(&mut benchmark_group, "futures", StreamExt::then);
@@ -310,7 +310,7 @@ fn benchmark_map_err_with<I>(
     });
 }
 
-fn benchmark_map_err(c: &mut Criterion) {
+fn benchmark_map_err(c: &mut Criterion<impl Measurement>) {
     let mut benchmark_group = c.benchmark_group("async iter/map_err");
 
     benchmark_map_err_with(&mut benchmark_group, "futures", TryStreamExt::map_err);
@@ -336,7 +336,7 @@ fn benchmark_map_ok_with<I>(
     });
 }
 
-fn benchmark_map_ok(c: &mut Criterion) {
+fn benchmark_map_ok(c: &mut Criterion<impl Measurement>) {
     let mut benchmark_group = c.benchmark_group("async iter/map_ok");
 
     benchmark_map_ok_with(&mut benchmark_group, "futures", TryStreamExt::map_ok);
@@ -362,7 +362,7 @@ fn benchmark_map_chain_with<I>(
     });
 }
 
-fn benchmark_map_chain(c: &mut Criterion) {
+fn benchmark_map_chain(c: &mut Criterion<impl Measurement>) {
     let mut benchmark_group = c.benchmark_group("async iter/map chain");
 
     benchmark_map_chain_with(&mut benchmark_group, "futures", |iter, f| {
@@ -394,7 +394,7 @@ fn benchmark_scan_async_with<I>(
     });
 }
 
-fn benchmark_scan_async(c: &mut Criterion) {
+fn benchmark_scan_async(c: &mut Criterion<impl Measurement>) {
     let mut benchmark_group = c.benchmark_group("async iter/scan_async");
 
     benchmark_scan_async_with(&mut benchmark_group, "futures", StreamExt::scan);
@@ -421,7 +421,7 @@ fn benchmark_try_fold_async_with<Fut>(
     });
 }
 
-fn benchmark_try_fold_async(c: &mut Criterion) {
+fn benchmark_try_fold_async(c: &mut Criterion<impl Measurement>) {
     fn try_fold_fn(
         f: fn(u32, u32) -> Ready<Result<u32, ()>>,
     ) -> impl Fn(u32, Result<u32, ()>) -> Ready<Result<u32, ()>> {
@@ -473,7 +473,7 @@ fn benchmark_try_for_each_async_with<Fut>(
     });
 }
 
-fn benchmark_try_for_each_async(c: &mut Criterion) {
+fn benchmark_try_for_each_async(c: &mut Criterion<impl Measurement>) {
     let mut benchmark_group = c.benchmark_group("async iter/try_for_each_async");
 
     benchmark_try_for_each_async_with(&mut benchmark_group, "async block", |mut iter, f| async move {
@@ -507,7 +507,7 @@ fn benchmark_zip_with<I>(
     });
 }
 
-fn benchmark_zip(c: &mut Criterion) {
+fn benchmark_zip(c: &mut Criterion<impl Measurement>) {
     let mut benchmark_group = c.benchmark_group("async iter/zip");
 
     benchmark_zip_with(&mut benchmark_group, "futures", StreamExt::zip);

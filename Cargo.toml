@@ -10,11 +10,11 @@ version = "0.1.0"
 
 [[bench]]
 harness = false
-name = "async-iter-performance"
+name = "async-iterator"
 
 [[bench]]
 harness = false
-name = "future-performance"
+name = "future"
 
 [dependencies]
 fn-traits = "0.1"
