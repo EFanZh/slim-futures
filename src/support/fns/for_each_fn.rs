@@ -1,7 +1,10 @@
 use fn_traits::FnMut;
 
 #[derive(Clone)]
-pub struct ForEachFn<F> {
+pub struct ForEachFn<F>
+where
+    F: ?Sized,
+{
     f: F,
 }
 
@@ -13,7 +16,7 @@ impl<F> ForEachFn<F> {
 
 impl<T, F> FnMut<((), T)> for ForEachFn<F>
 where
-    F: FnMut<(T,)>,
+    F: FnMut<(T,)> + ?Sized,
 {
     type Output = F::Output;
 

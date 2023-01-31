@@ -1,19 +1,23 @@
 use crate::async_iter::fold::Fold;
-use crate::support::AsyncIterator;
+use crate::support::{AsyncIterator, FusedAsyncIterator};
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use fn_traits::fns::MemTakeFn;
 use fn_traits::FnMut;
+use futures_core::FusedFuture;
 
 #[derive(Clone)]
-struct ReduceFn<F> {
+struct ReduceFn<F>
+where
+    F: ?Sized,
+{
     f: F,
 }
 
 impl<T, F> FnMut<(Option<T>, T)> for ReduceFn<F>
 where
-    F: FnMut<(T, T), Output = T>,
+    F: FnMut<(T, T), Output = T> + ?Sized,
 {
     type Output = Option<T>;
 
@@ -29,6 +33,7 @@ pin_project_lite::pin_project! {
     pub struct Reduce<I, F>
     where
         I: AsyncIterator,
+        F: ?Sized,
     {
         #[pin]
         inner: Fold<I, Option<I::Item>, MemTakeFn, ReduceFn<F>>,
@@ -62,12 +67,22 @@ where
 impl<I, F> Future for Reduce<I, F>
 where
     I: AsyncIterator,
-    F: FnMut<(I::Item, I::Item), Output = I::Item>,
+    F: FnMut<(I::Item, I::Item), Output = I::Item> + ?Sized,
 {
     type Output = Option<I::Item>;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         self.project().inner.poll(cx)
+    }
+}
+
+impl<I, F> FusedFuture for Reduce<I, F>
+where
+    I: FusedAsyncIterator,
+    F: FnMut<(I::Item, I::Item), Output = I::Item> + ?Sized,
+{
+    fn is_terminated(&self) -> bool {
+        self.inner.is_terminated()
     }
 }
 
