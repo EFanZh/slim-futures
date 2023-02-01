@@ -7,13 +7,16 @@ use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
 #[derive(Clone)]
-struct InspectErrFn<F> {
+struct InspectErrFn<F>
+where
+    F: ?Sized,
+{
     inner: F,
 }
 
 impl<'a, T, E, F> FnMut<(&'a Result<T, E>,)> for InspectErrFn<F>
 where
-    F: FnMut<(&'a E,), Output = ()>,
+    F: FnMut<(&'a E,), Output = ()> + ?Sized,
 {
     type Output = ();
 
@@ -26,7 +29,10 @@ where
 
 pin_project_lite::pin_project! {
     #[derive(Clone)]
-    pub struct InspectErr<Fut, F> {
+    pub struct InspectErr<Fut, F>
+    where
+        F: ?Sized,
+    {
         #[pin]
         inner: Inspect<Fut, InspectErrFn<F>>,
     }
@@ -43,7 +49,7 @@ impl<Fut, F> InspectErr<Fut, F> {
 impl<Fut, F> Future for InspectErr<Fut, F>
 where
     Fut: ResultFuture,
-    F: for<'a> FnMut<(&'a Fut::Error,), Output = ()>,
+    F: for<'a> FnMut<(&'a Fut::Error,), Output = ()> + ?Sized,
 {
     type Output = Fut::Output;
 

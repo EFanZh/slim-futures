@@ -4,7 +4,10 @@ use core::task::{self, Context, Poll};
 use fn_traits::FnMut;
 
 pin_project_lite::pin_project! {
-    pub struct TakeWhile<I, F> {
+    pub struct TakeWhile<I, F>
+    where
+        F: ?Sized,
+    {
         #[pin]
         iter: I,
         f: F,
@@ -33,7 +36,7 @@ where
 impl<I, F> AsyncIterator for TakeWhile<I, F>
 where
     I: AsyncIterator,
-    F: for<'a> FnMut<(&'a I::Item,), Output = bool>,
+    F: for<'a> FnMut<(&'a I::Item,), Output = bool> + ?Sized,
 {
     type Item = I::Item;
 

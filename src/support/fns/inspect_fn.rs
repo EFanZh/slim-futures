@@ -1,7 +1,10 @@
 use fn_traits::FnMut;
 
 #[derive(Clone)]
-pub struct InspectFn<F> {
+pub struct InspectFn<F>
+where
+    F: ?Sized,
+{
     f: F,
 }
 
@@ -13,7 +16,7 @@ impl<F> InspectFn<F> {
 
 impl<T, F> FnMut<(T,)> for InspectFn<F>
 where
-    F: for<'a> FnMut<(&'a T,), Output = ()>,
+    F: for<'a> FnMut<(&'a T,), Output = ()> + ?Sized,
 {
     type Output = T;
 

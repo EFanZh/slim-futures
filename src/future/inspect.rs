@@ -8,7 +8,10 @@ use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
     #[derive(Clone)]
-    pub struct Inspect<Fut, F> {
+    pub struct Inspect<Fut, F>
+    where
+        F: ?Sized,
+    {
         #[pin]
         inner: Map<Fut, InspectFn<F>>,
     }
@@ -25,7 +28,7 @@ impl<Fut, F> Inspect<Fut, F> {
 impl<Fut, F> Future for Inspect<Fut, F>
 where
     Fut: Future,
-    F: for<'a> FnMut<(&'a Fut::Output,), Output = ()>,
+    F: for<'a> FnMut<(&'a Fut::Output,), Output = ()> + ?Sized,
 {
     type Output = Fut::Output;
 
@@ -37,7 +40,7 @@ where
 impl<Fut, F> FusedFuture for Inspect<Fut, F>
 where
     Fut: FusedFuture,
-    F: for<'a> FnMut<(&'a Fut::Output,), Output = ()>,
+    F: for<'a> FnMut<(&'a Fut::Output,), Output = ()> + ?Sized,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

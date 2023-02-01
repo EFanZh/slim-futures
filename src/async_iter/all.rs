@@ -1,16 +1,17 @@
 use crate::async_iter::try_fold::TryFold;
-use crate::future::Map;
-use crate::support::fns::ControlFlowIsContinueFn;
 use crate::support::AsyncIterator;
 use core::future::Future;
 use core::ops::ControlFlow;
 use core::pin::Pin;
-use core::task::{Context, Poll};
+use core::task::{self, Context, Poll};
 use fn_traits::fns::CopyFn;
 use fn_traits::FnMut;
 
 #[derive(Clone)]
-struct AllFn<P> {
+struct AllFn<P>
+where
+    P: ?Sized,
+{
     predicate: P,
 }
 
@@ -30,19 +31,19 @@ where
 }
 
 pin_project_lite::pin_project! {
-    pub struct All<I, P> {
+    pub struct All<I, P>
+    where
+        P: ?Sized
+    {
         #[pin]
-        inner: Map<TryFold<I, (), CopyFn, AllFn<P>>, ControlFlowIsContinueFn>
+        inner: TryFold<I, (), CopyFn, AllFn<P>>,
     }
 }
 
 impl<I, P> All<I, P> {
     pub(crate) fn new(iter: I, predicate: P) -> Self {
         Self {
-            inner: Map::new(
-                TryFold::new(iter, (), CopyFn::default(), AllFn { predicate }),
-                ControlFlowIsContinueFn::default(),
-            ),
+            inner: TryFold::new(iter, (), CopyFn::default(), AllFn { predicate }),
         }
     }
 }
@@ -67,7 +68,7 @@ where
     type Output = bool;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
-        self.project().inner.poll(cx)
+        Poll::Ready(task::ready!(self.project().inner.poll(cx)).is_continue())
     }
 }
 

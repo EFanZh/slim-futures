@@ -26,12 +26,13 @@ pin_project_lite::pin_project! {
     pub struct Flatten<I>
     where
         I: AsyncIterator,
+        I: ?Sized,
         I::Item: IntoAsyncIterator,
     {
         #[pin]
-        iter: I,
-        #[pin]
         sub_iter: Option<<I::Item as IntoAsyncIterator>::IntoAsyncIter>,
+        #[pin]
+        iter: I,
     }
 }
 
@@ -41,7 +42,7 @@ where
     I::Item: IntoAsyncIterator,
 {
     pub(crate) fn new(iter: I) -> Self {
-        Self { iter, sub_iter: None }
+        Self { sub_iter: None, iter }
     }
 }
 
@@ -53,23 +54,23 @@ where
 {
     fn clone(&self) -> Self {
         Self {
-            iter: self.iter.clone(),
             sub_iter: self.sub_iter.clone(),
+            iter: self.iter.clone(),
         }
     }
 }
 
 impl<I> AsyncIterator for Flatten<I>
 where
-    I: AsyncIterator,
+    I: AsyncIterator + ?Sized,
     I::Item: IntoAsyncIterator,
 {
     type Item = <I::Item as IntoAsyncIterator>::Item;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         let this = self.project();
-        let mut iter = this.iter;
         let mut sub_iter_slot = this.sub_iter;
+        let mut iter = this.iter;
 
         loop {
             let sub_iter = match sub_iter_slot.as_mut().as_pin_mut() {
@@ -110,7 +111,7 @@ where
 
 impl<I> FusedAsyncIterator for Flatten<I>
 where
-    I: FusedAsyncIterator,
+    I: FusedAsyncIterator + ?Sized,
     I::Item: IntoAsyncIterator,
     <I::Item as IntoAsyncIterator>::IntoAsyncIter: FusedAsyncIterator,
 {

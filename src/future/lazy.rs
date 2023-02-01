@@ -6,15 +6,18 @@ use core::task::{Context, Poll};
 use fn_traits::FnMut;
 
 #[derive(Clone)]
-pub struct Lazy<F> {
+pub struct Lazy<F>
+where
+    F: ?Sized,
+{
     f: F,
 }
 
-impl<F> Unpin for Lazy<F> {}
+impl<F> Unpin for Lazy<F> where F: ?Sized {}
 
 impl<F, T> Future for Lazy<F>
 where
-    F: for<'a, 'b> FnMut<(&'a mut Context<'b>,), Output = T>,
+    F: for<'a, 'b> FnMut<(&'a mut Context<'b>,), Output = T> + ?Sized,
 {
     type Output = T;
 

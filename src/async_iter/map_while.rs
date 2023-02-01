@@ -4,7 +4,10 @@ use core::task::{self, Context, Poll};
 use fn_traits::FnMut;
 
 pin_project_lite::pin_project! {
-    pub struct MapWhile<I, F> {
+    pub struct MapWhile<I, F>
+    where
+        F: ?Sized,
+    {
         #[pin]
         iter: I,
         f: F,
@@ -33,7 +36,7 @@ where
 impl<I, F, T> AsyncIterator for MapWhile<I, F>
 where
     I: AsyncIterator,
-    F: FnMut<(I::Item,), Output = Option<T>>,
+    F: FnMut<(I::Item,), Output = Option<T>> + ?Sized,
 {
     type Item = T;
 

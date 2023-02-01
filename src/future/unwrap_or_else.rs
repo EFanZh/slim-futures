@@ -7,13 +7,16 @@ use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
 #[derive(Clone)]
-struct UnwrapOrElseFn<F> {
+struct UnwrapOrElseFn<F>
+where
+    F: ?Sized,
+{
     inner: F,
 }
 
 impl<T, E, F> FnMut<(Result<T, E>,)> for UnwrapOrElseFn<F>
 where
-    F: FnMut<(E,), Output = T>,
+    F: FnMut<(E,), Output = T> + ?Sized,
 {
     type Output = T;
 
@@ -24,7 +27,10 @@ where
 
 pin_project_lite::pin_project! {
     #[derive(Clone)]
-    pub struct UnwrapOrElse<Fut, F> {
+    pub struct UnwrapOrElse<Fut, F>
+    where
+        F: ?Sized,
+    {
         #[pin]
         inner: Map<Fut, UnwrapOrElseFn<F>>,
     }
@@ -41,7 +47,7 @@ impl<Fut, F> UnwrapOrElse<Fut, F> {
 impl<Fut, F> Future for UnwrapOrElse<Fut, F>
 where
     Fut: ResultFuture,
-    F: FnMut<(Fut::Error,), Output = Fut::Ok>,
+    F: FnMut<(Fut::Error,), Output = Fut::Ok> + ?Sized,
 {
     type Output = Fut::Ok;
 
@@ -53,7 +59,7 @@ where
 impl<Fut, F> FusedFuture for UnwrapOrElse<Fut, F>
 where
     Fut: ResultFuture + FusedFuture,
-    F: FnMut<(Fut::Error,), Output = Fut::Ok>,
+    F: FnMut<(Fut::Error,), Output = Fut::Ok> + ?Sized,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

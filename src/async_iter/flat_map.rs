@@ -10,6 +10,7 @@ pin_project_lite::pin_project! {
     where
         I: AsyncIterator,
         F: FnMut<(I::Item,)>,
+        F: ?Sized,
         F::Output: IntoAsyncIterator,
     {
         #[pin]
@@ -47,7 +48,7 @@ where
 impl<I, F> AsyncIterator for FlatMap<I, F>
 where
     I: AsyncIterator,
-    F: FnMut<(I::Item,)>,
+    F: FnMut<(I::Item,)> + ?Sized,
     F::Output: IntoAsyncIterator,
 {
     type Item = <F::Output as IntoAsyncIterator>::Item;
@@ -64,7 +65,7 @@ where
 impl<I, F> FusedAsyncIterator for FlatMap<I, F>
 where
     I: FusedAsyncIterator,
-    F: FnMut<(I::Item,)>,
+    F: FnMut<(I::Item,)> + ?Sized,
     F::Output: IntoAsyncIterator,
     <F::Output as IntoAsyncIterator>::IntoAsyncIter: FusedAsyncIterator,
 {

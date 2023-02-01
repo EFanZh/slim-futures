@@ -7,13 +7,16 @@ use fn_traits::FnMut;
 use futures_core::FusedFuture;
 
 #[derive(Clone)]
-struct InspectOkFn<F> {
+struct InspectOkFn<F>
+where
+    F: ?Sized,
+{
     inner: F,
 }
 
 impl<'a, T, E, F> FnMut<(&'a Result<T, E>,)> for InspectOkFn<F>
 where
-    F: FnMut<(&'a T,), Output = ()>,
+    F: FnMut<(&'a T,), Output = ()> + ?Sized,
 {
     type Output = ();
 
@@ -26,7 +29,10 @@ where
 
 pin_project_lite::pin_project! {
     #[derive(Clone)]
-    pub struct InspectOk<Fut, F> {
+    pub struct InspectOk<Fut, F>
+    where
+        F: ?Sized,
+    {
         #[pin]
         inner: Inspect<Fut, InspectOkFn<F>>,
     }
@@ -43,7 +49,7 @@ impl<Fut, F> InspectOk<Fut, F> {
 impl<Fut, F> Future for InspectOk<Fut, F>
 where
     Fut: ResultFuture,
-    F: for<'a> FnMut<(&'a Fut::Ok,), Output = ()>,
+    F: for<'a> FnMut<(&'a Fut::Ok,), Output = ()> + ?Sized,
 {
     type Output = Fut::Output;
 
@@ -55,7 +61,7 @@ where
 impl<Fut, F> FusedFuture for InspectOk<Fut, F>
 where
     Fut: ResultFuture + FusedFuture,
-    F: for<'a> FnMut<(&'a Fut::Ok,), Output = ()>,
+    F: for<'a> FnMut<(&'a Fut::Ok,), Output = ()> + ?Sized,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

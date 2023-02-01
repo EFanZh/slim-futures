@@ -1,11 +1,10 @@
 use crate::async_iter::try_fold_async::TryFoldAsync;
 use crate::future::Map;
-use crate::support::fns::ControlFlowIsBreakFn;
 use crate::support::AsyncIterator;
 use core::future::{Future, IntoFuture};
 use core::ops::ControlFlow;
 use core::pin::Pin;
-use core::task::{Context, Poll};
+use core::task::{self, Context, Poll};
 use fn_traits::fns::CopyFn;
 use fn_traits::FnMut;
 
@@ -25,13 +24,16 @@ impl FnMut<(bool,)> for BreakIfTrue {
 }
 
 #[derive(Clone)]
-struct AnyAsyncFn<P> {
+struct AnyAsyncFn<P>
+where
+    P: ?Sized,
+{
     predicate: P,
 }
 
 impl<T, P> FnMut<((), T)> for AnyAsyncFn<P>
 where
-    P: FnMut<(T,)>,
+    P: FnMut<(T,)> + ?Sized,
     P::Output: IntoFuture,
 {
     type Output = Map<<P::Output as IntoFuture>::IntoFuture, BreakIfTrue>;
@@ -46,10 +48,11 @@ pin_project_lite::pin_project! {
     where
         I: AsyncIterator,
         P: FnMut<(I::Item,)>,
+        P: ?Sized,
         P::Output: IntoFuture<Output = bool>,
     {
         #[pin]
-        inner: Map<TryFoldAsync<I, (), CopyFn, AnyAsyncFn<P>>, ControlFlowIsBreakFn>
+        inner: TryFoldAsync<I, (), CopyFn, AnyAsyncFn<P>>,
     }
 }
 
@@ -61,10 +64,7 @@ where
 {
     pub(crate) fn new(iter: I, predicate: P) -> Self {
         Self {
-            inner: Map::new(
-                TryFoldAsync::new(iter, (), CopyFn::default(), AnyAsyncFn { predicate }),
-                ControlFlowIsBreakFn::default(),
-            ),
+            inner: TryFoldAsync::new(iter, (), CopyFn::default(), AnyAsyncFn { predicate }),
         }
     }
 }
@@ -86,13 +86,13 @@ where
 impl<I, P> Future for AnyAsync<I, P>
 where
     I: AsyncIterator,
-    P: FnMut<(I::Item,)>,
+    P: FnMut<(I::Item,)> + ?Sized,
     P::Output: IntoFuture<Output = bool>,
 {
     type Output = bool;
 
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
-        self.project().inner.poll(cx)
+        Poll::Ready(task::ready!(self.project().inner.poll(cx)).is_break())
     }
 }
 

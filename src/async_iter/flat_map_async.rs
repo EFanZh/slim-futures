@@ -12,6 +12,7 @@ pin_project_lite::pin_project! {
     where
         I: AsyncIterator,
         F: FnMut<(I::Item,)>,
+        F: ?Sized,
         F::Output: IntoFuture,
         <F::Output as IntoFuture>::Output: IntoAsyncIterator,
     {
@@ -53,7 +54,7 @@ where
 impl<I, F> AsyncIterator for FlatMapAsync<I, F>
 where
     I: AsyncIterator,
-    F: FnMut<(I::Item,)>,
+    F: FnMut<(I::Item,)> + ?Sized,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::Output: IntoAsyncIterator,
 {
@@ -71,7 +72,7 @@ where
 impl<I, F> FusedAsyncIterator for FlatMapAsync<I, F>
 where
     I: FusedAsyncIterator,
-    F: FnMut<(I::Item,)>,
+    F: FnMut<(I::Item,)> + ?Sized,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::Output: IntoAsyncIterator,
     <F::Output as IntoFuture>::IntoFuture: FusedFuture,

@@ -9,7 +9,10 @@ use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
     #[derive(Clone)]
-    pub struct MapOkOrElse<Fut, D, F> {
+    pub struct MapOkOrElse<Fut, D, F>
+    where
+        F: ?Sized,
+    {
         #[pin]
         inner: Map<Fut, MapOkOrElseFn<D, F>>,
     }
@@ -27,7 +30,7 @@ impl<Fut, D, F> Future for MapOkOrElse<Fut, D, F>
 where
     Fut: ResultFuture,
     D: FnMut<(Fut::Error,)>,
-    F: FnMut<(Fut::Ok,), Output = D::Output>,
+    F: FnMut<(Fut::Ok,), Output = D::Output> + ?Sized,
 {
     type Output = F::Output;
 
@@ -40,7 +43,7 @@ impl<Fut, D, F> FusedFuture for MapOkOrElse<Fut, D, F>
 where
     Fut: ResultFuture + FusedFuture,
     D: FnMut<(Fut::Error,)>,
-    F: FnMut<(Fut::Ok,), Output = D::Output>,
+    F: FnMut<(Fut::Ok,), Output = D::Output> + ?Sized,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

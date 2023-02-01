@@ -9,7 +9,10 @@ use futures_core::FusedFuture;
 
 pin_project_lite::pin_project! {
     #[derive(Clone)]
-    pub struct MapErr<Fut, F> {
+    pub struct MapErr<Fut, F>
+    where
+        F: ?Sized,
+    {
         #[pin]
         inner: Map<Fut, MapErrFn<F>>,
     }
@@ -26,7 +29,7 @@ impl<Fut, F> MapErr<Fut, F> {
 impl<Fut, F> Future for MapErr<Fut, F>
 where
     Fut: ResultFuture,
-    F: FnMut<(Fut::Error,)>,
+    F: FnMut<(Fut::Error,)> + ?Sized,
 {
     type Output = Result<Fut::Ok, F::Output>;
 
@@ -38,7 +41,7 @@ where
 impl<Fut, F> FusedFuture for MapErr<Fut, F>
 where
     Fut: ResultFuture + FusedFuture,
-    F: FnMut<(Fut::Error,)>,
+    F: FnMut<(Fut::Error,)> + ?Sized,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()

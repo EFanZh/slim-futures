@@ -55,7 +55,7 @@ where
 impl<I, F> AsyncIterator for TakeWhileAsync<I, F>
 where
     I: AsyncIterator,
-    F: PredicateFn<I::Item>,
+    F: PredicateFn<I::Item> + ?Sized,
     <F as PredicateFn<I::Item>>::Output: IntoFuture<Output = bool>,
 {
     type Item = I::Item;

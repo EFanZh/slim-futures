@@ -8,7 +8,10 @@ use fn_traits::fns::CopyFn;
 use fn_traits::FnMut;
 
 pin_project_lite::pin_project! {
-    pub struct TryForEach<I, F> {
+    pub struct TryForEach<I, F>
+    where
+        F: ?Sized,
+    {
         #[pin]
         inner: TryFold<I, (), CopyFn, ForEachFn<F>>,
     }
@@ -37,7 +40,7 @@ where
 impl<I, F> Future for TryForEach<I, F>
 where
     I: AsyncIterator,
-    F: FnMut<(I::Item,)>,
+    F: FnMut<(I::Item,)> + ?Sized,
     F::Output: Try<Output = ()>,
 {
     type Output = F::Output;

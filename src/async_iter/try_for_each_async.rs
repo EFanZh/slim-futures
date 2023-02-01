@@ -12,6 +12,7 @@ pin_project_lite::pin_project! {
     where
         I: AsyncIterator,
         F: FnMut<(I::Item,)>,
+        F: ?Sized,
         F::Output: IntoFuture,
         <F::Output as IntoFuture>::Output: Try,
     {
@@ -52,7 +53,7 @@ where
 impl<I, F> Future for TryForEachAsync<I, F>
 where
     I: AsyncIterator,
-    F: FnMut<(I::Item,)>,
+    F: FnMut<(I::Item,)> + ?Sized,
     F::Output: IntoFuture,
     <F::Output as IntoFuture>::Output: Try<Output = ()>,
 {

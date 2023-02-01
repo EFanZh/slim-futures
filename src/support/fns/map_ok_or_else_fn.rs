@@ -1,6 +1,9 @@
 use fn_traits::FnMut;
 
-pub struct MapOkOrElseFn<D, F> {
+pub struct MapOkOrElseFn<D, F>
+where
+    F: ?Sized,
+{
     default: D,
     f: F,
 }
@@ -27,7 +30,7 @@ where
 impl<T, E, D, F> FnMut<(Result<T, E>,)> for MapOkOrElseFn<D, F>
 where
     D: FnMut<(E,)>,
-    F: FnMut<(T,), Output = D::Output>,
+    F: FnMut<(T,), Output = D::Output> + ?Sized,
 {
     type Output = F::Output;
 

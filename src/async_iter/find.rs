@@ -6,7 +6,10 @@ use core::task::{Context, Poll};
 use fn_traits::FnMut;
 
 pin_project_lite::pin_project! {
-    pub struct Find<I, P> {
+    pub struct Find<I, P>
+    where
+        P: ?Sized,
+    {
         #[pin]
         inner: Filter<I, P>
     }
@@ -35,7 +38,7 @@ where
 impl<I, P> Future for Find<I, P>
 where
     I: AsyncIterator,
-    P: for<'a> FnMut<(&'a I::Item,), Output = bool>,
+    P: for<'a> FnMut<(&'a I::Item,), Output = bool> + ?Sized,
 {
     type Output = Option<I::Item>;
 

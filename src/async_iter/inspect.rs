@@ -6,7 +6,10 @@ use core::task::{Context, Poll};
 use fn_traits::FnMut;
 
 pin_project_lite::pin_project! {
-    pub struct Inspect<I, F> {
+    pub struct Inspect<I, F>
+    where
+        F: ?Sized,
+    {
         #[pin]
         inner: Map<I, InspectFn<F>>,
     }
@@ -35,7 +38,7 @@ where
 impl<I, F> AsyncIterator for Inspect<I, F>
 where
     I: AsyncIterator,
-    F: for<'a> FnMut<(&'a I::Item,), Output = ()>,
+    F: for<'a> FnMut<(&'a I::Item,), Output = ()> + ?Sized,
 {
     type Item = I::Item;
 
@@ -51,7 +54,7 @@ where
 impl<I, F> FusedAsyncIterator for Inspect<I, F>
 where
     I: FusedAsyncIterator,
-    F: for<'a> FnMut<(&'a I::Item,), Output = ()>,
+    F: for<'a> FnMut<(&'a I::Item,), Output = ()> + ?Sized,
 {
     fn is_terminated(&self) -> bool {
         self.inner.is_terminated()
