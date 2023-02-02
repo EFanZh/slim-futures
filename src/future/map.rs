@@ -20,6 +20,10 @@ impl<Fut, F> Map<Fut, F> {
     pub(crate) fn new(fut: Fut, f: F) -> Self {
         Self { fut, f }
     }
+
+    pub(crate) fn get_inner_pinned(self: Pin<&mut Self>) -> Pin<&mut Fut> {
+        self.project().fut
+    }
 }
 
 impl<Fut, F> Future for Map<Fut, F>

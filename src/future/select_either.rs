@@ -36,6 +36,13 @@ where
             ),
         }
     }
+
+    #[must_use]
+    pub fn get_inner_pinned(self: Pin<&mut Self>) -> (Pin<&mut Fut1>, Pin<&mut Fut2>) {
+        let (fut_1, fut_2) = self.project().inner.get_inner_pinned();
+
+        (fut_1.get_inner_pinned(), fut_2.get_inner_pinned())
+    }
 }
 
 impl<Fut1, Fut2> Future for SelectEither<Fut1, Fut2>

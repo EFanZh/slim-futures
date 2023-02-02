@@ -17,6 +17,13 @@ impl<Fut1, Fut2> RawSelect<Fut1, Fut2> {
     pub(crate) fn new(fut_1: Fut1, fut_2: Fut2) -> Self {
         Self { fut_1, fut_2 }
     }
+
+    #[must_use]
+    pub fn get_inner_pinned(self: Pin<&mut Self>) -> (Pin<&mut Fut1>, Pin<&mut Fut2>) {
+        let this = self.project();
+
+        (this.fut_1, this.fut_2)
+    }
 }
 
 impl<Fut1, Fut2> Clone for RawSelect<Fut1, Fut2>
