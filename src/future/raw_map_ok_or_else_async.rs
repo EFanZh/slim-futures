@@ -13,7 +13,7 @@ pin_project_lite::pin_project! {
         Fut: ResultFuture,
         D: FnMut<(Fut::Error,)>,
         D::Output: IntoFuture,
-        F: FnMut<(Fut::Ok, ),Output = D::Output,>,
+        F: FnMut<(Fut::Ok,), Output = D::Output>,
     {
         #[pin]
         inner: MapAsync<Fut, MapOkOrElseFn<D, F>>,

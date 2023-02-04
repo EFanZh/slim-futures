@@ -4,7 +4,7 @@ use core::task::{self, Context, Poll};
 use fn_traits::FnMut;
 
 pin_project_lite::pin_project! {
-    pub struct Scan<I,S,F>
+    pub struct Scan<I, S, F>
     where
         F: ?Sized,
     {
