@@ -81,11 +81,7 @@ where
                     Some(item) => {
                         let fut = f.call_mut((getter.call_mut((acc,)), item)).into_future();
 
-                        state_slot.set(FoldState::Future { fut });
-
-                        let FoldStateProject::Future { fut } = state_slot.as_mut().project() else { unreachable!() };
-
-                        fut
+                        state_slot.as_mut().set_future(fut)
                     }
                 },
                 FoldStateProject::Future { fut } => fut,

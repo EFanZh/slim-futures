@@ -1,27 +1,10 @@
+use crate::support::states::{FoldState, FoldStateProject};
 use crate::support::{AsyncIterator, FusedAsyncIterator};
 use core::future::{Future, IntoFuture};
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
 use fn_traits::FnMut;
 use futures_core::FusedFuture;
-
-pin_project_lite::pin_project! {
-    #[project = StateProject]
-    #[project_replace = StateProjectReplace]
-    #[derive(Clone)]
-    enum State<Fut>
-    where
-        Fut: Future,
-    {
-        Accumulate {
-            acc: Option<Fut::Output>,
-        },
-        Future {
-            #[pin]
-            fut: Fut,
-        },
-    }
-}
 
 pin_project_lite::pin_project! {
     pub struct ReduceAsync<I, F>
@@ -34,7 +17,7 @@ pin_project_lite::pin_project! {
         #[pin]
         iter: I,
         #[pin]
-        state: State<<F::Output as IntoFuture>::IntoFuture>,
+        state: FoldState<Option<<F::Output as IntoFuture>::Output>, <F::Output as IntoFuture>::IntoFuture>,
         f: F,
     }
 }
@@ -48,7 +31,7 @@ where
     pub(crate) fn new(iter: I, f: F) -> Self {
         Self {
             iter,
-            state: State::Accumulate { acc: None },
+            state: FoldState::Accumulate { acc: None },
             f,
         }
     }
@@ -87,7 +70,7 @@ where
 
         Poll::Ready('outer: loop {
             let fut = match state_slot.as_mut().project() {
-                StateProject::Accumulate { acc } => loop {
+                FoldStateProject::Accumulate { acc } => loop {
                     match task::ready!(iter.as_mut().poll_next(cx)) {
                         None => break 'outer acc.take(),
                         Some(item) => match acc.take() {
@@ -95,21 +78,17 @@ where
                             Some(acc) => {
                                 let fut = f.call_mut((acc, item)).into_future();
 
-                                state_slot.set(State::Future { fut });
-
-                                let StateProject::Future { fut } = state_slot.as_mut().project() else { unreachable!() };
-
-                                break fut;
+                                break state_slot.as_mut().set_future(fut);
                             }
                         },
                     }
                 },
-                StateProject::Future { fut } => fut,
+                FoldStateProject::Future { fut } => fut,
             };
 
             let acc = task::ready!(fut.poll(cx));
 
-            state_slot.set(State::Accumulate { acc: Some(acc) });
+            state_slot.set(FoldState::Accumulate { acc: Some(acc) });
         })
     }
 }
@@ -122,7 +101,7 @@ where
     <F::Output as IntoFuture>::IntoFuture: FusedFuture,
 {
     fn is_terminated(&self) -> bool {
-        if let State::Future { fut } = &self.state {
+        if let FoldState::Future { fut } = &self.state {
             fut.is_terminated()
         } else {
             self.iter.is_terminated()
