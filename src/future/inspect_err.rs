@@ -1,31 +1,11 @@
 use crate::future::inspect::Inspect;
+use crate::support::fns::InspectErrFn;
 use crate::support::ResultFuture;
 use core::future::Future;
 use core::pin::Pin;
 use core::task::{Context, Poll};
 use fn_traits::FnMut;
 use futures_core::FusedFuture;
-
-#[derive(Clone)]
-struct InspectErrFn<F>
-where
-    F: ?Sized,
-{
-    inner: F,
-}
-
-impl<'a, T, E, F> FnMut<(&'a Result<T, E>,)> for InspectErrFn<F>
-where
-    F: FnMut<(&'a E,), Output = ()> + ?Sized,
-{
-    type Output = ();
-
-    fn call_mut(&mut self, args: (&'a Result<T, E>,)) -> Self::Output {
-        if let Err(error) = args.0 {
-            self.inner.call_mut((error,));
-        }
-    }
-}
 
 pin_project_lite::pin_project! {
     #[derive(Clone)]
@@ -41,7 +21,7 @@ pin_project_lite::pin_project! {
 impl<Fut, F> InspectErr<Fut, F> {
     pub(crate) fn new(fut: Fut, f: F) -> Self {
         Self {
-            inner: Inspect::new(fut, InspectErrFn { inner: f }),
+            inner: Inspect::new(fut, InspectErrFn::new(f)),
         }
     }
 }
