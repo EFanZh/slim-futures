@@ -1,6 +1,4 @@
-pub use self::fold_state::FoldState;
-#[allow(clippy::redundant_pub_crate)]
-pub(crate) use self::fold_state::FoldStateProject;
+pub use self::fold_state::{AccumulateState, FoldState, FoldStateProject, FutureState};
 pub use self::predicate_state::PredicateState;
 #[allow(clippy::redundant_pub_crate)]
 pub(crate) use self::predicate_state::{PredicateStateProject, PredicateStateReplace};

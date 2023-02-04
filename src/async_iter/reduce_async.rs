@@ -31,7 +31,7 @@ where
     pub(crate) fn new(iter: I, f: F) -> Self {
         Self {
             iter,
-            state: FoldState::Accumulate { acc: None },
+            state: FoldState::new(None),
             f,
         }
     }
@@ -69,26 +69,26 @@ where
         let f = this.f;
 
         Poll::Ready('outer: loop {
-            let fut = match state_slot.as_mut().project() {
-                FoldStateProject::Accumulate { acc } => loop {
+            let mut fut_state = match state_slot.as_mut().pin_project() {
+                FoldStateProject::Accumulate(mut acc_state) => loop {
                     match task::ready!(iter.as_mut().poll_next(cx)) {
-                        None => break 'outer acc.take(),
-                        Some(item) => match acc.take() {
-                            None => *acc = Some(item),
+                        None => break 'outer acc_state.get_mut().take(),
+                        Some(item) => match acc_state.get_mut().take() {
+                            None => *acc_state.get_mut() = Some(item),
                             Some(acc) => {
                                 let fut = f.call_mut((acc, item)).into_future();
 
-                                break state_slot.as_mut().set_future(fut);
+                                break acc_state.set_future(fut);
                             }
                         },
                     }
                 },
-                FoldStateProject::Future { fut } => fut,
+                FoldStateProject::Future(future_state) => future_state,
             };
 
-            let acc = task::ready!(fut.poll(cx));
+            let acc = task::ready!(fut_state.get_pinned().poll(cx));
 
-            state_slot.set(FoldState::Accumulate { acc: Some(acc) });
+            fut_state.set_accumulate(Some(acc));
         })
     }
 }
@@ -101,11 +101,9 @@ where
     <F::Output as IntoFuture>::IntoFuture: FusedFuture,
 {
     fn is_terminated(&self) -> bool {
-        if let FoldState::Future { fut } = &self.state {
-            fut.is_terminated()
-        } else {
-            self.iter.is_terminated()
-        }
+        self.state
+            .get_future()
+            .map_or_else(|| self.iter.is_terminated(), FusedFuture::is_terminated)
     }
 }
 

@@ -35,7 +35,7 @@ where
         Self {
             iter,
             getter,
-            state: FoldState::Accumulate { acc },
+            state: FoldState::new(acc),
             f,
         }
     }
@@ -79,20 +79,22 @@ where
         let f = this.f;
 
         Poll::Ready(loop {
-            let fut = match state_slot.as_mut().project() {
-                FoldStateProject::Accumulate { acc } => match task::ready!(iter.as_mut().poll_next(cx)) {
-                    None => break Self::Output::from_output(getter.call_mut((acc,))),
+            let mut fut_state = match state_slot.as_mut().pin_project() {
+                FoldStateProject::Accumulate(mut acc_state) => match task::ready!(iter.as_mut().poll_next(cx)) {
+                    None => break Self::Output::from_output(getter.call_mut((acc_state.get_mut(),))),
                     Some(item) => {
-                        let fut = f.call_mut((getter.call_mut((acc,)), item)).into_future();
+                        let fut = f
+                            .call_mut((getter.call_mut((acc_state.get_mut(),)), item))
+                            .into_future();
 
-                        state_slot.as_mut().set_future(fut)
+                        acc_state.set_future(fut)
                     }
                 },
-                FoldStateProject::Future { fut } => fut,
+                FoldStateProject::Future(fut_state) => fut_state,
             };
 
-            match task::ready!(fut.poll(cx)).branch() {
-                ControlFlow::Continue(acc) => state_slot.set(FoldState::Accumulate { acc }),
+            match task::ready!(fut_state.get_pinned().poll(cx)).branch() {
+                ControlFlow::Continue(acc) => fut_state.set_accumulate(acc),
                 ControlFlow::Break(residual) => break Self::Output::from_residual(residual),
             }
         })

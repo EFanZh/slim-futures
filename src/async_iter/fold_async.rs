@@ -33,7 +33,7 @@ where
         Self {
             iter,
             getter,
-            state: FoldState::Accumulate { acc },
+            state: FoldState::new(acc),
             f,
         }
     }
@@ -75,21 +75,23 @@ where
         let f = this.f;
 
         Poll::Ready(loop {
-            let fut = match state_slot.as_mut().project() {
-                FoldStateProject::Accumulate { acc } => match task::ready!(iter.as_mut().poll_next(cx)) {
-                    None => break getter.call_mut((acc,)),
+            let mut fut_state = match state_slot.as_mut().pin_project() {
+                FoldStateProject::Accumulate(mut acc_state) => match task::ready!(iter.as_mut().poll_next(cx)) {
+                    None => break getter.call_mut((acc_state.get_mut(),)),
                     Some(item) => {
-                        let fut = f.call_mut((getter.call_mut((acc,)), item)).into_future();
+                        let fut = f
+                            .call_mut((getter.call_mut((acc_state.get_mut(),)), item))
+                            .into_future();
 
-                        state_slot.as_mut().set_future(fut)
+                        acc_state.set_future(fut)
                     }
                 },
-                FoldStateProject::Future { fut } => fut,
+                FoldStateProject::Future(fut_state) => fut_state,
             };
 
-            let acc = task::ready!(fut.poll(cx));
+            let acc = task::ready!(fut_state.get_pinned().poll(cx));
 
-            state_slot.set(FoldState::Accumulate { acc });
+            fut_state.set_accumulate(acc);
         })
     }
 }
@@ -103,10 +105,9 @@ where
     <F::Output as IntoFuture>::IntoFuture: FusedFuture,
 {
     fn is_terminated(&self) -> bool {
-        match &self.state {
-            FoldState::Accumulate { .. } => self.iter.is_terminated(),
-            FoldState::Future { fut } => fut.is_terminated(),
-        }
+        self.state
+            .get_future()
+            .map_or_else(|| self.iter.is_terminated(), FusedFuture::is_terminated)
     }
 }
 
