@@ -10,7 +10,7 @@ use futures_core::FusedFuture;
 
 #[derive(Clone)]
 struct UnwrapOrElseAsyncFn<F> {
-    inner: F,
+    f: F,
 }
 
 impl<T, E, F> FnMut<(Result<T, E>,)> for UnwrapOrElseAsyncFn<F>
@@ -22,7 +22,7 @@ where
     fn call_mut(&mut self, args: (Result<T, E>,)) -> Self::Output {
         match args.0 {
             Ok(value) => ControlFlow::Break(value),
-            Err(error) => ControlFlow::Continue(self.inner.call_mut((error,))),
+            Err(error) => ControlFlow::Continue(self.f.call_mut((error,))),
         }
     }
 }
@@ -47,9 +47,7 @@ where
 {
     pub(crate) fn new(fut: Fut, f: F) -> Self {
         Self {
-            inner: TwoPhases::First {
-                state: Map::new(fut, UnwrapOrElseAsyncFn { inner: f }),
-            },
+            inner: TwoPhases::new(Map::new(fut, UnwrapOrElseAsyncFn { f })),
         }
     }
 }

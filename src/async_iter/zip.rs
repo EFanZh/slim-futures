@@ -1,13 +1,80 @@
 use crate::support::{AsyncIterator, FusedAsyncIterator};
-use core::mem;
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
+use three_states::{StateAProject, StateBProject, StateCProject, ThreeStates, ThreeStatesProject};
 
 #[derive(Clone)]
-enum State<A, B> {
-    Empty,
-    Left(A),
-    Right(B),
+struct State<A, B> {
+    inner: ThreeStates<(), (), (), A, (), B>,
+}
+
+impl<A, B> State<A, B> {
+    fn project(&mut self) -> StateProject<A, B> {
+        match self.inner.project_mut() {
+            ThreeStatesProject::A(inner) => StateProject::Empty(EmptyStateProject { inner }),
+            ThreeStatesProject::B(inner) => StateProject::Left(LeftStateProject { inner }),
+            ThreeStatesProject::C(inner) => StateProject::Right(RightStateProject { inner }),
+        }
+    }
+}
+
+impl<A, B> Default for State<A, B> {
+    fn default() -> Self {
+        Self {
+            inner: ThreeStates::A {
+                pinned: (),
+                unpinned: (),
+            },
+        }
+    }
+}
+
+struct EmptyStateProject<'a, A, B> {
+    inner: StateAProject<'a, (), (), (), A, (), B>,
+}
+
+impl<'a, A, B> EmptyStateProject<'a, A, B> {
+    fn set_left(self, value: A) -> LeftStateProject<'a, A, B> {
+        LeftStateProject {
+            inner: self.inner.set_state_b((), value).1,
+        }
+    }
+
+    fn set_right(self, value: B) -> RightStateProject<'a, A, B> {
+        RightStateProject {
+            inner: self.inner.set_state_c((), value).1,
+        }
+    }
+}
+
+struct LeftStateProject<'a, A, B> {
+    inner: StateBProject<'a, (), (), (), A, (), B>,
+}
+
+impl<'a, A, B> LeftStateProject<'a, A, B> {
+    fn set_empty(self) -> (A, EmptyStateProject<'a, A, B>) {
+        let (value, inner) = self.inner.set_state_a((), ());
+
+        (value, EmptyStateProject { inner })
+    }
+}
+
+struct RightStateProject<'a, A, B> {
+    inner: StateCProject<'a, (), (), (), A, (), B>,
+}
+
+impl<'a, A, B> RightStateProject<'a, A, B> {
+    fn set_empty(self) -> (B, EmptyStateProject<'a, A, B>) {
+        let (value, inner) = self.inner.set_state_a((), ());
+
+        (value, EmptyStateProject { inner })
+    }
+}
+
+enum StateProject<'a, A, B> {
+    Empty(EmptyStateProject<'a, A, B>),
+    Left(LeftStateProject<'a, A, B>),
+    Right(RightStateProject<'a, A, B>),
 }
 
 pin_project_lite::pin_project! {
@@ -33,7 +100,7 @@ where
         Self {
             left,
             right,
-            state: State::Empty,
+            state: State::default(),
         }
     }
 }
@@ -65,30 +132,30 @@ where
         let this = self.project();
         let mut left = this.left;
         let mut right = this.right;
-        let state = this.state;
+        let mut state = this.state.project();
 
         Poll::Ready(Some(loop {
             match state {
-                State::Empty => match left.as_mut().poll_next(cx) {
+                StateProject::Empty(empty_state) => match left.as_mut().poll_next(cx) {
                     Poll::Ready(None) => return Poll::Ready(None),
-                    Poll::Ready(Some(item)) => *state = State::Left(item),
+                    Poll::Ready(Some(item)) => state = StateProject::Left(empty_state.set_left(item)),
                     Poll::Pending => match task::ready!(right.as_mut().poll_next(cx)) {
                         None => return Poll::Ready(None),
-                        Some(item) => *state = State::Right(item),
+                        Some(item) => state = StateProject::Right(empty_state.set_right(item)),
                     },
                 },
-                State::Left(_) => match task::ready!(right.poll_next(cx)) {
+                StateProject::Left(left_state) => match task::ready!(right.poll_next(cx)) {
                     None => return Poll::Ready(None),
                     Some(right_item) => {
-                        let State::Left(left_item) = mem::replace(state, State::Empty) else { unreachable!() };
+                        let left_item = left_state.set_empty().0;
 
                         break (left_item, right_item);
                     }
                 },
-                State::Right(_) => match task::ready!(left.poll_next(cx)) {
+                StateProject::Right(right_state) => match task::ready!(left.poll_next(cx)) {
                     None => return Poll::Ready(None),
                     Some(left_item) => {
-                        let State::Right(right_item) = mem::replace(state, State::Empty) else { unreachable!() };
+                        let right_item = right_state.set_empty().0;
 
                         break (left_item, right_item);
                     }
@@ -101,13 +168,13 @@ where
         let (mut left_low, mut left_high) = self.left.size_hint();
         let (mut right_low, mut right_high) = self.right.size_hint();
 
-        match &self.state {
-            State::Empty => {}
-            State::Left(_) => {
+        match self.state.inner {
+            ThreeStates::A { .. } => {}
+            ThreeStates::B { .. } => {
                 left_low = left_low.saturating_add(1);
                 left_high = left_high.and_then(|left_high| left_high.checked_add(1));
             }
-            State::Right(_) => {
+            ThreeStates::C { .. } => {
                 right_low = right_low.saturating_add(1);
                 right_high = right_high.and_then(|right_high| right_high.checked_add(1));
             }
@@ -132,10 +199,10 @@ where
     B: FusedAsyncIterator,
 {
     fn is_terminated(&self) -> bool {
-        match &self.state {
-            State::Empty => self.left.is_terminated() || self.right.is_terminated(),
-            State::Left(_) => self.right.is_terminated(),
-            State::Right(_) => self.left.is_terminated(),
+        match self.state.inner {
+            ThreeStates::A { .. } => self.left.is_terminated() || self.right.is_terminated(),
+            ThreeStates::B { .. } => self.right.is_terminated(),
+            ThreeStates::C { .. } => self.left.is_terminated(),
         }
     }
 }

@@ -23,7 +23,7 @@ where
 {
     pub(crate) fn new(fut: Fut) -> Self {
         Self {
-            inner: TwoPhases::First { state: fut },
+            inner: TwoPhases::new(fut),
         }
     }
 }

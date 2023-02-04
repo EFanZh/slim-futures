@@ -24,7 +24,7 @@ where
 {
     pub(crate) fn new(fut: Fut) -> Self {
         Self {
-            inner: TwoPhases::First { state: fut },
+            inner: TwoPhases::new(fut),
         }
     }
 }
@@ -65,10 +65,9 @@ where
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
-        match &self.inner {
-            TwoPhases::First { .. } => (0, None),
-            TwoPhases::Second { state } => state.size_hint(),
-        }
+        self.inner
+            .get_second_phase()
+            .map_or((0, None), AsyncIterator::size_hint)
     }
 }
 

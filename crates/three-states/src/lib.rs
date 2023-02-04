@@ -1,5 +1,5 @@
-use core::hint;
 use core::pin::Pin;
+use core::{hint, mem};
 
 pin_project_lite::pin_project! {
     #[derive(Clone, Copy)]
@@ -18,6 +18,14 @@ impl<APin, AUnpin, BPin, BUnpin, CPin, CUnpin> ThreeStates<APin, AUnpin, BPin, B
             Self::A { .. } => ThreeStatesPinProject::A(StateAPinProject { inner: self }),
             Self::B { .. } => ThreeStatesPinProject::B(StateBPinProject { inner: self }),
             Self::C { .. } => ThreeStatesPinProject::C(StateCPinProject { inner: self }),
+        }
+    }
+
+    pub fn project_mut(&mut self) -> ThreeStatesProject<APin, AUnpin, BPin, BUnpin, CPin, CUnpin> {
+        match *self {
+            Self::A { .. } => ThreeStatesProject::A(StateAProject { inner: self }),
+            Self::B { .. } => ThreeStatesProject::B(StateBProject { inner: self }),
+            Self::C { .. } => ThreeStatesProject::C(StateCProject { inner: self }),
         }
     }
 }
@@ -178,4 +186,162 @@ pub enum ThreeStatesPinProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> {
     A(StateAPinProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>),
     B(StateBPinProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>),
     C(StateCPinProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>),
+}
+
+pub struct StateProject<'a, A, B> {
+    pub pinned: &'a mut A,
+    pub unpinned: &'a mut B,
+}
+
+pub struct StateAProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> {
+    inner: &'a mut ThreeStates<APin, AUnpin, BPin, BUnpin, CPin, CUnpin>,
+}
+
+impl<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> StateAProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> {
+    pub fn get_project(&mut self) -> StateProject<APin, AUnpin> {
+        match self.inner {
+            ThreeStates::A { pinned, unpinned } => StateProject { pinned, unpinned },
+            _ => unsafe { hint::unreachable_unchecked() },
+        }
+    }
+
+    pub fn into_project(self) -> StateProject<'a, APin, AUnpin> {
+        match self.inner {
+            ThreeStates::A { pinned, unpinned } => StateProject { pinned, unpinned },
+            _ => unsafe { hint::unreachable_unchecked() },
+        }
+    }
+
+    pub fn set_state_a(&mut self, pinned: APin, unpinned: AUnpin) -> AUnpin {
+        match mem::replace(self.inner, ThreeStates::A { pinned, unpinned }) {
+            ThreeStates::A { unpinned, .. } => unpinned,
+            _ => unsafe { hint::unreachable_unchecked() },
+        }
+    }
+
+    pub fn set_state_b(
+        self,
+        pinned: BPin,
+        unpinned: BUnpin,
+    ) -> (AUnpin, StateBProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>) {
+        match mem::replace(self.inner, ThreeStates::B { pinned, unpinned }) {
+            ThreeStates::A { unpinned, .. } => (unpinned, StateBProject { inner: self.inner }),
+            _ => unsafe { hint::unreachable_unchecked() },
+        }
+    }
+
+    pub fn set_state_c(
+        self,
+        pinned: CPin,
+        unpinned: CUnpin,
+    ) -> (AUnpin, StateCProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>) {
+        match mem::replace(self.inner, ThreeStates::C { pinned, unpinned }) {
+            ThreeStates::A { unpinned, .. } => (unpinned, StateCProject { inner: self.inner }),
+            _ => unsafe { hint::unreachable_unchecked() },
+        }
+    }
+}
+
+pub struct StateBProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> {
+    inner: &'a mut ThreeStates<APin, AUnpin, BPin, BUnpin, CPin, CUnpin>,
+}
+
+impl<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> StateBProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> {
+    pub fn get_project(&mut self) -> StateProject<BPin, BUnpin> {
+        match self.inner {
+            ThreeStates::B { pinned, unpinned } => StateProject { pinned, unpinned },
+            _ => unsafe { hint::unreachable_unchecked() },
+        }
+    }
+
+    pub fn into_project(self) -> StateProject<'a, BPin, BUnpin> {
+        match self.inner {
+            ThreeStates::B { pinned, unpinned } => StateProject { pinned, unpinned },
+            _ => unsafe { hint::unreachable_unchecked() },
+        }
+    }
+
+    pub fn set_state_a(
+        self,
+        pinned: APin,
+        unpinned: AUnpin,
+    ) -> (BUnpin, StateAProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>) {
+        match mem::replace(self.inner, ThreeStates::A { pinned, unpinned }) {
+            ThreeStates::B { unpinned, .. } => (unpinned, StateAProject { inner: self.inner }),
+            _ => unsafe { hint::unreachable_unchecked() },
+        }
+    }
+
+    pub fn set_state_b(&mut self, pinned: BPin, unpinned: BUnpin) -> BUnpin {
+        match mem::replace(self.inner, ThreeStates::B { pinned, unpinned }) {
+            ThreeStates::B { unpinned, .. } => unpinned,
+            _ => unsafe { hint::unreachable_unchecked() },
+        }
+    }
+
+    pub fn set_state_c(
+        self,
+        pinned: CPin,
+        unpinned: CUnpin,
+    ) -> (BUnpin, StateCProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>) {
+        match mem::replace(self.inner, ThreeStates::C { pinned, unpinned }) {
+            ThreeStates::B { unpinned, .. } => (unpinned, StateCProject { inner: self.inner }),
+            _ => unsafe { hint::unreachable_unchecked() },
+        }
+    }
+}
+
+pub struct StateCProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> {
+    inner: &'a mut ThreeStates<APin, AUnpin, BPin, BUnpin, CPin, CUnpin>,
+}
+
+impl<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> StateCProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> {
+    pub fn get_project(&mut self) -> StateProject<CPin, CUnpin> {
+        match self.inner {
+            ThreeStates::C { pinned, unpinned } => StateProject { pinned, unpinned },
+            _ => unsafe { hint::unreachable_unchecked() },
+        }
+    }
+
+    pub fn into_project(self) -> StateProject<'a, CPin, CUnpin> {
+        match self.inner {
+            ThreeStates::C { pinned, unpinned } => StateProject { pinned, unpinned },
+            _ => unsafe { hint::unreachable_unchecked() },
+        }
+    }
+
+    pub fn set_state_a(
+        self,
+        pinned: APin,
+        unpinned: AUnpin,
+    ) -> (CUnpin, StateAProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>) {
+        match mem::replace(self.inner, ThreeStates::A { pinned, unpinned }) {
+            ThreeStates::C { unpinned, .. } => (unpinned, StateAProject { inner: self.inner }),
+            _ => unsafe { hint::unreachable_unchecked() },
+        }
+    }
+
+    pub fn set_state_b(
+        self,
+        pinned: BPin,
+        unpinned: BUnpin,
+    ) -> (CUnpin, StateBProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>) {
+        match mem::replace(self.inner, ThreeStates::B { pinned, unpinned }) {
+            ThreeStates::C { unpinned, .. } => (unpinned, StateBProject { inner: self.inner }),
+            _ => unsafe { hint::unreachable_unchecked() },
+        }
+    }
+
+    pub fn set_state_c(&mut self, pinned: CPin, unpinned: CUnpin) -> CUnpin {
+        match mem::replace(self.inner, ThreeStates::C { pinned, unpinned }) {
+            ThreeStates::C { unpinned, .. } => unpinned,
+            _ => unsafe { hint::unreachable_unchecked() },
+        }
+    }
+}
+
+pub enum ThreeStatesProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> {
+    A(StateAProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>),
+    B(StateBProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>),
+    C(StateCProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>),
 }

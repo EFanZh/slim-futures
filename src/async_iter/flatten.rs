@@ -6,7 +6,7 @@ use fn_traits::FnMut;
 
 #[derive(Clone)]
 struct FlattenFn<F> {
-    inner: F,
+    f: F,
 }
 
 impl<T, F, U> FnMut<((), T)> for FlattenFn<F>
@@ -16,7 +16,7 @@ where
     type Output = ControlFlow<U>;
 
     fn call_mut(&mut self, args: ((), T)) -> Self::Output {
-        self.inner
+        self.f
             .call_mut((args.1,))
             .map_or(ControlFlow::Continue(()), ControlFlow::Break)
     }

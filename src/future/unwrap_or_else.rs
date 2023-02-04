@@ -11,7 +11,7 @@ struct UnwrapOrElseFn<F>
 where
     F: ?Sized,
 {
-    inner: F,
+    f: F,
 }
 
 impl<T, E, F> FnMut<(Result<T, E>,)> for UnwrapOrElseFn<F>
@@ -21,7 +21,7 @@ where
     type Output = T;
 
     fn call_mut(&mut self, args: (Result<T, E>,)) -> Self::Output {
-        args.0.unwrap_or_else(|error| self.inner.call_mut((error,)))
+        args.0.unwrap_or_else(|error| self.f.call_mut((error,)))
     }
 }
 
@@ -39,7 +39,7 @@ pin_project_lite::pin_project! {
 impl<Fut, F> UnwrapOrElse<Fut, F> {
     pub(crate) fn new(fut: Fut, f: F) -> Self {
         Self {
-            inner: Map::new(fut, UnwrapOrElseFn { inner: f }),
+            inner: Map::new(fut, UnwrapOrElseFn { f }),
         }
     }
 }

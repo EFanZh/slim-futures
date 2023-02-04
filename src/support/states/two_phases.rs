@@ -1,27 +1,32 @@
-use crate::support::FusedAsyncIterator;
+use crate::support::{FusedAsyncIterator, Never};
 use core::future::Future;
 use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
 use futures_core::FusedFuture;
+use three_states::{ThreeStates, ThreeStatesPinProject};
 
 pin_project_lite::pin_project! {
     #[project = TwoPhasesProject]
-    pub enum TwoPhases<A, B> {
-        First {
-            #[pin]
-            state: A,
-        },
-        Second {
-            #[pin]
-            state: B,
-        },
+    #[derive(Clone)]
+    pub struct TwoPhases<A, B> {
+        #[pin]
+        inner: ThreeStates<A, (), B, (), Never, Never>,
     }
 }
 
 impl<A, B> TwoPhases<A, B> {
+    pub fn new(state: A) -> Self {
+        Self {
+            inner: ThreeStates::A {
+                pinned: state,
+                unpinned: (),
+            },
+        }
+    }
+
     pub fn poll_with<T>(
-        mut self: Pin<&mut Self>,
+        self: Pin<&mut Self>,
         cx: &mut Context,
         f1: impl FnOnce(A::Output) -> ControlFlow<T, B>,
         f2: impl FnOnce(Pin<&mut B>, &mut Context) -> Poll<T>,
@@ -29,18 +34,23 @@ impl<A, B> TwoPhases<A, B> {
     where
         A: Future,
     {
-        if let TwoPhasesProject::First { state } = self.as_mut().project() {
-            let second_state = match f1(task::ready!(state.poll(cx))) {
-                ControlFlow::Continue(second_state) => second_state,
+        let second_state = match self.project().inner.pin_project() {
+            ThreeStatesPinProject::A(mut project) => match f1(task::ready!(project.get_project().pinned.poll(cx))) {
+                ControlFlow::Continue(second_state) => project.set_state_b(second_state, ()).1,
                 ControlFlow::Break(result) => return Poll::Ready(result),
-            };
+            },
+            ThreeStatesPinProject::B(project) => project,
+            ThreeStatesPinProject::C(project) => match *project.into_project().unpinned {},
+        };
 
-            self.set(Self::Second { state: second_state });
+        f2(second_state.into_project().pinned, cx)
+    }
+
+    pub fn get_second_phase(&self) -> Option<&B> {
+        match &self.inner {
+            ThreeStates::B { pinned, .. } => Some(pinned),
+            _ => None,
         }
-
-        let TwoPhasesProject::Second { state } = self.project() else { unreachable!() };
-
-        f2(state, cx)
     }
 
     pub fn is_future_terminated(&self) -> bool
@@ -48,9 +58,10 @@ impl<A, B> TwoPhases<A, B> {
         A: FusedFuture,
         B: FusedFuture,
     {
-        match self {
-            Self::First { state } => state.is_terminated(),
-            Self::Second { state } => state.is_terminated(),
+        match &self.inner {
+            ThreeStates::A { pinned, .. } => pinned.is_terminated(),
+            ThreeStates::B { pinned, .. } => pinned.is_terminated(),
+            ThreeStates::C { unpinned, .. } => match *unpinned {},
         }
     }
 
@@ -59,22 +70,10 @@ impl<A, B> TwoPhases<A, B> {
         A: FusedFuture,
         B: FusedAsyncIterator,
     {
-        match self {
-            Self::First { state } => state.is_terminated(),
-            Self::Second { state } => state.is_terminated(),
-        }
-    }
-}
-
-impl<A, B> Clone for TwoPhases<A, B>
-where
-    A: Clone,
-    B: Clone,
-{
-    fn clone(&self) -> Self {
-        match self {
-            Self::First { state } => Self::First { state: state.clone() },
-            Self::Second { state } => Self::Second { state: state.clone() },
+        match &self.inner {
+            ThreeStates::A { pinned, .. } => pinned.is_terminated(),
+            ThreeStates::B { pinned, .. } => pinned.is_terminated(),
+            ThreeStates::C { unpinned, .. } => match *unpinned {},
         }
     }
 }
