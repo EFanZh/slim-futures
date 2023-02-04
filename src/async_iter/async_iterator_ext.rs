@@ -21,6 +21,8 @@ use crate::async_iter::for_each::ForEach;
 use crate::async_iter::for_each_async::ForEachAsync;
 use crate::async_iter::fuse::Fuse;
 use crate::async_iter::inspect::Inspect;
+use crate::async_iter::inspect_err::InspectErr;
+use crate::async_iter::inspect_ok::InspectOk;
 use crate::async_iter::map::Map;
 use crate::async_iter::map_async::MapAsync;
 use crate::async_iter::map_err::MapErr;
@@ -307,6 +309,22 @@ pub trait AsyncIteratorExt: AsyncIterator {
         F: FnMut(&Self::Item),
     {
         crate::support::assert_async_iter::<_, Self::Item>(Inspect::new(self, f))
+    }
+
+    fn slim_inspect_err<F>(self, f: F) -> InspectErr<Self, F>
+    where
+        Self: ResultAsyncIterator + Sized,
+        F: FnMut(&Self::Error),
+    {
+        crate::support::assert_async_iter::<_, Self::Item>(InspectErr::new(self, f))
+    }
+
+    fn slim_inspect_ok<F>(self, f: F) -> InspectOk<Self, F>
+    where
+        Self: ResultAsyncIterator + Sized,
+        F: FnMut(&Self::Ok),
+    {
+        crate::support::assert_async_iter::<_, Self::Item>(InspectOk::new(self, f))
     }
 
     fn slim_map<F, T>(self, f: F) -> Map<Self, F>

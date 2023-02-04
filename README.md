@@ -53,6 +53,8 @@ Here is the list of combinators provided by `slim-futures`, and their [`futures`
 | `AsyncIteratorExt::slim_for_each_async`     | [`StreamExt::for_each`]          |                                     |
 | `AsyncIteratorExt::slim_fuse`               | [`StreamExt::fuse`]              |                                     |
 | `AsyncIteratorExt::slim_inspect`            | [`StreamExt::inspect`]           |                                     |
+| `AsyncIteratorExt::slim_inspect_err`        | [`TryStreamExt::inspect_err`]    |                                     |
+| `AsyncIteratorExt::slim_inspect_ok`         | [`TryStreamExt::inspect_ok`]     |                                     |
 | `AsyncIteratorExt::slim_map`                | [`StreamExt::map`]               |                                     |
 | `AsyncIteratorExt::slim_map_async`          | [`StreamExt::then`]              |                                     |
 | `AsyncIteratorExt::slim_map_err`            | [`TryStreamExt::map_err`]        |                                     |
@@ -164,6 +166,8 @@ Here is the list of combinators provided by `slim-futures`, and their [`futures`
 [`TryFutureExt::try_flatten`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.try_flatten
 [`TryFutureExt::unwrap_or_else`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.unwrap_or_else
 [`TryStreamExt::and_then`]: https://docs.rs/futures/latest/futures/stream/trait.TryStreamExt.html#method.and_then
+[`TryStreamExt::inspect_err`]: https://docs.rs/futures/latest/futures/stream/trait.TryStreamExt.html#method.map_err
+[`TryStreamExt::inspect_ok`]: https://docs.rs/futures/latest/futures/stream/trait.TryStreamExt.html#method.map_ok
 [`TryStreamExt::map_err`]: https://docs.rs/futures/latest/futures/stream/trait.TryStreamExt.html#method.map_err
 [`TryStreamExt::map_ok`]: https://docs.rs/futures/latest/futures/stream/trait.TryStreamExt.html#method.map_ok
 [`TryStreamExt::or_else`]: https://docs.rs/futures/latest/futures/stream/trait.TryStreamExt.html#method.or_else
