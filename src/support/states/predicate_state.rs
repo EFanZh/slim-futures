@@ -1,6 +1,6 @@
 use crate::support::Never;
 use core::pin::Pin;
-use three_states::{StateAProject, StateBProject, ThreeStates, ThreeStatesProject};
+use three_states::{StateAPinProject, StateBPinProject, ThreeStates, ThreeStatesPinProject};
 
 pin_project_lite::pin_project! {
     #[derive(Clone)]
@@ -20,9 +20,9 @@ impl<T, Fut> PredicateState<T, Fut> {
 
     pub fn pin_project(self: Pin<&mut Self>) -> PredicateStateProject<T, Fut> {
         match self.project().inner.pin_project() {
-            ThreeStatesProject::A(project) => PredicateStateProject::Empty(PredicateEmptyState { inner: project }),
-            ThreeStatesProject::B(project) => PredicateStateProject::Future(PredicateFutureState { inner: project }),
-            ThreeStatesProject::C(project) => match *project.into_project().unpinned {},
+            ThreeStatesPinProject::A(project) => PredicateStateProject::Empty(PredicateEmptyState { inner: project }),
+            ThreeStatesPinProject::B(project) => PredicateStateProject::Future(PredicateFutureState { inner: project }),
+            ThreeStatesPinProject::C(project) => match *project.into_project().unpinned {},
         }
     }
 }
@@ -39,7 +39,7 @@ impl<T, Fut> Default for PredicateState<T, Fut> {
 }
 
 pub struct PredicateEmptyState<'a, T, Fut> {
-    inner: StateAProject<'a, (), (), Fut, T, Never, Never>,
+    inner: StateAPinProject<'a, (), (), Fut, T, Never, Never>,
 }
 
 impl<'a, T, Fut> PredicateEmptyState<'a, T, Fut> {
@@ -51,7 +51,7 @@ impl<'a, T, Fut> PredicateEmptyState<'a, T, Fut> {
 }
 
 pub struct PredicateFutureState<'a, T, Fut> {
-    inner: StateBProject<'a, (), (), Fut, T, Never, Never>,
+    inner: StateBPinProject<'a, (), (), Fut, T, Never, Never>,
 }
 
 impl<'a, T, Fut> PredicateFutureState<'a, T, Fut> {

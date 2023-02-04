@@ -1,6 +1,6 @@
 use crate::support::Never;
 use core::pin::Pin;
-use three_states::{StateAProject, StateBProject, ThreeStates, ThreeStatesProject};
+use three_states::{StateAPinProject, StateBPinProject, ThreeStates, ThreeStatesPinProject};
 
 pin_project_lite::pin_project! {
     #[derive(Clone)]
@@ -29,15 +29,15 @@ impl<T, Fut> FoldState<T, Fut> {
 
     pub fn pin_project(self: Pin<&mut Self>) -> FoldStateProject<T, Fut> {
         match self.project().inner.pin_project() {
-            ThreeStatesProject::A(project) => FoldStateProject::Accumulate(FoldAccumulateState { inner: project }),
-            ThreeStatesProject::B(project) => FoldStateProject::Future(FoldFutureState { inner: project }),
-            ThreeStatesProject::C(project) => match *project.into_project().unpinned {},
+            ThreeStatesPinProject::A(project) => FoldStateProject::Accumulate(FoldAccumulateState { inner: project }),
+            ThreeStatesPinProject::B(project) => FoldStateProject::Future(FoldFutureState { inner: project }),
+            ThreeStatesPinProject::C(project) => match *project.into_project().unpinned {},
         }
     }
 }
 
 pub struct FoldAccumulateState<'a, T, Fut> {
-    inner: StateAProject<'a, (), T, Fut, (), Never, Never>,
+    inner: StateAPinProject<'a, (), T, Fut, (), Never, Never>,
 }
 
 impl<'a, T, Fut> FoldAccumulateState<'a, T, Fut> {
@@ -53,7 +53,7 @@ impl<'a, T, Fut> FoldAccumulateState<'a, T, Fut> {
 }
 
 pub struct FoldFutureState<'a, T, Fut> {
-    inner: StateBProject<'a, (), T, Fut, (), Never, Never>,
+    inner: StateBPinProject<'a, (), T, Fut, (), Never, Never>,
 }
 
 impl<'a, T, Fut> FoldFutureState<'a, T, Fut> {
