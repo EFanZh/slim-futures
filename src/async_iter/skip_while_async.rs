@@ -1,4 +1,4 @@
-use crate::support::states::{PredicateState, PredicateStateProject, PredicateStateReplace};
+use crate::support::states::{PredicateState, PredicateStateProject};
 use crate::support::{AsyncIterator, FusedAsyncIterator, PredicateFn};
 use core::future::{Future, IntoFuture};
 use core::pin::Pin;
@@ -9,7 +9,7 @@ pin_project_lite::pin_project! {
     #[derive(Clone)]
     struct State<F, T, Fut> {
         #[pin]
-        polling_state: PredicateState<T, Fut>,
+        predicate_state: PredicateState<T, Fut>,
         f: F,
     }
 }
@@ -45,7 +45,7 @@ where
             iter,
             state: Some(State {
                 f,
-                polling_state: PredicateState::Empty,
+                predicate_state: PredicateState::default(),
             }),
         }
     }
@@ -76,35 +76,36 @@ where
     type Item = I::Item;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
-        let this = self.project();
+        let mut this = self.project();
         let mut iter = this.iter;
-        let mut state_slot = this.state;
-        let Some(state) = state_slot.as_mut().as_pin_mut().map(State::project) else { return iter.poll_next(cx) };
-        let mut fut_slot = state.polling_state;
+        let Some(state) = this.state.as_mut().as_pin_mut().map(State::project) else { return iter.poll_next(cx) };
+        let mut predicate_state = state.predicate_state.pin_project();
         let f = state.f;
 
         loop {
-            let fut = match fut_slot.as_mut().project() {
-                PredicateStateProject::Empty => match task::ready!(iter.as_mut().poll_next(cx)) {
+            let mut fut_state = match predicate_state {
+                PredicateStateProject::Empty(empty_state) => match task::ready!(iter.as_mut().poll_next(cx)) {
                     None => break Poll::Ready(None),
                     Some(item) => {
                         let fut = f.call_mut((&item,)).into_future();
 
-                        fut_slot.as_mut().set_polling(item, fut)
+                        empty_state.set_future(item, fut)
                     }
                 },
-                PredicateStateProject::Polling { fut, .. } => fut,
+                PredicateStateProject::Future(fut_state) => fut_state,
             };
 
-            let skip = task::ready!(fut.poll(cx));
+            let skip = task::ready!(fut_state.get_pinned_future().poll(cx));
 
-            let PredicateStateReplace::Polling { item, .. } = fut_slot.as_mut().project_replace(PredicateState::Empty) else { unreachable!() };
+            let (item, empty_state) = fut_state.set_empty();
 
             if !skip {
-                state_slot.set(None);
+                this.state.set(None);
 
                 break Poll::Ready(Some(item));
             }
+
+            predicate_state = PredicateStateProject::Empty(empty_state);
         }
     }
 
@@ -114,7 +115,7 @@ where
         if let Some(state) = &self.state {
             candidate.0 = 0;
 
-            if matches!(state.polling_state, PredicateState::Polling { .. }) {
+            if state.predicate_state.get_future().is_some() {
                 candidate.1 = candidate.1.and_then(|high| high.checked_add(1));
             }
         }
@@ -131,15 +132,10 @@ where
     <<F as PredicateFn<I::Item>>::Output as IntoFuture>::IntoFuture: FusedFuture,
 {
     fn is_terminated(&self) -> bool {
-        if let Some(State {
-            polling_state: PredicateState::Polling { fut, .. },
-            ..
-        }) = &self.state
-        {
-            fut.is_terminated()
-        } else {
-            self.iter.is_terminated()
-        }
+        self.state
+            .as_ref()
+            .and_then(|state| state.predicate_state.get_future())
+            .map_or_else(|| self.iter.is_terminated(), FusedFuture::is_terminated)
     }
 }
 

@@ -29,40 +29,40 @@ impl<T, Fut> FoldState<T, Fut> {
 
     pub fn pin_project(self: Pin<&mut Self>) -> FoldStateProject<T, Fut> {
         match self.project().inner.pin_project() {
-            ThreeStatesProject::A(project) => FoldStateProject::Accumulate(AccumulateState { inner: project }),
-            ThreeStatesProject::B(project) => FoldStateProject::Future(FutureState { inner: project }),
+            ThreeStatesProject::A(project) => FoldStateProject::Accumulate(FoldAccumulateState { inner: project }),
+            ThreeStatesProject::B(project) => FoldStateProject::Future(FoldFutureState { inner: project }),
             ThreeStatesProject::C(project) => match *project.into_project().unpinned {},
         }
     }
 }
 
-pub struct AccumulateState<'a, T, Fut> {
+pub struct FoldAccumulateState<'a, T, Fut> {
     inner: StateAProject<'a, (), T, Fut, (), Never, Never>,
 }
 
-impl<'a, T, Fut> AccumulateState<'a, T, Fut> {
+impl<'a, T, Fut> FoldAccumulateState<'a, T, Fut> {
     pub fn get_mut(&mut self) -> &mut T {
         self.inner.get_project().unpinned
     }
 
-    pub fn set_future(self, fut: Fut) -> FutureState<'a, T, Fut> {
-        FutureState {
+    pub fn set_future(self, fut: Fut) -> FoldFutureState<'a, T, Fut> {
+        FoldFutureState {
             inner: self.inner.set_state_b(fut, ()).1,
         }
     }
 }
 
-pub struct FutureState<'a, T, Fut> {
+pub struct FoldFutureState<'a, T, Fut> {
     inner: StateBProject<'a, (), T, Fut, (), Never, Never>,
 }
 
-impl<'a, T, Fut> FutureState<'a, T, Fut> {
+impl<'a, T, Fut> FoldFutureState<'a, T, Fut> {
     pub fn get_pinned(&mut self) -> Pin<&mut Fut> {
         self.inner.get_project().pinned
     }
 
-    pub fn set_accumulate(self, acc: T) -> AccumulateState<'a, T, Fut> {
-        AccumulateState {
+    pub fn set_accumulate(self, acc: T) -> FoldAccumulateState<'a, T, Fut> {
+        FoldAccumulateState {
             inner: self.inner.set_state_a((), acc).1,
         }
     }
@@ -70,6 +70,6 @@ impl<'a, T, Fut> FutureState<'a, T, Fut> {
 
 #[allow(clippy::module_name_repetitions)]
 pub enum FoldStateProject<'a, T, Fut> {
-    Accumulate(AccumulateState<'a, T, Fut>),
-    Future(FutureState<'a, T, Fut>),
+    Accumulate(FoldAccumulateState<'a, T, Fut>),
+    Future(FoldFutureState<'a, T, Fut>),
 }

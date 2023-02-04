@@ -1,4 +1,4 @@
-use crate::support::states::{PredicateState, PredicateStateProject, PredicateStateReplace};
+use crate::support::states::{PredicateState, PredicateStateProject};
 use crate::support::{AsyncIterator, PredicateFn};
 use core::future::{Future, IntoFuture};
 use core::pin::Pin;
@@ -29,7 +29,7 @@ where
     pub(crate) fn new(iter: I, f: F) -> Self {
         Self {
             iter,
-            state: PredicateState::Empty,
+            state: PredicateState::default(),
             f,
         }
     }
@@ -63,24 +63,23 @@ where
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         let this = self.project();
         let mut iter = this.iter;
-        let mut state_slot = this.state;
+        let state = this.state.pin_project();
         let f = this.f;
 
-        let fut = match state_slot.as_mut().project() {
-            PredicateStateProject::Empty => match task::ready!(iter.as_mut().poll_next(cx)) {
+        let mut fut_state = match state {
+            PredicateStateProject::Empty(empty_state) => match task::ready!(iter.as_mut().poll_next(cx)) {
                 None => return Poll::Ready(None),
                 Some(item) => {
                     let fut = f.call_mut((&item,)).into_future();
 
-                    state_slot.as_mut().set_polling(item, fut)
+                    empty_state.set_future(item, fut)
                 }
             },
-            PredicateStateProject::Polling { fut, .. } => fut,
+            PredicateStateProject::Future(fut_state) => fut_state,
         };
 
-        let take = task::ready!(fut.poll(cx));
-
-        let PredicateStateReplace::Polling { item, .. } = state_slot.as_mut().project_replace(PredicateState::Empty) else { unreachable!() };
+        let take = task::ready!(fut_state.get_pinned_future().poll(cx));
+        let item = fut_state.set_empty().0;
 
         if take {
             Poll::Ready(Some(item))
@@ -92,7 +91,7 @@ where
     fn size_hint(&self) -> (usize, Option<usize>) {
         let mut candidate = (0, self.iter.size_hint().1);
 
-        if matches!(self.state, PredicateState::Polling { .. }) {
+        if self.state.get_future().is_some() {
             candidate.1 = candidate.1.and_then(|high| high.checked_add(1));
         }
 

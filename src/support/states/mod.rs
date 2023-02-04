@@ -1,7 +1,6 @@
-pub use self::fold_state::{AccumulateState, FoldState, FoldStateProject, FutureState};
+pub use self::fold_state::{FoldAccumulateState, FoldFutureState, FoldState, FoldStateProject};
 pub use self::predicate_state::PredicateState;
-#[allow(clippy::redundant_pub_crate)]
-pub(crate) use self::predicate_state::{PredicateStateProject, PredicateStateReplace};
+pub use self::predicate_state::{PredicateEmptyState, PredicateFutureState, PredicateStateProject};
 pub use self::two_phases::TwoPhases;
 
 mod fold_state;
