@@ -40,18 +40,18 @@ where
     support::assert_future::<_, T>(Ready::new(getter, value))
 }
 
-pub fn ready_by_copy<T>(value: T) -> Ready<CopyFn, T>
-where
-    T: Copy,
-{
-    support::assert_future::<_, T>(Ready::new(CopyFn::default(), value))
-}
-
 pub fn ready_by_clone<T>(value: T) -> Ready<CloneFn, T>
 where
     T: Clone,
 {
     support::assert_future::<_, T>(Ready::new(CloneFn::default(), value))
+}
+
+pub fn ready_by_copy<T>(value: T) -> Ready<CopyFn, T>
+where
+    T: Copy,
+{
+    support::assert_future::<_, T>(Ready::new(CopyFn::default(), value))
 }
 
 pub fn ready_by_take<T>(value: T) -> Ready<MemTakeFn, T>

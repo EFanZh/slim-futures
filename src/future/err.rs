@@ -53,18 +53,18 @@ where
     support::assert_future::<_, Result<T, E>>(Err::new(getter, error))
 }
 
-pub fn err_by_copy<T, E>(error: E) -> Err<CopyFn, T, E>
-where
-    E: Copy,
-{
-    support::assert_future::<_, Result<T, E>>(Err::new(CopyFn::default(), error))
-}
-
 pub fn err_by_clone<T, E>(error: E) -> Err<CloneFn, T, E>
 where
     E: Clone,
 {
     support::assert_future::<_, Result<T, E>>(Err::new(CloneFn::default(), error))
+}
+
+pub fn err_by_copy<T, E>(error: E) -> Err<CopyFn, T, E>
+where
+    E: Copy,
+{
+    support::assert_future::<_, Result<T, E>>(Err::new(CopyFn::default(), error))
 }
 
 pub fn err_by_take<T, E>(error: E) -> Err<MemTakeFn, T, E>

@@ -223,15 +223,6 @@ pub trait AsyncIteratorExt: AsyncIterator {
         crate::support::assert_future::<_, T>(Fold::new(self, init, getter, f))
     }
 
-    fn slim_fold_by_copy<T, F>(self, init: T, f: F) -> Fold<Self, T, CopyFn, F>
-    where
-        Self: Sized,
-        T: Copy,
-        F: FnMut(T, Self::Item) -> T,
-    {
-        crate::support::assert_future::<_, T>(Fold::new(self, init, CopyFn::default(), f))
-    }
-
     fn slim_fold_by_clone<T, F>(self, init: T, f: F) -> Fold<Self, T, CloneFn, F>
     where
         Self: Sized,
@@ -239,6 +230,15 @@ pub trait AsyncIteratorExt: AsyncIterator {
         F: FnMut(T, Self::Item) -> T,
     {
         crate::support::assert_future::<_, T>(Fold::new(self, init, CloneFn::default(), f))
+    }
+
+    fn slim_fold_by_copy<T, F>(self, init: T, f: F) -> Fold<Self, T, CopyFn, F>
+    where
+        Self: Sized,
+        T: Copy,
+        F: FnMut(T, Self::Item) -> T,
+    {
+        crate::support::assert_future::<_, T>(Fold::new(self, init, CopyFn::default(), f))
     }
 
     fn slim_fold_by_take<T, F>(self, init: T, f: F) -> Fold<Self, T, MemTakeFn, F>
@@ -260,16 +260,6 @@ pub trait AsyncIteratorExt: AsyncIterator {
         crate::support::assert_future::<_, T>(FoldAsync::new(self, init, getter, f))
     }
 
-    fn slim_fold_async_by_copy<T, F, Fut>(self, init: T, f: F) -> FoldAsync<Self, T, CopyFn, F>
-    where
-        Self: Sized,
-        T: Copy,
-        F: FnMut(T, Self::Item) -> Fut,
-        Fut: IntoFuture<Output = T>,
-    {
-        crate::support::assert_future::<_, T>(FoldAsync::new(self, init, CopyFn::default(), f))
-    }
-
     fn slim_fold_async_by_clone<T, F, Fut>(self, init: T, f: F) -> FoldAsync<Self, T, CloneFn, F>
     where
         Self: Sized,
@@ -278,6 +268,16 @@ pub trait AsyncIteratorExt: AsyncIterator {
         Fut: IntoFuture<Output = T>,
     {
         crate::support::assert_future::<_, T>(FoldAsync::new(self, init, CloneFn::default(), f))
+    }
+
+    fn slim_fold_async_by_copy<T, F, Fut>(self, init: T, f: F) -> FoldAsync<Self, T, CopyFn, F>
+    where
+        Self: Sized,
+        T: Copy,
+        F: FnMut(T, Self::Item) -> Fut,
+        Fut: IntoFuture<Output = T>,
+    {
+        crate::support::assert_future::<_, T>(FoldAsync::new(self, init, CopyFn::default(), f))
     }
 
     fn slim_fold_async_by_take<T, F, Fut>(self, init: T, f: F) -> FoldAsync<Self, T, MemTakeFn, F>
@@ -416,7 +416,7 @@ pub trait AsyncIteratorExt: AsyncIterator {
 
     fn slim_ok_into<T>(self) -> OkInto<Self, T>
     where
-        Self: AsyncIterator + Sized,
+        Self: Sized,
         Self::Item: Try,
         <Self::Item as Try>::Output: Into<T>,
         <Self::Item as Try>::Residual: Residual<T>,
@@ -535,16 +535,6 @@ pub trait AsyncIteratorExt: AsyncIterator {
         crate::support::assert_future::<_, R>(TryFold::new(self, init, getter, f))
     }
 
-    fn slim_try_fold_by_copy<T, F, R>(self, init: T, f: F) -> TryFold<Self, T, CopyFn, F>
-    where
-        Self: Sized,
-        T: Copy,
-        F: FnMut(T, Self::Item) -> R,
-        R: Try<Output = T>,
-    {
-        crate::support::assert_future::<_, R>(TryFold::new(self, init, CopyFn::default(), f))
-    }
-
     fn slim_try_fold_by_clone<T, F, R>(self, init: T, f: F) -> TryFold<Self, T, CloneFn, F>
     where
         Self: Sized,
@@ -553,6 +543,16 @@ pub trait AsyncIteratorExt: AsyncIterator {
         R: Try<Output = T>,
     {
         crate::support::assert_future::<_, R>(TryFold::new(self, init, CloneFn::default(), f))
+    }
+
+    fn slim_try_fold_by_copy<T, F, R>(self, init: T, f: F) -> TryFold<Self, T, CopyFn, F>
+    where
+        Self: Sized,
+        T: Copy,
+        F: FnMut(T, Self::Item) -> R,
+        R: Try<Output = T>,
+    {
+        crate::support::assert_future::<_, R>(TryFold::new(self, init, CopyFn::default(), f))
     }
 
     fn slim_try_fold_by_take<T, F, R>(self, init: T, f: F) -> TryFold<Self, T, MemTakeFn, F>
@@ -576,17 +576,6 @@ pub trait AsyncIteratorExt: AsyncIterator {
         crate::support::assert_future::<_, Fut::Output>(TryFoldAsync::new(self, init, getter, f))
     }
 
-    fn slim_try_fold_async_by_copy<T, F, Fut>(self, init: T, f: F) -> TryFoldAsync<Self, T, CopyFn, F>
-    where
-        Self: Sized,
-        T: Copy,
-        F: FnMut(T, Self::Item) -> Fut,
-        Fut: IntoFuture,
-        Fut::Output: Try<Output = T>,
-    {
-        crate::support::assert_future::<_, Fut::Output>(TryFoldAsync::new(self, init, CopyFn::default(), f))
-    }
-
     fn slim_try_fold_async_by_clone<T, F, Fut>(self, init: T, f: F) -> TryFoldAsync<Self, T, CloneFn, F>
     where
         Self: Sized,
@@ -596,6 +585,17 @@ pub trait AsyncIteratorExt: AsyncIterator {
         Fut::Output: Try<Output = T>,
     {
         crate::support::assert_future::<_, Fut::Output>(TryFoldAsync::new(self, init, CloneFn::default(), f))
+    }
+
+    fn slim_try_fold_async_by_copy<T, F, Fut>(self, init: T, f: F) -> TryFoldAsync<Self, T, CopyFn, F>
+    where
+        Self: Sized,
+        T: Copy,
+        F: FnMut(T, Self::Item) -> Fut,
+        Fut: IntoFuture,
+        Fut::Output: Try<Output = T>,
+    {
+        crate::support::assert_future::<_, Fut::Output>(TryFoldAsync::new(self, init, CopyFn::default(), f))
     }
 
     fn slim_try_fold_async_by_take<T, F, Fut>(self, init: T, f: F) -> TryFoldAsync<Self, T, MemTakeFn, F>
@@ -637,4 +637,4 @@ pub trait AsyncIteratorExt: AsyncIterator {
     }
 }
 
-impl<I> AsyncIteratorExt for I where I: AsyncIterator {}
+impl<I> AsyncIteratorExt for I where I: AsyncIterator + ?Sized {}

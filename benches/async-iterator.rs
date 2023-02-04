@@ -185,13 +185,13 @@ fn benchmark_fold_async(c: &mut Criterion<impl Measurement>) {
 
     benchmark_fold_async_with(
         &mut benchmark_group,
-        "slim-futures/copy",
+        "slim-futures/clone",
         AsyncIteratorExt::slim_fold_async_by_clone,
     );
 
     benchmark_fold_async_with(
         &mut benchmark_group,
-        "slim-futures/clone",
+        "slim-futures/copy",
         AsyncIteratorExt::slim_fold_async_by_copy,
     );
 
@@ -444,16 +444,16 @@ fn benchmark_try_fold_async(c: &mut Criterion<impl Measurement>) {
 
     benchmark_try_fold_async_with(&mut benchmark_group, "futures", TryStreamExt::try_fold);
 
-    benchmark_try_fold_async_with(&mut benchmark_group, "slim-futures/copy", |iter, init, f| {
-        iter.slim_try_fold_async_by_copy(init, try_fold_fn(f))
-    });
-
     benchmark_try_fold_async_with(&mut benchmark_group, "slim-futures/clone", |iter, init, f| {
         iter.slim_try_fold_async_by_clone(init, try_fold_fn(f))
     });
 
+    benchmark_try_fold_async_with(&mut benchmark_group, "slim-futures/copy", |iter, init, f| {
+        iter.slim_try_fold_async_by_copy(init, try_fold_fn(f))
+    });
+
     benchmark_try_fold_async_with(&mut benchmark_group, "slim-futures/take", |iter, init, f| {
-        iter.slim_try_fold_async_by_clone(init, try_fold_fn(f))
+        iter.slim_try_fold_async_by_take(init, try_fold_fn(f))
     });
 
     benchmark_group.finish()

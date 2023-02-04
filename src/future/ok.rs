@@ -53,18 +53,18 @@ where
     support::assert_future::<_, Result<T, E>>(Ok::new(getter, value))
 }
 
-pub fn ok_by_copy<T, E>(value: T) -> Ok<CopyFn, T, E>
-where
-    T: Copy,
-{
-    support::assert_future::<_, Result<T, E>>(Ok::new(CopyFn::default(), value))
-}
-
 pub fn ok_by_clone<T, E>(value: T) -> Ok<CloneFn, T, E>
 where
     T: Clone,
 {
     support::assert_future::<_, Result<T, E>>(Ok::new(CloneFn::default(), value))
+}
+
+pub fn ok_by_copy<T, E>(value: T) -> Ok<CopyFn, T, E>
+where
+    T: Copy,
+{
+    support::assert_future::<_, Result<T, E>>(Ok::new(CopyFn::default(), value))
 }
 
 pub fn ok_by_take<T, E>(value: T) -> Ok<MemTakeFn, T, E>
