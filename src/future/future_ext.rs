@@ -219,8 +219,8 @@ pub trait FutureExt: Future {
     where
         Self: Sized,
         Self::Output: Try,
-        <Self::Output as Try>::Residual: Residual<T>,
         <Self::Output as Try>::Output: Into<T>,
+        <Self::Output as Try>::Residual: Residual<T>,
     {
         support::assert_future::<_, <<Self::Output as Try>::Residual as Residual<T>>::TryType>(OkInto::new(self))
     }

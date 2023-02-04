@@ -36,6 +36,7 @@ Here is the list of combinators provided by `slim-futures`, and their [`futures`
 | `AsyncIteratorExt::slim_and_then_async`     | [`TryStreamExt::and_then`]       |                                     |
 | `AsyncIteratorExt::slim_any`                |                                  |                                     |
 | `AsyncIteratorExt::slim_any_async`          | [`StreamExt::any`]               |                                     |
+| `AsyncIteratorExt::slim_err_into`           | [`TryStreamExt::err_into`]       |                                     |
 | `AsyncIteratorExt::slim_filter`             |                                  |                                     |
 | `AsyncIteratorExt::slim_filter_async`       | [`StreamExt::filter`]            |                                     |
 | `AsyncIteratorExt::slim_filter_map`         |                                  |                                     |
@@ -63,6 +64,7 @@ Here is the list of combinators provided by `slim-futures`, and their [`futures`
 | `AsyncIteratorExt::slim_map_ok_async`       |                                  |                                     |
 | `AsyncIteratorExt::slim_map_while`          |                                  |                                     |
 | `AsyncIteratorExt::slim_map_while_async`    |                                  |                                     |
+| `AsyncIteratorExt::slim_ok_into`            |                                  |                                     |
 | `AsyncIteratorExt::slim_or_else`            |                                  |                                     |
 | `AsyncIteratorExt::slim_or_else_async`      | [`TryStreamExt::or_else`]        |                                     |
 | `AsyncIteratorExt::slim_reduce`             |                                  |                                     |
@@ -167,6 +169,7 @@ Here is the list of combinators provided by `slim-futures`, and their [`futures`
 [`TryFutureExt::try_flatten`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.try_flatten
 [`TryFutureExt::unwrap_or_else`]: https://docs.rs/futures/latest/futures/future/trait.TryFutureExt.html#method.unwrap_or_else
 [`TryStreamExt::and_then`]: https://docs.rs/futures/latest/futures/stream/trait.TryStreamExt.html#method.and_then
+[`TryStreamExt::err_into`]: https://docs.rs/futures/latest/futures/stream/trait.TryStreamExt.html#method.err_into
 [`TryStreamExt::inspect_err`]: https://docs.rs/futures/latest/futures/stream/trait.TryStreamExt.html#method.inspect_err
 [`TryStreamExt::inspect_ok`]: https://docs.rs/futures/latest/futures/stream/trait.TryStreamExt.html#method.inspect_ok
 [`TryStreamExt::map_err`]: https://docs.rs/futures/latest/futures/stream/trait.TryStreamExt.html#method.map_err

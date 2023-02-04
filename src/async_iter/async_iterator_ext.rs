@@ -4,6 +4,7 @@ use crate::async_iter::and_then::AndThen;
 use crate::async_iter::and_then_async::AndThenAsync;
 use crate::async_iter::any::Any;
 use crate::async_iter::any_async::AnyAsync;
+use crate::async_iter::err_into::ErrInto;
 use crate::async_iter::filter::Filter;
 use crate::async_iter::filter_async::FilterAsync;
 use crate::async_iter::filter_map::FilterMap;
@@ -31,6 +32,7 @@ use crate::async_iter::map_ok::MapOk;
 use crate::async_iter::map_ok_async::MapOkAsync;
 use crate::async_iter::map_while::MapWhile;
 use crate::async_iter::map_while_async::MapWhileAsync;
+use crate::async_iter::ok_into::OkInto;
 use crate::async_iter::or_else::OrElse;
 use crate::async_iter::or_else_async::OrElseAsync;
 use crate::async_iter::reduce::Reduce;
@@ -105,6 +107,14 @@ pub trait AsyncIteratorExt: AsyncIterator {
         Fut: IntoFuture<Output = bool>,
     {
         crate::support::assert_future::<_, bool>(AnyAsync::new(self, predicate))
+    }
+
+    fn slim_err_into<E>(self) -> ErrInto<Self, E>
+    where
+        Self: ResultAsyncIterator + Sized,
+        Self::Error: Into<E>,
+    {
+        crate::support::assert_async_iter::<_, Result<Self::Ok, E>>(ErrInto::new(self))
     }
 
     fn slim_filter<P>(self, predicate: P) -> Filter<Self, P>
@@ -402,6 +412,18 @@ pub trait AsyncIteratorExt: AsyncIterator {
         Fut: IntoFuture<Output = Option<T>>,
     {
         crate::support::assert_async_iter::<_, T>(MapWhileAsync::new(self, f))
+    }
+
+    fn slim_ok_into<T>(self) -> OkInto<Self, T>
+    where
+        Self: AsyncIterator + Sized,
+        Self::Item: Try,
+        <Self::Item as Try>::Output: Into<T>,
+        <Self::Item as Try>::Residual: Residual<T>,
+    {
+        crate::support::assert_async_iter::<_, <<Self::Item as Try>::Residual as Residual<T>>::TryType>(OkInto::new(
+            self,
+        ))
     }
 
     fn slim_or_else<F, R>(self, f: F) -> OrElse<Self, F>
