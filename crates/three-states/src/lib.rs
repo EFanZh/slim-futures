@@ -22,9 +22,9 @@ impl<APin, AUnpin, BPin, BUnpin, CPin, CUnpin> ThreeStates<APin, AUnpin, BPin, B
     }
 }
 
-pub struct StateProject<'a, T, U> {
-    pub pinned: Pin<&'a mut T>,
-    pub unpinned: &'a mut U,
+pub struct StatePinProject<'a, A, B> {
+    pub pinned: Pin<&'a mut A>,
+    pub unpinned: &'a mut B,
 }
 
 pub struct StateAPinProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> {
@@ -32,16 +32,16 @@ pub struct StateAPinProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> {
 }
 
 impl<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> StateAPinProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> {
-    pub fn get_project(&mut self) -> StateProject<APin, AUnpin> {
+    pub fn get_project(&mut self) -> StatePinProject<APin, AUnpin> {
         match self.inner.as_mut().project() {
-            InnerThreeStatesPinProject::A { pinned, unpinned } => StateProject { pinned, unpinned },
+            InnerThreeStatesPinProject::A { pinned, unpinned } => StatePinProject { pinned, unpinned },
             _ => unsafe { hint::unreachable_unchecked() },
         }
     }
 
-    pub fn into_project(self) -> StateProject<'a, APin, AUnpin> {
+    pub fn into_project(self) -> StatePinProject<'a, APin, AUnpin> {
         match self.inner.project() {
-            InnerThreeStatesPinProject::A { pinned, unpinned } => StateProject { pinned, unpinned },
+            InnerThreeStatesPinProject::A { pinned, unpinned } => StatePinProject { pinned, unpinned },
             _ => unsafe { hint::unreachable_unchecked() },
         }
     }
@@ -81,16 +81,16 @@ pub struct StateBPinProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> {
 }
 
 impl<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> StateBPinProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> {
-    pub fn get_project(&mut self) -> StateProject<BPin, BUnpin> {
+    pub fn get_project(&mut self) -> StatePinProject<BPin, BUnpin> {
         match self.inner.as_mut().project() {
-            InnerThreeStatesPinProject::B { pinned, unpinned } => StateProject { pinned, unpinned },
+            InnerThreeStatesPinProject::B { pinned, unpinned } => StatePinProject { pinned, unpinned },
             _ => unsafe { hint::unreachable_unchecked() },
         }
     }
 
-    pub fn into_project(self) -> StateProject<'a, BPin, BUnpin> {
+    pub fn into_project(self) -> StatePinProject<'a, BPin, BUnpin> {
         match self.inner.project() {
-            InnerThreeStatesPinProject::B { pinned, unpinned } => StateProject { pinned, unpinned },
+            InnerThreeStatesPinProject::B { pinned, unpinned } => StatePinProject { pinned, unpinned },
             _ => unsafe { hint::unreachable_unchecked() },
         }
     }
@@ -130,16 +130,16 @@ pub struct StateCPinProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> {
 }
 
 impl<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> StateCPinProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> {
-    pub fn get_project(&mut self) -> StateProject<CPin, CUnpin> {
+    pub fn get_project(&mut self) -> StatePinProject<CPin, CUnpin> {
         match self.inner.as_mut().project() {
-            InnerThreeStatesPinProject::C { pinned, unpinned } => StateProject { pinned, unpinned },
+            InnerThreeStatesPinProject::C { pinned, unpinned } => StatePinProject { pinned, unpinned },
             _ => unsafe { hint::unreachable_unchecked() },
         }
     }
 
-    pub fn into_project(self) -> StateProject<'a, CPin, CUnpin> {
+    pub fn into_project(self) -> StatePinProject<'a, CPin, CUnpin> {
         match self.inner.project() {
-            InnerThreeStatesPinProject::C { pinned, unpinned } => StateProject { pinned, unpinned },
+            InnerThreeStatesPinProject::C { pinned, unpinned } => StatePinProject { pinned, unpinned },
             _ => unsafe { hint::unreachable_unchecked() },
         }
     }
