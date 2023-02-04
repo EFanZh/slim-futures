@@ -56,13 +56,15 @@ pub struct FutureState<'a, T, Fut> {
     inner: StateBProject<'a, (), T, Fut, (), Never, Never>,
 }
 
-impl<T, Fut> FutureState<'_, T, Fut> {
+impl<'a, T, Fut> FutureState<'a, T, Fut> {
     pub fn get_pinned(&mut self) -> Pin<&mut Fut> {
         self.inner.get_project().pinned
     }
 
-    pub fn set_accumulate(self, acc: T) {
-        self.inner.set_state_a((), acc);
+    pub fn set_accumulate(self, acc: T) -> AccumulateState<'a, T, Fut> {
+        AccumulateState {
+            inner: self.inner.set_state_a((), acc).1,
+        }
     }
 }
 
