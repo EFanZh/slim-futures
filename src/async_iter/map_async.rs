@@ -42,8 +42,8 @@ where
     fn clone(&self) -> Self {
         Self {
             iter: self.iter.clone(),
-            f: self.f.clone(),
             fut: self.fut.clone(),
+            f: self.f.clone(),
         }
     }
 }

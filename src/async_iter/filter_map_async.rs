@@ -28,7 +28,7 @@ where
     F::Output: IntoFuture,
 {
     pub(crate) fn new(iter: I, f: F) -> Self {
-        Self { iter, f, fut: None }
+        Self { iter, fut: None, f }
     }
 }
 
@@ -42,8 +42,8 @@ where
     fn clone(&self) -> Self {
         Self {
             iter: self.iter.clone(),
-            f: self.f.clone(),
             fut: self.fut.clone(),
+            f: self.f.clone(),
         }
     }
 }
@@ -59,8 +59,8 @@ where
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         let this = self.project();
         let mut iter = this.iter;
-        let f = this.f;
         let mut fut_slot = this.fut;
+        let f = this.f;
 
         loop {
             let fut = match fut_slot.as_mut().as_pin_mut() {
