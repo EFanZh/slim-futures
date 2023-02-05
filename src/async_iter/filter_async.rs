@@ -81,7 +81,6 @@ where
             };
 
             let keep = task::ready!(fut_state.get_pinned_future().poll(cx));
-
             let (item, empty_state) = fut_state.set_empty();
 
             if keep {

@@ -9,13 +9,16 @@ repository = "https://github.com/EFanZh/slim-futures"
 version = "0.1.0-alpha.0"
 
 [workspace]
-members = ["crates/three-states"]
+members = ["crates/option-entry", "crates/three-states"]
 
 [workspace.dependencies]
 fn-traits = "0.1"
 futures-core = "0.3"
 futures-util = "0.3"
+option-entry = { path = "crates/option-entry" }
 pin-project-lite = "0.2"
+scopeguard = "1"
+three-states = { path = "crates/three-states" }
 
 [[bench]]
 harness = false
@@ -29,8 +32,9 @@ name = "future"
 fn-traits = { workspace = true }
 futures-core = { workspace = true }
 futures-util = { workspace = true }
+option-entry = { workspace = true }
 pin-project-lite = { workspace = true }
-three-states = { path = "crates/three-states" }
+three-states = { workspace = true }
 
 [dev-dependencies]
 criterion = { version = "0.4", features = ["async_futures", "html_reports"] }
