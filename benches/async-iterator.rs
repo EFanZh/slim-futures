@@ -83,6 +83,74 @@ fn benchmark_future_with<Fut>(
     benchmark_group.bench_function(name, |b| b.to_async(FuturesExecutor).iter(&mut f));
 }
 
+// `all`.
+
+fn benchmark_all_with<Fut>(
+    benchmark_group: &mut BenchmarkGroup<impl Measurement>,
+    name: &str,
+    mut f: impl FnMut(StreamType<usize>, fn(usize) -> bool) -> Fut,
+) where
+    Fut: Future<Output = bool>,
+{
+    benchmark_future_with(benchmark_group, name, || {
+        f(gen_stream(convert::identity), hint::black_box::<fn(_) -> _>(|_| true))
+    });
+}
+
+fn benchmark_all(c: &mut Criterion<impl Measurement>) {
+    let mut benchmark_group = c.benchmark_group("async iter/all");
+
+    benchmark_all_with(&mut benchmark_group, "async block", |mut iter, f| async move {
+        while let Some(item) = iter.next().await {
+            if !f(item) {
+                return false;
+            }
+        }
+
+        true
+    });
+
+    benchmark_all_with(&mut benchmark_group, "slim-futures", AsyncIteratorExt::slim_all);
+
+    benchmark_group.finish()
+}
+
+// `all_async`.
+
+fn benchmark_all_async_with<Fut>(
+    benchmark_group: &mut BenchmarkGroup<impl Measurement>,
+    name: &str,
+    mut f: impl FnMut(StreamType<usize>, fn(usize) -> Ready<bool>) -> Fut,
+) where
+    Fut: Future<Output = bool>,
+{
+    benchmark_future_with(benchmark_group, name, || {
+        f(
+            gen_stream(convert::identity),
+            hint::black_box::<fn(_) -> _>(|_| future::ready_by_copy(true)),
+        )
+    });
+}
+
+fn benchmark_all_async(c: &mut Criterion<impl Measurement>) {
+    let mut benchmark_group = c.benchmark_group("async iter/all_async");
+
+    benchmark_all_async_with(&mut benchmark_group, "async block", |mut iter, f| async move {
+        while let Some(item) = iter.next().await {
+            if !f(item).await {
+                return false;
+            }
+        }
+
+        true
+    });
+
+    benchmark_all_async_with(&mut benchmark_group, "futures", StreamExt::all);
+    benchmark_all_async_with(&mut benchmark_group, "slim-futures", AsyncIteratorExt::slim_all_async);
+
+    benchmark_group.finish()
+}
+
 // `and_then`.
 
 fn benchmark_and_then_with<I>(
@@ -549,6 +617,8 @@ fn benchmark_zip(c: &mut Criterion<impl Measurement>) {
 
 criterion::criterion_group!(
     benchmarks,
+    benchmark_all,
+    benchmark_all_async,
     benchmark_and_then,
     benchmark_and_then_async,
     benchmark_filter_async,
