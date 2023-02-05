@@ -17,7 +17,7 @@ pin_project_lite::pin_project! {
         #[pin]
         iter: I,
         #[pin]
-        fut: Option<<F::Output as IntoFuture>::IntoFuture>,
+        state: Option<<F::Output as IntoFuture>::IntoFuture>,
         f: F,
     }
 }
@@ -29,7 +29,7 @@ where
     F::Output: IntoFuture,
 {
     pub(crate) fn new(iter: I, f: F) -> Self {
-        Self { iter, fut: None, f }
+        Self { iter, state: None, f }
     }
 }
 
@@ -43,7 +43,7 @@ where
     fn clone(&self) -> Self {
         Self {
             iter: self.iter.clone(),
-            fut: self.fut.clone(),
+            state: self.state.clone(),
             f: self.f.clone(),
         }
     }
@@ -60,15 +60,15 @@ where
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         let this = self.project();
         let mut iter = this.iter;
-        let fut = this.fut;
+        let state = this.state.pinned_entry();
         let f = this.f;
 
-        let mut fut = match fut.pinned_entry() {
-            OptionPinnedEntry::None(none_fut) => match task::ready!(iter.as_mut().poll_next(cx)) {
+        let mut fut = match state {
+            OptionPinnedEntry::None(none_state) => match task::ready!(iter.as_mut().poll_next(cx)) {
                 None => return Poll::Ready(None),
-                Some(item) => none_fut.set_some(f.call_mut((item,)).into_future()),
+                Some(item) => none_state.set_some(f.call_mut((item,)).into_future()),
             },
-            OptionPinnedEntry::Some(some_fut) => some_fut,
+            OptionPinnedEntry::Some(some_state) => some_state,
         };
 
         let item = task::ready!(fut.get_pin_mut().poll(cx));
@@ -81,7 +81,7 @@ where
     fn size_hint(&self) -> (usize, Option<usize>) {
         let mut candidate = (0, self.iter.size_hint().1);
 
-        if self.fut.is_some() {
+        if self.state.is_some() {
             candidate.1 = candidate.1.and_then(|high| high.checked_add(1));
         }
 

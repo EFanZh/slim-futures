@@ -2,18 +2,19 @@ use crate::support::{AsyncIterator, FusedAsyncIterator};
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
 use fn_traits::FnMut;
+use option_entry::{OptionEntry, OptionEntryExt};
 
 pin_project_lite::pin_project! {
     pub struct SkipWhile<I, F> {
         #[pin]
         iter: I,
-        f: Option<F>,
+        state: Option<F>,
     }
 }
 
 impl<I, F> SkipWhile<I, F> {
     pub(crate) fn new(iter: I, f: F) -> Self {
-        Self { iter, f: Some(f) }
+        Self { iter, state: Some(f) }
     }
 }
 
@@ -25,7 +26,7 @@ where
     fn clone(&self) -> Self {
         Self {
             iter: self.iter.clone(),
-            f: self.f.clone(),
+            state: self.state.clone(),
         }
     }
 }
@@ -40,18 +41,17 @@ where
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         let this = self.project();
         let mut iter = this.iter;
-        let f_slot = this.f;
-        let Some(f) = f_slot else { return iter.poll_next(cx) };
+        let OptionEntry::Some(mut f) = this.state.entry() else { return iter.poll_next(cx) };
 
         loop {
             let item = task::ready!(iter.as_mut().poll_next(cx));
 
             if let Some(item) = &item {
-                if f.call_mut((item,)) {
+                if f.get_mut().call_mut((item,)) {
                     continue;
                 }
 
-                *f_slot = None;
+                f.set_none();
             }
 
             break Poll::Ready(item);
@@ -61,7 +61,7 @@ where
     fn size_hint(&self) -> (usize, Option<usize>) {
         let mut candidate = self.iter.size_hint();
 
-        if self.f.is_some() {
+        if self.state.is_some() {
             candidate.0 = 0;
         }
 

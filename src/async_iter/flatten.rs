@@ -31,7 +31,7 @@ pin_project_lite::pin_project! {
         I::Item: IntoAsyncIterator,
     {
         #[pin]
-        sub_iter: Option<<I::Item as IntoAsyncIterator>::IntoAsyncIter>,
+        state: Option<<I::Item as IntoAsyncIterator>::IntoAsyncIter>,
         #[pin]
         iter: I,
     }
@@ -43,7 +43,7 @@ where
     I::Item: IntoAsyncIterator,
 {
     pub(crate) fn new(iter: I) -> Self {
-        Self { sub_iter: None, iter }
+        Self { state: None, iter }
     }
 }
 
@@ -55,7 +55,7 @@ where
 {
     fn clone(&self) -> Self {
         Self {
-            sub_iter: self.sub_iter.clone(),
+            state: self.state.clone(),
             iter: self.iter.clone(),
         }
     }
@@ -70,16 +70,16 @@ where
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         let this = self.project();
-        let mut sub_iter = this.sub_iter;
+        let mut state = this.state.pinned_entry();
         let mut iter = this.iter;
 
         loop {
-            let mut sub_iter = match sub_iter.as_mut().pinned_entry() {
-                OptionPinnedEntry::None(none_sub_iter) => match task::ready!(iter.as_mut().poll_next(cx)) {
+            let mut sub_iter = match state {
+                OptionPinnedEntry::None(none_state) => match task::ready!(iter.as_mut().poll_next(cx)) {
                     None => break Poll::Ready(None),
-                    Some(into_sub_iter) => none_sub_iter.set_some(into_sub_iter.into_async_iter()),
+                    Some(into_state) => none_state.set_some(into_state.into_async_iter()),
                 },
-                OptionPinnedEntry::Some(some_sub_iter) => some_sub_iter,
+                OptionPinnedEntry::Some(some_state) => some_state,
             };
 
             let item = task::ready!(sub_iter.get_pin_mut().poll_next(cx));
@@ -88,17 +88,17 @@ where
                 break Poll::Ready(item);
             }
 
-            sub_iter.set_none();
+            state = OptionPinnedEntry::None(sub_iter.set_none());
         }
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
         let has_more = self.iter.size_hint().1 != Some(0);
 
-        self.sub_iter.as_ref().map_or_else(
+        self.state.as_ref().map_or_else(
             || (0, (!has_more).then_some(0)),
-            |sub_iter| {
-                let mut candidate = sub_iter.size_hint();
+            |state| {
+                let mut candidate = state.size_hint();
 
                 if has_more {
                     candidate.1 = None;
@@ -117,7 +117,7 @@ where
     <I::Item as IntoAsyncIterator>::IntoAsyncIter: FusedAsyncIterator,
 {
     fn is_terminated(&self) -> bool {
-        self.sub_iter
+        self.state
             .as_ref()
             .map_or_else(|| self.iter.is_terminated(), FusedAsyncIterator::is_terminated)
     }

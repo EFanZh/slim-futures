@@ -65,11 +65,11 @@ where
     fn poll(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Self::Output> {
         let this = self.project();
         let mut iter = this.iter;
-        let mut state = this.state;
+        let mut state = this.state.pin_project();
         let f = this.f;
 
         'outer: loop {
-            let mut fut_state = match state.as_mut().pin_project() {
+            let mut fut = match state {
                 FoldStateProject::Accumulate(mut acc_state) => loop {
                     match task::ready!(iter.as_mut().poll_next(cx)) {
                         None => break 'outer Poll::Ready(acc_state.get_mut().take()),
@@ -86,9 +86,9 @@ where
                 FoldStateProject::Future(future_state) => future_state,
             };
 
-            let acc = task::ready!(fut_state.get_pinned().poll(cx));
+            let acc = task::ready!(fut.get_pinned().poll(cx));
 
-            fut_state.set_accumulate(Some(acc));
+            state = FoldStateProject::Accumulate(fut.set_accumulate(Some(acc)));
         }
     }
 }

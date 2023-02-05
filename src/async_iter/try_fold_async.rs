@@ -75,11 +75,11 @@ where
         let this = self.project();
         let mut iter = this.iter;
         let getter = this.getter;
-        let mut state = this.state;
+        let mut state = this.state.pin_project();
         let f = this.f;
 
         Poll::Ready(loop {
-            let mut fut_state = match state.as_mut().pin_project() {
+            let mut fut = match state {
                 FoldStateProject::Accumulate(mut acc_state) => match task::ready!(iter.as_mut().poll_next(cx)) {
                     None => break Self::Output::from_output(getter.call_mut((acc_state.get_mut(),))),
                     Some(item) => {
@@ -93,10 +93,8 @@ where
                 FoldStateProject::Future(fut_state) => fut_state,
             };
 
-            match task::ready!(fut_state.get_pinned().poll(cx)).branch() {
-                ControlFlow::Continue(acc) => {
-                    fut_state.set_accumulate(acc);
-                }
+            match task::ready!(fut.get_pinned().poll(cx)).branch() {
+                ControlFlow::Continue(acc) => state = FoldStateProject::Accumulate(fut.set_accumulate(acc)),
                 ControlFlow::Break(residual) => break Self::Output::from_residual(residual),
             }
         })

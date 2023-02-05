@@ -279,6 +279,35 @@ fn benchmark_and_then_async(c: &mut Criterion<impl Measurement>) {
     benchmark_group.finish()
 }
 
+// `filter`.
+
+fn benchmark_filter_with<I>(
+    benchmark_group: &mut BenchmarkGroup<impl Measurement>,
+    name: &str,
+    mut f: impl FnMut(StreamType<usize>, fn(&usize) -> bool) -> I,
+) where
+    I: Stream<Item = usize>,
+{
+    benchmark_async_iter_with(benchmark_group, name, || {
+        f(
+            gen_stream(convert::identity),
+            hint::black_box::<fn(&_) -> _>(|&x| x % 2 == 0),
+        )
+    });
+}
+
+fn benchmark_filter(c: &mut Criterion<impl Measurement>) {
+    let mut benchmark_group = c.benchmark_group("async iter/filter");
+
+    benchmark_filter_with(&mut benchmark_group, "futures", |iter, f| {
+        iter.filter(move |item| future::ready_by_copy(f(item)))
+    });
+
+    benchmark_filter_with(&mut benchmark_group, "slim-futures", AsyncIteratorExt::slim_filter);
+
+    benchmark_group.finish()
+}
+
 // `filter_async`.
 
 fn benchmark_filter_async_with<I>(
@@ -687,10 +716,11 @@ criterion::criterion_group!(
     benchmarks,
     benchmark_all,
     benchmark_all_async,
-    benchmark_any,
-    benchmark_any_async,
     benchmark_and_then,
     benchmark_and_then_async,
+    benchmark_any,
+    benchmark_any_async,
+    benchmark_filter,
     benchmark_filter_async,
     benchmark_filter_map_async,
     benchmark_fold_async,

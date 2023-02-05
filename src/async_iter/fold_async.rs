@@ -71,11 +71,11 @@ where
         let this = self.project();
         let mut iter = this.iter;
         let getter = this.getter;
-        let mut state = this.state;
+        let mut state = this.state.pin_project();
         let f = this.f;
 
         loop {
-            let mut fut_state = match state.as_mut().pin_project() {
+            let mut fut = match state {
                 FoldStateProject::Accumulate(mut acc_state) => match task::ready!(iter.as_mut().poll_next(cx)) {
                     None => break Poll::Ready(getter.call_mut((acc_state.get_mut(),))),
                     Some(item) => {
@@ -89,9 +89,9 @@ where
                 FoldStateProject::Future(fut_state) => fut_state,
             };
 
-            let acc = task::ready!(fut_state.get_pinned().poll(cx));
+            let acc = task::ready!(fut.get_pinned().poll(cx));
 
-            fut_state.set_accumulate(acc);
+            state = FoldStateProject::Accumulate(fut.set_accumulate(acc));
         }
     }
 }

@@ -80,15 +80,15 @@ where
         let this = self.project();
         let mut iter = this.iter;
         let state = this.state;
-        let fut = this.fut;
+        let fut = this.fut.pinned_entry();
         let f = this.f;
 
-        let mut fut = match fut.pinned_entry() {
-            OptionPinnedEntry::None(none_fut) => match task::ready!(iter.as_mut().poll_next(cx)) {
+        let mut fut = match fut {
+            OptionPinnedEntry::None(none_state) => match task::ready!(iter.as_mut().poll_next(cx)) {
                 None => return Poll::Ready(None),
-                Some(item) => none_fut.set_some(f.call_mut((state, item)).into_future()),
+                Some(item) => none_state.set_some(f.call_mut((state, item)).into_future()),
             },
-            OptionPinnedEntry::Some(some_fut) => some_fut,
+            OptionPinnedEntry::Some(some_state) => some_state,
         };
 
         let item = task::ready!(fut.get_pin_mut().poll(cx));

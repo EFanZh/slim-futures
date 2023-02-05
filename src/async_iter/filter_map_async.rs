@@ -17,7 +17,7 @@ pin_project_lite::pin_project! {
         #[pin]
         iter: I,
         #[pin]
-        fut: Option<<F::Output as IntoFuture>::IntoFuture>,
+        state: Option<<F::Output as IntoFuture>::IntoFuture>,
         f: F,
     }
 }
@@ -29,7 +29,7 @@ where
     F::Output: IntoFuture,
 {
     pub(crate) fn new(iter: I, f: F) -> Self {
-        Self { iter, fut: None, f }
+        Self { iter, state: None, f }
     }
 }
 
@@ -43,7 +43,7 @@ where
     fn clone(&self) -> Self {
         Self {
             iter: self.iter.clone(),
-            fut: self.fut.clone(),
+            state: self.state.clone(),
             f: self.f.clone(),
         }
     }
@@ -60,21 +60,21 @@ where
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         let this = self.project();
         let mut iter = this.iter;
-        let mut fut = this.fut;
+        let mut state = this.state.pinned_entry();
         let f = this.f;
 
         loop {
-            let mut fut = match fut.as_mut().pinned_entry() {
-                OptionPinnedEntry::None(none_entry) => match task::ready!(iter.as_mut().poll_next(cx)) {
+            let mut fut = match state {
+                OptionPinnedEntry::None(none_state) => match task::ready!(iter.as_mut().poll_next(cx)) {
                     None => break Poll::Ready(None),
-                    Some(item) => none_entry.set_some(f.call_mut((item,)).into_future()),
+                    Some(item) => none_state.set_some(f.call_mut((item,)).into_future()),
                 },
-                OptionPinnedEntry::Some(fut) => fut,
+                OptionPinnedEntry::Some(some_state) => some_state,
             };
 
             let item = task::ready!(fut.get_pin_mut().poll(cx));
 
-            fut.set_none();
+            state = OptionPinnedEntry::None(fut.set_none());
 
             if item.is_some() {
                 break Poll::Ready(item);
@@ -85,7 +85,7 @@ where
     fn size_hint(&self) -> (usize, Option<usize>) {
         let mut candidate = (0, self.iter.size_hint().1);
 
-        if self.fut.is_some() {
+        if self.state.is_some() {
             candidate.1 = candidate.1.and_then(|high| high.checked_add(1));
         }
 
@@ -101,7 +101,7 @@ where
     <F::Output as IntoFuture>::IntoFuture: FusedFuture,
 {
     fn is_terminated(&self) -> bool {
-        self.fut
+        self.state
             .as_ref()
             .map_or_else(|| self.iter.is_terminated(), FusedFuture::is_terminated)
     }

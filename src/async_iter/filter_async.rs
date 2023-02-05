@@ -64,11 +64,11 @@ where
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         let this = self.project();
         let mut iter = this.iter;
-        let mut state = this.state;
+        let mut state = this.state.pin_project();
         let predicate = this.predicate;
 
         loop {
-            let mut fut = match state.as_mut().pin_project() {
+            let mut fut = match state {
                 PredicateStateProject::Empty(empty_state) => match task::ready!(iter.as_mut().poll_next(cx)) {
                     None => break Poll::Ready(None),
                     Some(item) => {
@@ -81,7 +81,9 @@ where
             };
 
             let keep = task::ready!(fut.get_pinned_future().poll(cx));
-            let item = fut.set_empty().0;
+            let (item, empty_state) = fut.set_empty();
+
+            state = PredicateStateProject::Empty(empty_state);
 
             if keep {
                 break Poll::Ready(Some(item));

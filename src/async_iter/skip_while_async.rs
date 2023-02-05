@@ -79,13 +79,13 @@ where
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         let this = self.project();
         let mut iter = this.iter;
-        let OptionPinnedEntry::Some(mut state_slot) = this.state.pinned_entry() else { return iter.poll_next(cx) };
-        let state = state_slot.get_pin_mut().project();
-        let mut predicate_state = state.predicate_state;
-        let f = state.f;
+        let OptionPinnedEntry::Some(mut state) = this.state.pinned_entry() else { return iter.poll_next(cx) };
+        let state_projection = state.get_pin_mut().project();
+        let mut predicate_state = state_projection.predicate_state.pin_project();
+        let f = state_projection.f;
 
         loop {
-            let mut fut_state = match predicate_state.as_mut().pin_project() {
+            let mut fut = match predicate_state {
                 PredicateStateProject::Empty(empty_state) => match task::ready!(iter.as_mut().poll_next(cx)) {
                     None => break Poll::Ready(None),
                     Some(item) => {
@@ -97,11 +97,13 @@ where
                 PredicateStateProject::Future(fut_state) => fut_state,
             };
 
-            let skip = task::ready!(fut_state.get_pinned_future().poll(cx));
-            let item = fut_state.set_empty().0;
+            let skip = task::ready!(fut.get_pinned_future().poll(cx));
+            let (item, empty_state) = fut.set_empty();
+
+            predicate_state = PredicateStateProject::Empty(empty_state);
 
             if !skip {
-                state_slot.set_none();
+                state.set_none();
 
                 break Poll::Ready(Some(item));
             }
