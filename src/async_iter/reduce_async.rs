@@ -1,10 +1,99 @@
-use crate::support::states::{FoldState, FoldStateProject};
 use crate::support::{AsyncIterator, FusedAsyncIterator};
 use core::future::{Future, IntoFuture};
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
 use fn_traits::FnMut;
 use futures_core::FusedFuture;
+use three_states::{StateAPinProject, StateBPinProject, StateCPinProject, ThreeStates, ThreeStatesPinProject};
+
+pin_project_lite::pin_project! {
+    #[derive(Clone)]
+    pub struct State<T, Fut> {
+        #[pin]
+        inner: ThreeStates<(), (), (), T, Fut, ()>,
+    }
+}
+
+impl<T, Fut> Default for State<T, Fut> {
+    fn default() -> Self {
+        Self {
+            inner: ThreeStates::A {
+                pinned: (),
+                unpinned: (),
+            },
+        }
+    }
+}
+
+impl<T, Fut> State<T, Fut> {
+    fn get_future(&self) -> Option<&Fut> {
+        match &self.inner {
+            ThreeStates::C { pinned, .. } => Some(pinned),
+            _ => None,
+        }
+    }
+
+    fn pin_project(self: Pin<&mut Self>) -> StateProject<T, Fut> {
+        match self.project().inner.pin_project() {
+            ThreeStatesPinProject::A(project) => StateProject::Empty(EmptyState { inner: project }),
+            ThreeStatesPinProject::B(project) => StateProject::Accumulate(AccumulateState { inner: project }),
+            ThreeStatesPinProject::C(project) => StateProject::Future(FutureState { inner: project }),
+        }
+    }
+}
+
+pub struct EmptyState<'a, T, Fut> {
+    inner: StateAPinProject<'a, (), (), (), T, Fut, ()>,
+}
+
+impl<'a, T, Fut> EmptyState<'a, T, Fut> {
+    fn set_accumulate(self, acc: T) -> AccumulateState<'a, T, Fut> {
+        AccumulateState {
+            inner: self.inner.set_state_b((), acc).1,
+        }
+    }
+
+    fn set_future(self, fut: Fut) -> FutureState<'a, T, Fut> {
+        FutureState {
+            inner: self.inner.set_state_c(fut, ()).1,
+        }
+    }
+}
+
+pub struct AccumulateState<'a, T, Fut> {
+    inner: StateBPinProject<'a, (), (), (), T, Fut, ()>,
+}
+
+impl<'a, T, Fut> AccumulateState<'a, T, Fut> {
+    fn set_empty(self) -> (EmptyState<'a, T, Fut>, T) {
+        let (item, inner) = self.inner.set_state_a((), ());
+
+        (EmptyState { inner }, item)
+    }
+}
+
+pub struct FutureState<'a, T, Fut> {
+    inner: StateCPinProject<'a, (), (), (), T, Fut, ()>,
+}
+
+impl<'a, T, Fut> FutureState<'a, T, Fut> {
+    fn get_pin_mut(&mut self) -> Pin<&mut Fut> {
+        self.inner.get_project().pinned
+    }
+
+    fn set_accumulate(self, acc: T) -> AccumulateState<'a, T, Fut> {
+        AccumulateState {
+            inner: self.inner.set_state_b((), acc).1,
+        }
+    }
+}
+
+#[allow(clippy::module_name_repetitions)]
+pub enum StateProject<'a, T, Fut> {
+    Empty(EmptyState<'a, T, Fut>),
+    Accumulate(AccumulateState<'a, T, Fut>),
+    Future(FutureState<'a, T, Fut>),
+}
 
 pin_project_lite::pin_project! {
     pub struct ReduceAsync<I, F>
@@ -17,7 +106,7 @@ pin_project_lite::pin_project! {
         #[pin]
         iter: I,
         #[pin]
-        state: FoldState<Option<<F::Output as IntoFuture>::Output>, <F::Output as IntoFuture>::IntoFuture>,
+        state: State<<F::Output as IntoFuture>::Output, <F::Output as IntoFuture>::IntoFuture>,
         f: F,
     }
 }
@@ -31,7 +120,7 @@ where
     pub(crate) fn new(iter: I, f: F) -> Self {
         Self {
             iter,
-            state: FoldState::new(None),
+            state: State::default(),
             f,
         }
     }
@@ -68,27 +157,31 @@ where
         let mut state = this.state.pin_project();
         let f = this.f;
 
-        'outer: loop {
+        loop {
             let mut fut = match state {
-                FoldStateProject::Accumulate(mut acc_state) => loop {
-                    match task::ready!(iter.as_mut().poll_next(cx)) {
-                        None => break 'outer Poll::Ready(acc_state.get_mut().take()),
-                        Some(item) => match acc_state.get_mut().take() {
-                            None => *acc_state.get_mut() = Some(item),
-                            Some(acc) => {
-                                let fut = f.call_mut((acc, item)).into_future();
+                StateProject::Empty(empty_state) => match task::ready!(iter.as_mut().poll_next(cx)) {
+                    None => return Poll::Ready(None),
+                    Some(item) => {
+                        state = StateProject::Accumulate(empty_state.set_accumulate(item));
 
-                                break acc_state.set_future(fut);
-                            }
-                        },
+                        continue;
                     }
                 },
-                FoldStateProject::Future(future_state) => future_state,
+                StateProject::Accumulate(acc_state) => match task::ready!(iter.as_mut().poll_next(cx)) {
+                    None => return Poll::Ready(Some(acc_state.set_empty().1)),
+                    Some(item) => {
+                        let (empty_state, acc) = acc_state.set_empty();
+                        let fut = f.call_mut((acc, item)).into_future();
+
+                        empty_state.set_future(fut)
+                    }
+                },
+                StateProject::Future(fut_state) => fut_state,
             };
 
-            let acc = task::ready!(fut.get_pinned().poll(cx));
+            let acc = task::ready!(fut.get_pin_mut().poll(cx));
 
-            state = FoldStateProject::Accumulate(fut.set_accumulate(Some(acc)));
+            state = StateProject::Accumulate(fut.set_accumulate(acc));
         }
     }
 }
