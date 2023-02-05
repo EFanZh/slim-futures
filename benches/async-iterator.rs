@@ -24,6 +24,8 @@ fn benchmark_async_iter_with<I>(
 ) where
     I: Stream,
 {
+    hint::black_box::<fn(_, _) -> _>(I::poll_next);
+
     benchmark_group.bench_function(name, |b| {
         b.to_async(FuturesExecutor).iter(|| {
             let iter = f();
@@ -46,6 +48,8 @@ fn benchmark_future_with<Fut>(
 ) where
     Fut: Future,
 {
+    hint::black_box::<fn(_, _) -> _>(Fut::poll);
+
     benchmark_group.bench_function(name, |b| b.to_async(FuturesExecutor).iter(&mut f));
 }
 

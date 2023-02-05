@@ -10,6 +10,8 @@ fn benchmark_with<Fut>(benchmark_group: &mut BenchmarkGroup<impl Measurement>, n
 where
     Fut: Future,
 {
+    hint::black_box::<fn(_, _) -> _>(Fut::poll);
+
     benchmark_group.bench_function(name, |b| b.to_async(FuturesExecutor).iter(&mut f));
 }
 
