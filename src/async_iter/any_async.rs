@@ -14,6 +14,7 @@ struct BreakIfTrue;
 impl FnMut<(bool,)> for BreakIfTrue {
     type Output = ControlFlow<()>;
 
+    #[inline]
     fn call_mut(&mut self, args: (bool,)) -> Self::Output {
         if args.0 {
             ControlFlow::Break(())
