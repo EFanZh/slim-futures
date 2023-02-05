@@ -174,41 +174,6 @@ fn benchmark_map_ok(c: &mut Criterion<impl Measurement>) {
     benchmark_group.finish()
 }
 
-// map chain.
-
-fn benchmark_map_chain_with<Fut>(
-    benchmark_group: &mut BenchmarkGroup<impl Measurement>,
-    name: &str,
-    mut f: impl FnMut(Ready<u32>, fn(u32) -> u32) -> Fut,
-) where
-    Fut: Future<Output = u32>,
-{
-    benchmark_with(benchmark_group, name, || {
-        f(
-            future::ready(hint::black_box(2)),
-            hint::black_box::<fn(_) -> _>(convert::identity),
-        )
-    });
-}
-
-fn benchmark_map_chain(c: &mut Criterion<impl Measurement>) {
-    let mut benchmark_group = c.benchmark_group("future/map chain");
-
-    benchmark_map_chain_with(&mut benchmark_group, "async block", |fut, f| async move {
-        f(f(f(f(fut.await))))
-    });
-
-    benchmark_map_chain_with(&mut benchmark_group, "futures", |fut, f| {
-        fut.map(f).map(f).map(f).map(f)
-    });
-
-    benchmark_map_chain_with(&mut benchmark_group, "slim-futures", |fut, f| {
-        fut.slim_map(f).slim_map(f).slim_map(f).slim_map(f)
-    });
-
-    benchmark_group.finish()
-}
-
 // Main.
 
 criterion::criterion_group!(
@@ -218,7 +183,6 @@ criterion::criterion_group!(
     benchmark_map_async,
     benchmark_map_err,
     benchmark_map_ok,
-    benchmark_map_chain,
 );
 
 criterion::criterion_main!(benchmarks);
