@@ -10,13 +10,41 @@ use slim_futures::future;
 use std::future::Future;
 use std::iter::Map;
 use std::ops::Range;
+use std::pin::Pin;
+use std::task::{Context, Poll};
 use std::{convert, hint};
 
 type Ready<T> = future::Ready<CopyFn, T>;
-type StreamType<R> = Iter<Map<Range<usize>, fn(usize) -> R>>;
+type StreamType<R> = NoInlineStream<Iter<Map<Range<usize>, fn(usize) -> R>>>;
+
+pin_project_lite::pin_project! {
+    struct NoInlineStream<S>{
+        #[pin]
+        inner: S,
+    }
+}
+
+impl<S> Stream for NoInlineStream<S>
+where
+    S: Stream,
+{
+    type Item = S::Item;
+
+    #[inline(never)]
+    fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
+        self.project().inner.poll_next(cx)
+    }
+
+    #[inline(never)]
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        self.inner.size_hint()
+    }
+}
 
 fn gen_stream<R>(f: fn(usize) -> R) -> StreamType<R> {
-    hint::black_box(stream::iter((0..1_000_000).map(f)))
+    hint::black_box(NoInlineStream {
+        inner: stream::iter((0..1_000_000).map(f)),
+    })
 }
 
 fn benchmark_async_iter_with<I>(
@@ -60,7 +88,7 @@ fn benchmark_future_with<Fut>(
 fn benchmark_and_then_with<I>(
     benchmark_group: &mut BenchmarkGroup<impl Measurement>,
     name: &str,
-    mut f: impl FnMut(Iter<Map<Range<usize>, fn(usize) -> Result<usize, usize>>>, fn(usize) -> Result<usize, usize>) -> I,
+    mut f: impl FnMut(StreamType<Result<usize, usize>>, fn(usize) -> Result<usize, usize>) -> I,
 ) where
     I: Stream<Item = Result<usize, usize>>,
 {
@@ -89,10 +117,7 @@ fn benchmark_and_then(c: &mut Criterion<impl Measurement>) {
 fn benchmark_and_then_async_with<I>(
     benchmark_group: &mut BenchmarkGroup<impl Measurement>,
     name: &str,
-    mut f: impl FnMut(
-        Iter<Map<Range<usize>, fn(usize) -> Result<usize, usize>>>,
-        fn(usize) -> Ready<Result<usize, usize>>,
-    ) -> I,
+    mut f: impl FnMut(StreamType<Result<usize, usize>>, fn(usize) -> Ready<Result<usize, usize>>) -> I,
 ) where
     I: Stream<Item = Result<usize, usize>>,
 {
