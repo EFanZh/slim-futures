@@ -43,7 +43,7 @@ where
         let f_slot = this.f;
         let Some(f) = f_slot else { return iter.poll_next(cx) };
 
-        Poll::Ready(loop {
+        loop {
             let item = task::ready!(iter.as_mut().poll_next(cx));
 
             if let Some(item) = &item {
@@ -54,8 +54,8 @@ where
                 *f_slot = None;
             }
 
-            break item;
-        })
+            break Poll::Ready(item);
+        }
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {

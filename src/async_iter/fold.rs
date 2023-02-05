@@ -56,12 +56,12 @@ where
         let getter = this.getter;
         let f = this.f;
 
-        Poll::Ready(loop {
+        loop {
             match task::ready!(iter.as_mut().poll_next(cx)) {
-                None => break getter.call_mut((acc,)),
+                None => break Poll::Ready(getter.call_mut((acc,))),
                 Some(item) => *acc = f.call_mut((getter.call_mut((acc,)), item)),
             }
-        })
+        }
     }
 }
 
