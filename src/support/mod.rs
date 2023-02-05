@@ -1,6 +1,5 @@
 pub use self::into_async_iterator::IntoAsyncIterator;
 pub use self::into_result_future::IntoResultFuture;
-pub use self::option_ext::OptionExt;
 pub use self::option_future::OptionFuture;
 pub use self::predicate_fn::PredicateFn;
 pub use self::raw_residual::RawResidual;
@@ -14,7 +13,6 @@ pub use futures_core::{FusedStream as FusedAsyncIterator, Stream as AsyncIterato
 pub mod fns;
 mod into_async_iterator;
 mod into_result_future;
-mod option_ext;
 mod option_future;
 mod predicate_fn;
 mod raw_residual;

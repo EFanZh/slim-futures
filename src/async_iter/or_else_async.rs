@@ -1,9 +1,10 @@
-use crate::support::{AsyncIterator, FusedAsyncIterator, OptionExt, ResultAsyncIterator, Try};
+use crate::support::{AsyncIterator, FusedAsyncIterator, ResultAsyncIterator, Try};
 use core::future::{Future, IntoFuture};
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
 use fn_traits::FnMut;
 use futures_core::FusedFuture;
+use option_entry::{OptionEntryExt, OptionPinnedEntry};
 
 pin_project_lite::pin_project! {
     pub struct OrElseAsync<I, F>
@@ -60,23 +61,23 @@ where
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         let this = self.project();
         let mut iter = this.iter;
-        let mut fut_slot = this.fut;
+        let fut = this.fut;
         let f = this.f;
 
-        let fut = match fut_slot.as_mut().as_pin_mut() {
-            None => match task::ready!(iter.as_mut().poll_next(cx)) {
+        let mut fut = match fut.pinned_entry() {
+            OptionPinnedEntry::None(none_fut) => match task::ready!(iter.as_mut().poll_next(cx)) {
                 None => return Poll::Ready(None),
                 Some(item) => match item {
                     Ok(value) => return Poll::Ready(Some(Self::Item::from_output(value))),
-                    Err(error) => fut_slot.as_mut().insert_pinned(f.call_mut((error,)).into_future()),
+                    Err(error) => none_fut.set_some(f.call_mut((error,)).into_future()),
                 },
             },
-            Some(fut) => fut,
+            OptionPinnedEntry::Some(some_fut) => some_fut,
         };
 
-        let item = task::ready!(fut.poll(cx));
+        let item = task::ready!(fut.get_pin_mut().poll(cx));
 
-        fut_slot.set(None);
+        fut.set_none();
 
         Poll::Ready(Some(item))
     }

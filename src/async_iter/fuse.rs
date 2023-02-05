@@ -1,6 +1,7 @@
 use crate::support::{AsyncIterator, FusedAsyncIterator};
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
+use option_entry::{OptionEntryExt, OptionPinnedEntry};
 
 pin_project_lite::pin_project! {
     pub struct Fuse<I> {
@@ -33,13 +34,13 @@ where
     type Item = I::Item;
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
-        let mut iter_slot = self.project().iter;
+        let iter = self.project().iter.pinned_entry();
 
-        Poll::Ready(if let Some(iter) = iter_slot.as_mut().as_pin_mut() {
-            let item = task::ready!(iter.poll_next(cx));
+        Poll::Ready(if let OptionPinnedEntry::Some(mut iter) = iter {
+            let item = task::ready!(iter.get_pin_mut().poll_next(cx));
 
             if item.is_none() {
-                iter_slot.set(None);
+                iter.set_none();
             }
 
             item

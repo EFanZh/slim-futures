@@ -1,8 +1,9 @@
-use crate::support::{AsyncIterator, FromResidual, FusedAsyncIterator, IntoAsyncIterator, OptionExt, Try};
+use crate::support::{AsyncIterator, FromResidual, FusedAsyncIterator, IntoAsyncIterator, Try};
 use core::ops::ControlFlow;
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
 use fn_traits::FnMut;
+use option_entry::{OptionEntryExt, OptionPinnedEntry};
 
 #[derive(Clone)]
 struct TryFlattenFn<F> {
@@ -74,28 +75,28 @@ where
 
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         let this = self.project();
-        let mut sub_iter_slot = this.sub_iter;
+        let mut sub_iter = this.sub_iter;
         let mut iter = this.iter;
 
         loop {
-            let sub_iter = match sub_iter_slot.as_mut().as_pin_mut() {
-                None => match task::ready!(iter.as_mut().poll_next(cx)) {
+            let mut sub_iter = match sub_iter.as_mut().pinned_entry() {
+                OptionPinnedEntry::None(none_sub_iter) => match task::ready!(iter.as_mut().poll_next(cx)) {
                     None => break Poll::Ready(None),
                     Some(item) => match item.branch() {
-                        ControlFlow::Continue(output) => sub_iter_slot.as_mut().insert_pinned(output.into_async_iter()),
+                        ControlFlow::Continue(output) => none_sub_iter.set_some(output.into_async_iter()),
                         ControlFlow::Break(residual) => break Poll::Ready(Some(Self::Item::from_residual(residual))),
                     },
                 },
-                Some(sub_iter) => sub_iter,
+                OptionPinnedEntry::Some(some_sub_iter) => some_sub_iter,
             };
 
-            let item = task::ready!(sub_iter.poll_next(cx));
+            let item = task::ready!(sub_iter.get_pin_mut().poll_next(cx));
 
             if item.is_some() {
                 break Poll::Ready(item);
             }
 
-            sub_iter_slot.set(None);
+            sub_iter.set_none();
         }
     }
 

@@ -1,9 +1,10 @@
-use crate::support::{AsyncIterator, FusedAsyncIterator, OptionExt};
+use crate::support::{AsyncIterator, FusedAsyncIterator};
 use core::future::IntoFuture;
 use core::pin::Pin;
 use core::task::{self, Context, Poll};
 use fn_traits::FnMut;
 use futures_core::{FusedFuture, Future};
+use option_entry::{OptionEntryExt, OptionPinnedEntry};
 
 pin_project_lite::pin_project! {
     pub struct FilterMapAsync<I, F>
@@ -59,21 +60,21 @@ where
     fn poll_next(self: Pin<&mut Self>, cx: &mut Context) -> Poll<Option<Self::Item>> {
         let this = self.project();
         let mut iter = this.iter;
-        let mut fut_slot = this.fut;
+        let mut fut = this.fut;
         let f = this.f;
 
         loop {
-            let fut = match fut_slot.as_mut().as_pin_mut() {
-                None => match task::ready!(iter.as_mut().poll_next(cx)) {
+            let mut fut = match fut.as_mut().pinned_entry() {
+                OptionPinnedEntry::None(none_entry) => match task::ready!(iter.as_mut().poll_next(cx)) {
                     None => break Poll::Ready(None),
-                    Some(item) => fut_slot.as_mut().insert_pinned(f.call_mut((item,)).into_future()),
+                    Some(item) => none_entry.set_some(f.call_mut((item,)).into_future()),
                 },
-                Some(fut) => fut,
+                OptionPinnedEntry::Some(fut) => fut,
             };
 
-            let item = task::ready!(fut.poll(cx));
+            let item = task::ready!(fut.get_pin_mut().poll(cx));
 
-            fut_slot.set(None);
+            fut.set_none();
 
             if item.is_some() {
                 break Poll::Ready(item);
