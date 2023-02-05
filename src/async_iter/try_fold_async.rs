@@ -93,7 +93,7 @@ where
                 FoldStateProject::Future(fut_state) => fut_state,
             };
 
-            match task::ready!(fut.get_pinned().poll(cx)).branch() {
+            match task::ready!(fut.get_pin_mut().poll(cx)).branch() {
                 ControlFlow::Continue(acc) => state = FoldStateProject::Accumulate(fut.set_accumulate(acc)),
                 ControlFlow::Break(residual) => break Self::Output::from_residual(residual),
             }

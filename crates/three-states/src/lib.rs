@@ -65,9 +65,9 @@ impl<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> StateAPinProject<'a, APin, AU
         mut self,
         pinned: BPin,
         unpinned: BUnpin,
-    ) -> (AUnpin, StateBPinProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>) {
+    ) -> (StateBPinProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>, AUnpin) {
         match self.inner.as_mut().project_replace(ThreeStates::B { pinned, unpinned }) {
-            ThreeStatesPinProjectReplace::A { unpinned, .. } => (unpinned, StateBPinProject { inner: self.inner }),
+            ThreeStatesPinProjectReplace::A { unpinned, .. } => (StateBPinProject { inner: self.inner }, unpinned),
             _ => unsafe { hint::unreachable_unchecked() },
         }
     }
@@ -76,9 +76,9 @@ impl<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> StateAPinProject<'a, APin, AU
         mut self,
         pinned: CPin,
         unpinned: CUnpin,
-    ) -> (AUnpin, StateCPinProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>) {
+    ) -> (StateCPinProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>, AUnpin) {
         match self.inner.as_mut().project_replace(ThreeStates::C { pinned, unpinned }) {
-            ThreeStatesPinProjectReplace::A { unpinned, .. } => (unpinned, StateCPinProject { inner: self.inner }),
+            ThreeStatesPinProjectReplace::A { unpinned, .. } => (StateCPinProject { inner: self.inner }, unpinned),
             _ => unsafe { hint::unreachable_unchecked() },
         }
     }
@@ -107,9 +107,9 @@ impl<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> StateBPinProject<'a, APin, AU
         mut self,
         pinned: APin,
         unpinned: AUnpin,
-    ) -> (BUnpin, StateAPinProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>) {
+    ) -> (StateAPinProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>, BUnpin) {
         match self.inner.as_mut().project_replace(ThreeStates::A { pinned, unpinned }) {
-            ThreeStatesPinProjectReplace::B { unpinned, .. } => (unpinned, StateAPinProject { inner: self.inner }),
+            ThreeStatesPinProjectReplace::B { unpinned, .. } => (StateAPinProject { inner: self.inner }, unpinned),
             _ => unsafe { hint::unreachable_unchecked() },
         }
     }
@@ -125,9 +125,9 @@ impl<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> StateBPinProject<'a, APin, AU
         mut self,
         pinned: CPin,
         unpinned: CUnpin,
-    ) -> (BUnpin, StateCPinProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>) {
+    ) -> (StateCPinProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>, BUnpin) {
         match self.inner.as_mut().project_replace(ThreeStates::C { pinned, unpinned }) {
-            ThreeStatesPinProjectReplace::B { unpinned, .. } => (unpinned, StateCPinProject { inner: self.inner }),
+            ThreeStatesPinProjectReplace::B { unpinned, .. } => (StateCPinProject { inner: self.inner }, unpinned),
             _ => unsafe { hint::unreachable_unchecked() },
         }
     }
@@ -156,9 +156,9 @@ impl<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> StateCPinProject<'a, APin, AU
         mut self,
         pinned: APin,
         unpinned: AUnpin,
-    ) -> (CUnpin, StateAPinProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>) {
+    ) -> (StateAPinProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>, CUnpin) {
         match self.inner.as_mut().project_replace(ThreeStates::A { pinned, unpinned }) {
-            ThreeStatesPinProjectReplace::C { unpinned, .. } => (unpinned, StateAPinProject { inner: self.inner }),
+            ThreeStatesPinProjectReplace::C { unpinned, .. } => (StateAPinProject { inner: self.inner }, unpinned),
             _ => unsafe { hint::unreachable_unchecked() },
         }
     }
@@ -167,9 +167,9 @@ impl<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> StateCPinProject<'a, APin, AU
         mut self,
         pinned: BPin,
         unpinned: BUnpin,
-    ) -> (CUnpin, StateBPinProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>) {
+    ) -> (StateBPinProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>, CUnpin) {
         match self.inner.as_mut().project_replace(ThreeStates::B { pinned, unpinned }) {
-            ThreeStatesPinProjectReplace::C { unpinned, .. } => (unpinned, StateBPinProject { inner: self.inner }),
+            ThreeStatesPinProjectReplace::C { unpinned, .. } => (StateBPinProject { inner: self.inner }, unpinned),
             _ => unsafe { hint::unreachable_unchecked() },
         }
     }
@@ -223,9 +223,9 @@ impl<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> StateAProject<'a, APin, AUnpi
         self,
         pinned: BPin,
         unpinned: BUnpin,
-    ) -> (AUnpin, StateBProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>) {
+    ) -> (StateBProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>, AUnpin) {
         match mem::replace(self.inner, ThreeStates::B { pinned, unpinned }) {
-            ThreeStates::A { unpinned, .. } => (unpinned, StateBProject { inner: self.inner }),
+            ThreeStates::A { unpinned, .. } => (StateBProject { inner: self.inner }, unpinned),
             _ => unsafe { hint::unreachable_unchecked() },
         }
     }
@@ -234,9 +234,9 @@ impl<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> StateAProject<'a, APin, AUnpi
         self,
         pinned: CPin,
         unpinned: CUnpin,
-    ) -> (AUnpin, StateCProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>) {
+    ) -> (StateCProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>, AUnpin) {
         match mem::replace(self.inner, ThreeStates::C { pinned, unpinned }) {
-            ThreeStates::A { unpinned, .. } => (unpinned, StateCProject { inner: self.inner }),
+            ThreeStates::A { unpinned, .. } => (StateCProject { inner: self.inner }, unpinned),
             _ => unsafe { hint::unreachable_unchecked() },
         }
     }
@@ -265,9 +265,9 @@ impl<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> StateBProject<'a, APin, AUnpi
         self,
         pinned: APin,
         unpinned: AUnpin,
-    ) -> (BUnpin, StateAProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>) {
+    ) -> (StateAProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>, BUnpin) {
         match mem::replace(self.inner, ThreeStates::A { pinned, unpinned }) {
-            ThreeStates::B { unpinned, .. } => (unpinned, StateAProject { inner: self.inner }),
+            ThreeStates::B { unpinned, .. } => (StateAProject { inner: self.inner }, unpinned),
             _ => unsafe { hint::unreachable_unchecked() },
         }
     }
@@ -283,9 +283,9 @@ impl<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> StateBProject<'a, APin, AUnpi
         self,
         pinned: CPin,
         unpinned: CUnpin,
-    ) -> (BUnpin, StateCProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>) {
+    ) -> (StateCProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>, BUnpin) {
         match mem::replace(self.inner, ThreeStates::C { pinned, unpinned }) {
-            ThreeStates::B { unpinned, .. } => (unpinned, StateCProject { inner: self.inner }),
+            ThreeStates::B { unpinned, .. } => (StateCProject { inner: self.inner }, unpinned),
             _ => unsafe { hint::unreachable_unchecked() },
         }
     }
@@ -314,9 +314,9 @@ impl<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> StateCProject<'a, APin, AUnpi
         self,
         pinned: APin,
         unpinned: AUnpin,
-    ) -> (CUnpin, StateAProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>) {
+    ) -> (StateAProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>, CUnpin) {
         match mem::replace(self.inner, ThreeStates::A { pinned, unpinned }) {
-            ThreeStates::C { unpinned, .. } => (unpinned, StateAProject { inner: self.inner }),
+            ThreeStates::C { unpinned, .. } => (StateAProject { inner: self.inner }, unpinned),
             _ => unsafe { hint::unreachable_unchecked() },
         }
     }
@@ -325,9 +325,9 @@ impl<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> StateCProject<'a, APin, AUnpi
         self,
         pinned: BPin,
         unpinned: BUnpin,
-    ) -> (CUnpin, StateBProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>) {
+    ) -> (StateBProject<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin>, CUnpin) {
         match mem::replace(self.inner, ThreeStates::B { pinned, unpinned }) {
-            ThreeStates::C { unpinned, .. } => (unpinned, StateBProject { inner: self.inner }),
+            ThreeStates::C { unpinned, .. } => (StateBProject { inner: self.inner }, unpinned),
             _ => unsafe { hint::unreachable_unchecked() },
         }
     }

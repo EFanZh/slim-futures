@@ -80,8 +80,8 @@ where
                 PredicateStateProject::Future(fut_state) => fut_state,
             };
 
-            let keep = task::ready!(fut.get_pinned_future().poll(cx));
-            let (item, empty_state) = fut.set_empty();
+            let keep = task::ready!(fut.get_pin_mut().poll(cx));
+            let (empty_state, item) = fut.set_empty();
 
             state = PredicateStateProject::Empty(empty_state);
 

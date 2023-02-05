@@ -47,7 +47,7 @@ impl<'a, T, Fut> FoldAccumulateState<'a, T, Fut> {
 
     pub fn set_future(self, fut: Fut) -> FoldFutureState<'a, T, Fut> {
         FoldFutureState {
-            inner: self.inner.set_state_b(fut, ()).1,
+            inner: self.inner.set_state_b(fut, ()).0,
         }
     }
 }
@@ -57,13 +57,13 @@ pub struct FoldFutureState<'a, T, Fut> {
 }
 
 impl<'a, T, Fut> FoldFutureState<'a, T, Fut> {
-    pub fn get_pinned(&mut self) -> Pin<&mut Fut> {
+    pub fn get_pin_mut(&mut self) -> Pin<&mut Fut> {
         self.inner.get_project().pinned
     }
 
     pub fn set_accumulate(self, acc: T) -> FoldAccumulateState<'a, T, Fut> {
         FoldAccumulateState {
-            inner: self.inner.set_state_a((), acc).1,
+            inner: self.inner.set_state_a((), acc).0,
         }
     }
 }

@@ -66,7 +66,7 @@ where
         let state = this.state.pin_project();
         let f = this.f;
 
-        let mut fut_state = match state {
+        let mut fut = match state {
             PredicateStateProject::Empty(empty_state) => match task::ready!(iter.as_mut().poll_next(cx)) {
                 None => return Poll::Ready(None),
                 Some(item) => {
@@ -78,8 +78,8 @@ where
             PredicateStateProject::Future(fut_state) => fut_state,
         };
 
-        let take = task::ready!(fut_state.get_pinned_future().poll(cx));
-        let item = fut_state.set_empty().0;
+        let take = task::ready!(fut.get_pin_mut().poll(cx));
+        let item = fut.set_empty().1;
 
         if take {
             Poll::Ready(Some(item))

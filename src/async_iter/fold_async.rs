@@ -89,7 +89,7 @@ where
                 FoldStateProject::Future(fut_state) => fut_state,
             };
 
-            let acc = task::ready!(fut.get_pinned().poll(cx));
+            let acc = task::ready!(fut.get_pin_mut().poll(cx));
 
             state = FoldStateProject::Accumulate(fut.set_accumulate(acc));
         }

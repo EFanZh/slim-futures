@@ -11,9 +11,9 @@ struct State<A, B> {
 impl<A, B> State<A, B> {
     fn project(&mut self) -> StateProject<A, B> {
         match self.inner.project_mut() {
-            ThreeStatesProject::A(inner) => StateProject::Empty(EmptyStateProject { inner }),
-            ThreeStatesProject::B(inner) => StateProject::Left(LeftStateProject { inner }),
-            ThreeStatesProject::C(inner) => StateProject::Right(RightStateProject { inner }),
+            ThreeStatesProject::A(inner) => StateProject::Empty(EmptyState { inner }),
+            ThreeStatesProject::B(inner) => StateProject::Left(LeftState { inner }),
+            ThreeStatesProject::C(inner) => StateProject::Right(RightState { inner }),
         }
     }
 }
@@ -29,52 +29,52 @@ impl<A, B> Default for State<A, B> {
     }
 }
 
-struct EmptyStateProject<'a, A, B> {
+struct EmptyState<'a, A, B> {
     inner: StateAProject<'a, (), (), (), A, (), B>,
 }
 
-impl<'a, A, B> EmptyStateProject<'a, A, B> {
-    fn set_left(self, value: A) -> LeftStateProject<'a, A, B> {
-        LeftStateProject {
-            inner: self.inner.set_state_b((), value).1,
+impl<'a, A, B> EmptyState<'a, A, B> {
+    fn set_left(self, value: A) -> LeftState<'a, A, B> {
+        LeftState {
+            inner: self.inner.set_state_b((), value).0,
         }
     }
 
-    fn set_right(self, value: B) -> RightStateProject<'a, A, B> {
-        RightStateProject {
-            inner: self.inner.set_state_c((), value).1,
+    fn set_right(self, value: B) -> RightState<'a, A, B> {
+        RightState {
+            inner: self.inner.set_state_c((), value).0,
         }
     }
 }
 
-struct LeftStateProject<'a, A, B> {
+struct LeftState<'a, A, B> {
     inner: StateBProject<'a, (), (), (), A, (), B>,
 }
 
-impl<'a, A, B> LeftStateProject<'a, A, B> {
-    fn set_empty(self) -> (A, EmptyStateProject<'a, A, B>) {
-        let (value, inner) = self.inner.set_state_a((), ());
+impl<'a, A, B> LeftState<'a, A, B> {
+    fn set_empty(self) -> (EmptyState<'a, A, B>, A) {
+        let (inner, value) = self.inner.set_state_a((), ());
 
-        (value, EmptyStateProject { inner })
+        (EmptyState { inner }, value)
     }
 }
 
-struct RightStateProject<'a, A, B> {
+struct RightState<'a, A, B> {
     inner: StateCProject<'a, (), (), (), A, (), B>,
 }
 
-impl<'a, A, B> RightStateProject<'a, A, B> {
-    fn set_empty(self) -> (B, EmptyStateProject<'a, A, B>) {
-        let (value, inner) = self.inner.set_state_a((), ());
+impl<'a, A, B> RightState<'a, A, B> {
+    fn set_empty(self) -> (EmptyState<'a, A, B>, B) {
+        let (inner, value) = self.inner.set_state_a((), ());
 
-        (value, EmptyStateProject { inner })
+        (EmptyState { inner }, value)
     }
 }
 
 enum StateProject<'a, A, B> {
-    Empty(EmptyStateProject<'a, A, B>),
-    Left(LeftStateProject<'a, A, B>),
-    Right(RightStateProject<'a, A, B>),
+    Empty(EmptyState<'a, A, B>),
+    Left(LeftState<'a, A, B>),
+    Right(RightState<'a, A, B>),
 }
 
 pin_project_lite::pin_project! {
@@ -147,7 +147,7 @@ where
                 StateProject::Left(left_state) => match task::ready!(right.poll_next(cx)) {
                     None => return Poll::Ready(None),
                     Some(right_item) => {
-                        let left_item = left_state.set_empty().0;
+                        let left_item = left_state.set_empty().1;
 
                         break (left_item, right_item);
                     }
@@ -155,7 +155,7 @@ where
                 StateProject::Right(right_state) => match task::ready!(left.poll_next(cx)) {
                     None => return Poll::Ready(None),
                     Some(left_item) => {
-                        let right_item = right_state.set_empty().0;
+                        let right_item = right_state.set_empty().1;
 
                         break (left_item, right_item);
                     }

@@ -45,7 +45,7 @@ pub struct PredicateEmptyState<'a, T, Fut> {
 impl<'a, T, Fut> PredicateEmptyState<'a, T, Fut> {
     pub fn set_future(self, item: T, fut: Fut) -> PredicateFutureState<'a, T, Fut> {
         PredicateFutureState {
-            inner: self.inner.set_state_b(fut, item).1,
+            inner: self.inner.set_state_b(fut, item).0,
         }
     }
 }
@@ -55,14 +55,14 @@ pub struct PredicateFutureState<'a, T, Fut> {
 }
 
 impl<'a, T, Fut> PredicateFutureState<'a, T, Fut> {
-    pub fn get_pinned_future(&mut self) -> Pin<&mut Fut> {
+    pub fn get_pin_mut(&mut self) -> Pin<&mut Fut> {
         self.inner.get_project().pinned
     }
 
-    pub fn set_empty(self) -> (T, PredicateEmptyState<'a, T, Fut>) {
-        let (item, inner) = self.inner.set_state_a((), ());
+    pub fn set_empty(self) -> (PredicateEmptyState<'a, T, Fut>, T) {
+        let (inner, item) = self.inner.set_state_a((), ());
 
-        (item, PredicateEmptyState { inner })
+        (PredicateEmptyState { inner }, item)
     }
 }
 
