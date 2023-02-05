@@ -14,6 +14,7 @@ struct ContinueIfTrue;
 impl FnMut<(bool,)> for ContinueIfTrue {
     type Output = ControlFlow<()>;
 
+    #[inline]
     fn call_mut(&mut self, args: (bool,)) -> Self::Output {
         if args.0 {
             ControlFlow::Continue(())
