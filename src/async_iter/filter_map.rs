@@ -49,8 +49,8 @@ where
             let Some(item) = task::ready!(iter.as_mut().poll_next(cx)) else { break Poll::Ready(None) };
             let item = f.call_mut((item,));
 
-            if item.is_some() {
-                break Poll::Ready(item);
+            if let Some(item) = item {
+                break Poll::Ready(Some(item));
             }
         }
     }

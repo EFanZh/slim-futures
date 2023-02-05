@@ -92,8 +92,8 @@ where
 
             let item = task::ready!(sub_iter.get_pin_mut().poll_next(cx));
 
-            if item.is_some() {
-                break Poll::Ready(item);
+            if let Some(item) = item {
+                break Poll::Ready(Some(item));
             }
 
             state = OptionPinnedEntry::None(sub_iter.set_none());

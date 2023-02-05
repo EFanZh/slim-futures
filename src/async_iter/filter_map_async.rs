@@ -76,8 +76,8 @@ where
 
             state = OptionPinnedEntry::None(fut.set_none());
 
-            if item.is_some() {
-                break Poll::Ready(item);
+            if let Some(item) = item {
+                break Poll::Ready(Some(item));
             }
         }
     }
