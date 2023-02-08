@@ -83,7 +83,7 @@ where
                 OptionPinnedEntry::None(none_state) => match task::ready!(iter.as_mut().poll_next(cx)) {
                     None => break Poll::Ready(None),
                     Some(item) => match item.branch() {
-                        ControlFlow::Continue(output) => none_state.set_some(output.into_async_iter()),
+                        ControlFlow::Continue(output) => none_state.replace_some(output.into_async_iter()),
                         ControlFlow::Break(residual) => break Poll::Ready(Some(Self::Item::from_residual(residual))),
                     },
                 },
@@ -96,7 +96,7 @@ where
                 break Poll::Ready(Some(item));
             }
 
-            state = OptionPinnedEntry::None(sub_iter.set_none());
+            state = OptionPinnedEntry::None(sub_iter.replace_none());
         }
     }
 

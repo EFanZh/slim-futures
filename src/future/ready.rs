@@ -63,17 +63,17 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::future;
+    use crate::future::ready;
     use std::mem;
 
     #[tokio::test]
     async fn test_ready() {
-        assert_eq!(future::ready_by_copy::<u32>(2).await, 2);
+        assert_eq!(ready::ready_by_copy::<u32>(2).await, 2);
     }
 
     #[tokio::test]
     async fn test_ready_clone() {
-        let future = future::ready_by_copy::<u32>(2);
+        let future = ready::ready_by_copy::<u32>(2);
         let future_2 = future.clone();
 
         assert_eq!(future.await, 2);
@@ -83,7 +83,7 @@ mod tests {
     #[tokio::test]
     async fn test_ready_is_slim() {
         let value: u32 = 2;
-        let future_1 = future::ready_by_copy(value);
+        let future_1 = ready::ready_by_copy(value);
         let future_2 = futures_util::future::ready(value);
 
         assert_eq!(mem::size_of_val(&value), mem::size_of_val(&future_1));

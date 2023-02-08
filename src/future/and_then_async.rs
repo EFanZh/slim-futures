@@ -110,32 +110,45 @@ where
 #[cfg(test)]
 mod tests {
     use crate::future::future_ext::FutureExt;
+    use crate::future::{err, ok};
     use futures_core::FusedFuture;
-    use futures_util::future::{self, Ready, TryFutureExt};
+    use futures_util::future::{Ready, TryFutureExt};
     use std::mem;
     use std::num::NonZeroU32;
 
     fn ok_plus_3(value: u32) -> Ready<Result<u32, u32>> {
-        future::ok(value + 3)
+        futures_util::future::ok(value + 3)
     }
 
     fn err_plus_3(value: u32) -> Ready<Result<u32, u32>> {
-        future::err(value + 3)
+        futures_util::future::err(value + 3)
     }
 
     #[tokio::test]
     async fn test_and_then_async() {
-        assert_eq!(future::ok::<_, u32>(2).slim_and_then_async(ok_plus_3).await, Ok(5));
-        assert_eq!(future::ok::<_, u32>(2).slim_and_then_async(err_plus_3).await, Err(5));
-        assert_eq!(future::err::<_, u32>(2).slim_and_then_async(ok_plus_3).await, Err(2));
-        assert_eq!(future::err::<_, u32>(2).slim_and_then_async(err_plus_3).await, Err(2));
+        assert_eq!(ok::ok_by_copy::<_, u32>(2).slim_and_then_async(ok_plus_3).await, Ok(5));
+
+        assert_eq!(
+            ok::ok_by_copy::<_, u32>(2).slim_and_then_async(err_plus_3).await,
+            Err(5),
+        );
+
+        assert_eq!(
+            err::err_by_copy::<_, u32>(2).slim_and_then_async(ok_plus_3).await,
+            Err(2),
+        );
+
+        assert_eq!(
+            err::err_by_copy::<_, u32>(2).slim_and_then_async(err_plus_3).await,
+            Err(2),
+        );
     }
 
     #[tokio::test]
     async fn test_and_then_async_with_option() {
         assert_eq!(
-            future::ready(Some(2))
-                .slim_and_then_async(|x| future::ready(Some(x + 3)))
+            futures_util::future::ready(Some(2))
+                .slim_and_then_async(|x| futures_util::future::ready(Some(x + 3)))
                 .await,
             Some(5),
         );
@@ -143,7 +156,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_and_then_async_clone() {
-        let future = future::ok::<u32, u32>(2).slim_and_then_async(ok_plus_3);
+        let future = ok::ok_by_copy::<u32, u32>(2).slim_and_then_async(ok_plus_3);
         let future_2 = future.clone();
 
         assert_eq!(future.await, Ok(5));
@@ -152,7 +165,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_and_then_async_fused_future() {
-        let mut future = future::ok::<u32, u32>(2).slim_and_then_async(ok_plus_3);
+        let mut future = futures_util::future::ok::<u32, u32>(2).slim_and_then_async(ok_plus_3);
 
         assert!(!future.is_terminated());
         assert_eq!(future.by_ref().await, Ok(5));
@@ -161,10 +174,10 @@ mod tests {
 
     #[tokio::test]
     async fn test_and_then_async_is_slim() {
-        let make_base_future = || crate::future::ok_by_copy::<_, u32>(NonZeroU32::new(2).unwrap()).slim_map_ok(drop);
+        let make_base_future = || ok::ok_by_copy::<_, u32>(NonZeroU32::new(2).unwrap()).slim_map_ok(drop);
         let base_future = make_base_future();
-        let future_1 = make_base_future().slim_and_then_async(crate::future::ok_by_copy::<_, u32>);
-        let future_2 = make_base_future().and_then(crate::future::ok_by_copy);
+        let future_1 = make_base_future().slim_and_then_async(ok::ok_by_copy::<_, u32>);
+        let future_2 = make_base_future().and_then(ok::ok_by_copy);
 
         assert_eq!(mem::size_of_val(&base_future), mem::size_of_val(&future_1));
         assert!(mem::size_of_val(&future_1) < mem::size_of_val(&future_2));

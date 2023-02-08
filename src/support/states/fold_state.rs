@@ -47,7 +47,7 @@ impl<'a, T, Fut> FoldAccumulateState<'a, T, Fut> {
 
     pub fn set_future(self, fut: Fut) -> FoldFutureState<'a, T, Fut> {
         FoldFutureState {
-            inner: self.inner.set_state_b(fut, ()).0,
+            inner: self.inner.replace_state_b(fut, ()).0,
         }
     }
 }
@@ -63,7 +63,7 @@ impl<'a, T, Fut> FoldFutureState<'a, T, Fut> {
 
     pub fn set_accumulate(self, acc: T) -> FoldAccumulateState<'a, T, Fut> {
         FoldAccumulateState {
-            inner: self.inner.set_state_a((), acc).0,
+            inner: self.inner.replace_state_a((), acc).0,
         }
     }
 }

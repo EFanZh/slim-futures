@@ -36,7 +36,7 @@ impl<A, B> TwoPhases<A, B> {
     {
         let second_state = match self.project().inner.pin_project() {
             ThreeStatesPinProject::A(mut project) => match f1(task::ready!(project.get_project().pinned.poll(cx))) {
-                ControlFlow::Continue(second_state) => project.set_state_b(second_state, ()).0,
+                ControlFlow::Continue(second_state) => project.replace_state_b(second_state, ()).0,
                 ControlFlow::Break(result) => return Poll::Ready(result),
             },
             ThreeStatesPinProject::B(project) => project,

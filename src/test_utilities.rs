@@ -53,7 +53,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::Yield;
-    use crate::future::FutureExt;
+    use crate::future::{self, FutureExt};
     use futures_core::FusedFuture;
     use std::task::Poll;
 
@@ -76,7 +76,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_delayed() {
-        let mut future = super::delayed(crate::future::ready_by_copy::<u32>(2));
+        let mut future = super::delayed(future::ready_by_copy::<u32>(2));
 
         assert_eq!(futures_util::poll!(future.by_ref()), Poll::Pending);
         assert_eq!(futures_util::poll!(future.by_ref()), Poll::Ready(2));

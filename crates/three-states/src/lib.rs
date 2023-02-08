@@ -54,14 +54,14 @@ impl<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> StateAPinProject<'a, APin, AU
         }
     }
 
-    pub fn set_state_a(&mut self, pinned: APin, unpinned: AUnpin) -> AUnpin {
+    pub fn replace_state_a(&mut self, pinned: APin, unpinned: AUnpin) -> AUnpin {
         match self.inner.as_mut().project_replace(ThreeStates::A { pinned, unpinned }) {
             ThreeStatesPinProjectReplace::A { unpinned, .. } => unpinned,
             _ => unsafe { hint::unreachable_unchecked() },
         }
     }
 
-    pub fn set_state_b(
+    pub fn replace_state_b(
         mut self,
         pinned: BPin,
         unpinned: BUnpin,
@@ -72,7 +72,7 @@ impl<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> StateAPinProject<'a, APin, AU
         }
     }
 
-    pub fn set_state_c(
+    pub fn replace_state_c(
         mut self,
         pinned: CPin,
         unpinned: CUnpin,
@@ -103,7 +103,7 @@ impl<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> StateBPinProject<'a, APin, AU
         }
     }
 
-    pub fn set_state_a(
+    pub fn replace_state_a(
         mut self,
         pinned: APin,
         unpinned: AUnpin,
@@ -114,14 +114,14 @@ impl<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> StateBPinProject<'a, APin, AU
         }
     }
 
-    pub fn set_state_b(&mut self, pinned: BPin, unpinned: BUnpin) -> BUnpin {
+    pub fn replace_state_b(&mut self, pinned: BPin, unpinned: BUnpin) -> BUnpin {
         match self.inner.as_mut().project_replace(ThreeStates::B { pinned, unpinned }) {
             ThreeStatesPinProjectReplace::B { unpinned, .. } => unpinned,
             _ => unsafe { hint::unreachable_unchecked() },
         }
     }
 
-    pub fn set_state_c(
+    pub fn replace_state_c(
         mut self,
         pinned: CPin,
         unpinned: CUnpin,
@@ -152,7 +152,7 @@ impl<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> StateCPinProject<'a, APin, AU
         }
     }
 
-    pub fn set_state_a(
+    pub fn replace_state_a(
         mut self,
         pinned: APin,
         unpinned: AUnpin,
@@ -163,7 +163,7 @@ impl<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> StateCPinProject<'a, APin, AU
         }
     }
 
-    pub fn set_state_b(
+    pub fn replace_state_b(
         mut self,
         pinned: BPin,
         unpinned: BUnpin,
@@ -174,7 +174,7 @@ impl<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> StateCPinProject<'a, APin, AU
         }
     }
 
-    pub fn set_state_c(&mut self, pinned: CPin, unpinned: CUnpin) -> CUnpin {
+    pub fn replace_state_c(&mut self, pinned: CPin, unpinned: CUnpin) -> CUnpin {
         match self.inner.as_mut().project_replace(ThreeStates::C { pinned, unpinned }) {
             ThreeStatesPinProjectReplace::C { unpinned, .. } => unpinned,
             _ => unsafe { hint::unreachable_unchecked() },
@@ -212,14 +212,14 @@ impl<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> StateAProject<'a, APin, AUnpi
         }
     }
 
-    pub fn set_state_a(&mut self, pinned: APin, unpinned: AUnpin) -> AUnpin {
+    pub fn replace_state_a(&mut self, pinned: APin, unpinned: AUnpin) -> AUnpin {
         match mem::replace(self.inner, ThreeStates::A { pinned, unpinned }) {
             ThreeStates::A { unpinned, .. } => unpinned,
             _ => unsafe { hint::unreachable_unchecked() },
         }
     }
 
-    pub fn set_state_b(
+    pub fn replace_state_b(
         self,
         pinned: BPin,
         unpinned: BUnpin,
@@ -230,7 +230,7 @@ impl<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> StateAProject<'a, APin, AUnpi
         }
     }
 
-    pub fn set_state_c(
+    pub fn replace_state_c(
         self,
         pinned: CPin,
         unpinned: CUnpin,
@@ -261,7 +261,7 @@ impl<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> StateBProject<'a, APin, AUnpi
         }
     }
 
-    pub fn set_state_a(
+    pub fn replace_state_a(
         self,
         pinned: APin,
         unpinned: AUnpin,
@@ -272,14 +272,14 @@ impl<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> StateBProject<'a, APin, AUnpi
         }
     }
 
-    pub fn set_state_b(&mut self, pinned: BPin, unpinned: BUnpin) -> BUnpin {
+    pub fn replace_state_b(&mut self, pinned: BPin, unpinned: BUnpin) -> BUnpin {
         match mem::replace(self.inner, ThreeStates::B { pinned, unpinned }) {
             ThreeStates::B { unpinned, .. } => unpinned,
             _ => unsafe { hint::unreachable_unchecked() },
         }
     }
 
-    pub fn set_state_c(
+    pub fn replace_state_c(
         self,
         pinned: CPin,
         unpinned: CUnpin,
@@ -310,7 +310,7 @@ impl<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> StateCProject<'a, APin, AUnpi
         }
     }
 
-    pub fn set_state_a(
+    pub fn replace_state_a(
         self,
         pinned: APin,
         unpinned: AUnpin,
@@ -321,7 +321,7 @@ impl<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> StateCProject<'a, APin, AUnpi
         }
     }
 
-    pub fn set_state_b(
+    pub fn replace_state_b(
         self,
         pinned: BPin,
         unpinned: BUnpin,
@@ -332,7 +332,7 @@ impl<'a, APin, AUnpin, BPin, BUnpin, CPin, CUnpin> StateCProject<'a, APin, AUnpi
         }
     }
 
-    pub fn set_state_c(&mut self, pinned: CPin, unpinned: CUnpin) -> CUnpin {
+    pub fn replace_state_c(&mut self, pinned: CPin, unpinned: CUnpin) -> CUnpin {
         match mem::replace(self.inner, ThreeStates::C { pinned, unpinned }) {
             ThreeStates::C { unpinned, .. } => unpinned,
             _ => unsafe { hint::unreachable_unchecked() },

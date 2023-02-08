@@ -81,6 +81,7 @@ where
 #[cfg(test)]
 mod tests {
     use crate::future::future_ext::FutureExt;
+    use crate::future::ready;
     use crate::{future, test_utilities};
     use futures_core::FusedFuture;
     use futures_util::future::Either;
@@ -91,14 +92,14 @@ mod tests {
     #[tokio::test]
     async fn test_select_either() {
         assert!(matches!(
-            future::select_either(future::ready_by_copy(2), future::ready_by_copy(3)).await,
+            super::select_either(ready::ready_by_copy(2), ready::ready_by_copy(3)).await,
             Either::Left(2),
         ));
 
         assert!(matches!(
-            future::select_either(
-                test_utilities::delayed(future::ready_by_copy(2)),
-                future::ready_by_copy(3)
+            super::select_either(
+                test_utilities::delayed(ready::ready_by_copy(2)),
+                ready::ready_by_copy(3)
             )
             .await,
             Either::Right(3),
@@ -107,7 +108,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_select_either_clone() {
-        let future = future::select_either(future::ready_by_copy(2), future::ready_by_copy(3));
+        let future = super::select_either(ready::ready_by_copy(2), ready::ready_by_copy(3));
         let future_2 = future.clone();
 
         assert!(matches!(future.await, Either::Left(2)));
@@ -126,19 +127,19 @@ mod tests {
             result
         };
 
-        assert!(!future::select_either(pending(), pending()).is_terminated());
-        assert!(future::select_either(pending(), terminated()).is_terminated());
-        assert!(future::select_either(terminated(), pending()).is_terminated());
-        assert!(future::select_either(terminated(), terminated()).is_terminated());
+        assert!(!super::select_either(pending(), pending()).is_terminated());
+        assert!(super::select_either(pending(), terminated()).is_terminated());
+        assert!(super::select_either(terminated(), pending()).is_terminated());
+        assert!(super::select_either(terminated(), terminated()).is_terminated());
     }
 
     #[tokio::test]
     async fn test_select_either_is_slim() {
         let make_base_future_1 = || future::lazy(|_| 2);
-        let make_base_future_2 = || future::ready_by_copy(NonZeroU32::new(3).unwrap()).slim_map(NonZeroU32::get);
+        let make_base_future_2 = || ready::ready_by_copy(NonZeroU32::new(3).unwrap()).slim_map(NonZeroU32::get);
         let base_future_1 = make_base_future_1();
         let base_future_2 = make_base_future_2();
-        let future = future::select_either(make_base_future_1(), make_base_future_2());
+        let future = super::select_either(make_base_future_1(), make_base_future_2());
 
         assert_eq!(mem::size_of_val(&base_future_2), mem::size_of_val(&future));
         assert_eq!(base_future_1.await, 2);

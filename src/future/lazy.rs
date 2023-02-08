@@ -35,7 +35,6 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::future;
     use std::mem;
     use std::task::Context;
 
@@ -45,12 +44,12 @@ mod tests {
 
     #[tokio::test]
     async fn test_lazy() {
-        assert_eq!(future::lazy(lazy_fn).await, 2);
+        assert_eq!(super::lazy(lazy_fn).await, 2);
     }
 
     #[tokio::test]
     async fn test_lazy_clone() {
-        let future = future::lazy(lazy_fn);
+        let future = super::lazy(lazy_fn);
         let future_2 = future.clone();
 
         assert_eq!(future.await, 2);
@@ -59,7 +58,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_lazy_is_slim() {
-        let future_1 = future::lazy(lazy_fn);
+        let future_1 = super::lazy(lazy_fn);
         let future_2 = futures_util::future::lazy(lazy_fn);
 
         assert_eq!(mem::size_of_val(&lazy_fn), mem::size_of_val(&future_1));

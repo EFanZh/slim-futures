@@ -173,33 +173,38 @@ where
 #[cfg(test)]
 mod tests {
     use crate::future::future_ext::FutureExt;
+    use crate::future::{err, ok};
     use futures_core::FusedFuture;
-    use futures_util::future::{self, Ready};
+    use futures_util::future::Ready;
 
     fn plus_3(value: u32) -> Ready<u32> {
-        future::ready(value + 3)
+        futures_util::future::ready(value + 3)
     }
 
     fn plus_4(value: u32) -> Ready<u32> {
-        future::ready(value + 4)
+        futures_util::future::ready(value + 4)
     }
 
     #[tokio::test]
     async fn test_map_ok_or_else_async() {
         assert_eq!(
-            future::ok::<_, u32>(2).slim_map_ok_or_else_async(plus_3, plus_4).await,
+            ok::ok_by_copy::<_, u32>(2)
+                .slim_map_ok_or_else_async(plus_3, plus_4)
+                .await,
             6,
         );
 
         assert_eq!(
-            future::err::<_, u32>(2).slim_map_ok_or_else_async(plus_3, plus_4).await,
+            err::err_by_copy::<_, u32>(2)
+                .slim_map_ok_or_else_async(plus_3, plus_4)
+                .await,
             5,
         );
     }
 
     #[tokio::test]
     async fn test_map_ok_or_else_async_clone() {
-        let future = future::ok::<_, u32>(2).slim_map_ok_or_else_async(plus_3, plus_4);
+        let future = ok::ok_by_copy::<_, u32>(2).slim_map_ok_or_else_async(plus_3, plus_4);
         let future_2 = future.clone();
 
         assert_eq!(future.await, 6);
@@ -208,7 +213,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_map_ok_or_else_async_fused_future() {
-        let mut future = future::ok::<_, u32>(2).slim_map_ok_or_else_async(plus_3, plus_4);
+        let mut future = futures_util::future::ok::<_, u32>(2).slim_map_ok_or_else_async(plus_3, plus_4);
 
         assert!(!future.is_terminated());
         assert_eq!(future.by_ref().await, 6);

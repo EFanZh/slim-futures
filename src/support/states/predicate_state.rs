@@ -45,7 +45,7 @@ pub struct PredicateEmptyState<'a, T, Fut> {
 impl<'a, T, Fut> PredicateEmptyState<'a, T, Fut> {
     pub fn set_future(self, item: T, fut: Fut) -> PredicateFutureState<'a, T, Fut> {
         PredicateFutureState {
-            inner: self.inner.set_state_b(fut, item).0,
+            inner: self.inner.replace_state_b(fut, item).0,
         }
     }
 }
@@ -60,7 +60,7 @@ impl<'a, T, Fut> PredicateFutureState<'a, T, Fut> {
     }
 
     pub fn set_empty(self) -> (PredicateEmptyState<'a, T, Fut>, T) {
-        let (inner, item) = self.inner.set_state_a((), ());
+        let (inner, item) = self.inner.replace_state_a((), ());
 
         (PredicateEmptyState { inner }, item)
     }

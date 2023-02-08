@@ -58,6 +58,7 @@ where
 mod tests {
     use super::IntoTryFuture;
     use crate::future::future_ext::FutureExt;
+    use crate::future::ready;
     use crate::support::Never;
     use futures_core::FusedFuture;
     use futures_util::{future, FutureExt as _};
@@ -111,7 +112,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_into_try_future_is_slim() {
-        let make_base_future = || crate::future::ready_by_copy::<u32>(2);
+        let make_base_future = || ready::ready_by_copy::<u32>(2);
         let base_future = make_base_future();
         let future_1 = make_base_future().slim_unit_error();
         let future_2 = make_base_future().unit_error();

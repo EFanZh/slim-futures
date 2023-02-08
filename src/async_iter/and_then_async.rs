@@ -73,7 +73,7 @@ where
             OptionPinnedEntry::None(none_state) => match task::ready!(iter.as_mut().poll_next(cx)) {
                 None => return Poll::Ready(None),
                 Some(item) => match item.branch() {
-                    ControlFlow::Continue(output) => none_state.set_some(f.call_mut((output,)).into_future()),
+                    ControlFlow::Continue(output) => none_state.replace_some(f.call_mut((output,)).into_future()),
                     ControlFlow::Break(residual) => return Poll::Ready(Some(Self::Item::from_residual(residual))),
                 },
             },
@@ -82,7 +82,7 @@ where
 
         let item = task::ready!(fut.get_pin_mut().poll(cx));
 
-        fut.set_none();
+        fut.replace_none();
 
         Poll::Ready(Some(item))
     }

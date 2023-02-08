@@ -36,13 +36,13 @@ struct EmptyState<'a, A, B> {
 impl<'a, A, B> EmptyState<'a, A, B> {
     fn set_left(self, value: A) -> LeftState<'a, A, B> {
         LeftState {
-            inner: self.inner.set_state_b((), value).0,
+            inner: self.inner.replace_state_b((), value).0,
         }
     }
 
     fn set_right(self, value: B) -> RightState<'a, A, B> {
         RightState {
-            inner: self.inner.set_state_c((), value).0,
+            inner: self.inner.replace_state_c((), value).0,
         }
     }
 }
@@ -53,7 +53,7 @@ struct LeftState<'a, A, B> {
 
 impl<'a, A, B> LeftState<'a, A, B> {
     fn set_empty(self) -> (EmptyState<'a, A, B>, A) {
-        let (inner, value) = self.inner.set_state_a((), ());
+        let (inner, value) = self.inner.replace_state_a((), ());
 
         (EmptyState { inner }, value)
     }
@@ -65,7 +65,7 @@ struct RightState<'a, A, B> {
 
 impl<'a, A, B> RightState<'a, A, B> {
     fn set_empty(self) -> (EmptyState<'a, A, B>, B) {
-        let (inner, value) = self.inner.set_state_a((), ());
+        let (inner, value) = self.inner.replace_state_a((), ());
 
         (EmptyState { inner }, value)
     }

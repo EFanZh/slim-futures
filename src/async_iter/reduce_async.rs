@@ -49,13 +49,13 @@ pub struct EmptyState<'a, T, Fut> {
 impl<'a, T, Fut> EmptyState<'a, T, Fut> {
     fn set_accumulate(self, acc: T) -> AccumulateState<'a, T, Fut> {
         AccumulateState {
-            inner: self.inner.set_state_b((), acc).0,
+            inner: self.inner.replace_state_b((), acc).0,
         }
     }
 
     fn set_future(self, fut: Fut) -> FutureState<'a, T, Fut> {
         FutureState {
-            inner: self.inner.set_state_c(fut, ()).0,
+            inner: self.inner.replace_state_c(fut, ()).0,
         }
     }
 }
@@ -66,7 +66,7 @@ pub struct AccumulateState<'a, T, Fut> {
 
 impl<'a, T, Fut> AccumulateState<'a, T, Fut> {
     fn set_empty(self) -> (EmptyState<'a, T, Fut>, T) {
-        let (inner, item) = self.inner.set_state_a((), ());
+        let (inner, item) = self.inner.replace_state_a((), ());
 
         (EmptyState { inner }, item)
     }
@@ -83,7 +83,7 @@ impl<'a, T, Fut> FutureState<'a, T, Fut> {
 
     fn set_accumulate(self, acc: T) -> AccumulateState<'a, T, Fut> {
         AccumulateState {
-            inner: self.inner.set_state_b((), acc).0,
+            inner: self.inner.replace_state_b((), acc).0,
         }
     }
 }

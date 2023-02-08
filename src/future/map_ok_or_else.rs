@@ -53,6 +53,7 @@ where
 #[cfg(test)]
 mod tests {
     use crate::future::future_ext::FutureExt;
+    use crate::future::ok;
     use futures_core::FusedFuture;
     use futures_util::{future, TryFutureExt};
     use std::mem;
@@ -91,7 +92,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_map_ok_or_else_is_slim() {
-        let make_base_future = || crate::future::ok_by_copy::<u32, u32>(2);
+        let make_base_future = || ok::ok_by_copy::<u32, u32>(2);
         let base_future = make_base_future();
         let future_1 = make_base_future().slim_map_ok_or_else(plus_3, plus_4);
         let future_2 = make_base_future().map_ok_or_else(plus_3, plus_4);

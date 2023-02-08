@@ -42,7 +42,7 @@ pub struct OptionNoneEntry<'a, T> {
 }
 
 impl<'a, T> OptionNoneEntry<'a, T> {
-    pub fn set_some(self, value: T) -> OptionSomeEntry<'a, T> {
+    pub fn replace_some(self, value: T) -> OptionSomeEntry<'a, T> {
         let inner = self.inner;
 
         // `OptionSomeEntry` proves that `inner` is in `None` state, so destructor can be safely ignored.
@@ -68,7 +68,7 @@ impl<'a, T> OptionSomeEntry<'a, T> {
         unsafe { self.inner.as_mut().unwrap_unchecked() }
     }
 
-    pub fn set_none(self) -> (OptionNoneEntry<'a, T>, T) {
+    pub fn replace_none(self) -> (OptionNoneEntry<'a, T>, T) {
         let inner = self.inner;
 
         // SAFETY: `OptionSomeEntry` proves that `inner` is in `Some` state.
@@ -89,7 +89,7 @@ pub struct OptionNonePinnedEntry<'a, T> {
 }
 
 impl<'a, T> OptionNonePinnedEntry<'a, T> {
-    pub fn set_some(self, value: T) -> OptionSomePinnedEntry<'a, T> {
+    pub fn replace_some(self, value: T) -> OptionSomePinnedEntry<'a, T> {
         let mut inner = self.inner;
 
         // `OptionSomePinnedEntry` proves that `inner` is in `None` state, so destructor can be safely ignored.
@@ -115,11 +115,11 @@ impl<'a, T> OptionSomePinnedEntry<'a, T> {
         unsafe { self.inner.as_pin_mut().unwrap_unchecked() }
     }
 
-    pub fn set_none(self) -> OptionNonePinnedEntry<'a, T> {
+    pub fn replace_none(self) -> OptionNonePinnedEntry<'a, T> {
         let mut inner = self.inner;
 
         {
-            let mut set_none_on_drop = scopeguard::guard(inner.as_mut(), |inner| {
+            let mut replace_none_on_drop = scopeguard::guard(inner.as_mut(), |inner| {
                 //  Value destructor have already been called, we are not calling it again.
                 write_pin_mut_without_calling_destructor(inner, None)
             });
@@ -128,7 +128,7 @@ impl<'a, T> OptionSomePinnedEntry<'a, T> {
                 // SAFETY: We are not moving the value, and we are setting the value to `None` afterwards so the
                 // destructor will not be called more than once.
                 ptr::drop_in_place(Pin::get_unchecked_mut(
-                    set_none_on_drop.as_mut().as_pin_mut().unwrap_unchecked(),
+                    replace_none_on_drop.as_mut().as_pin_mut().unwrap_unchecked(),
                 ));
             }
         }
@@ -136,7 +136,7 @@ impl<'a, T> OptionSomePinnedEntry<'a, T> {
         OptionNonePinnedEntry { inner }
     }
 
-    pub fn set_some(&mut self, value: T) {
+    pub fn replace_some(&mut self, value: T) {
         self.get_pin_mut().set(value);
     }
 }

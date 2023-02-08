@@ -103,7 +103,7 @@ where
             predicate_state = PredicateStateProject::Empty(empty_state);
 
             if !skip {
-                state.set_none();
+                state.replace_none();
 
                 break Poll::Ready(Some(item));
             }

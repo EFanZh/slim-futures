@@ -77,7 +77,7 @@ where
             let mut sub_iter = match state {
                 OptionPinnedEntry::None(none_state) => match task::ready!(iter.as_mut().poll_next(cx)) {
                     None => break Poll::Ready(None),
-                    Some(into_state) => none_state.set_some(into_state.into_async_iter()),
+                    Some(into_state) => none_state.replace_some(into_state.into_async_iter()),
                 },
                 OptionPinnedEntry::Some(some_state) => some_state,
             };
@@ -88,7 +88,7 @@ where
                 break Poll::Ready(Some(item));
             }
 
-            state = OptionPinnedEntry::None(sub_iter.set_none());
+            state = OptionPinnedEntry::None(sub_iter.replace_none());
         }
     }
 

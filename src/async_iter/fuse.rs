@@ -40,7 +40,7 @@ where
             let item = task::ready!(iter.get_pin_mut().poll_next(cx));
 
             if item.is_none() {
-                iter.set_none();
+                iter.replace_none();
             }
 
             item

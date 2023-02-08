@@ -91,9 +91,10 @@ where
 #[cfg(test)]
 mod tests {
     use crate::future::future_ext::FutureExt;
+    use crate::future::{err, ok, ready};
     use crate::test_utilities::Yield;
     use futures_core::FusedFuture;
-    use futures_util::future::{self, Ready};
+    use futures_util::future::Ready;
     use futures_util::TryFutureExt;
     use std::mem;
     use std::num::NonZeroU32;
@@ -101,19 +102,23 @@ mod tests {
     #[tokio::test]
     async fn test_try_flatten() {
         assert_eq!(
-            future::ok::<_, u32>(future::ok::<u32, u32>(2)).slim_try_flatten().await,
+            ok::ok_by_clone::<_, u32>(ok::ok_by_copy::<u32, u32>(2))
+                .slim_try_flatten()
+                .await,
             Ok(2),
         );
 
         assert_eq!(
-            future::ok::<_, u32>(future::err::<u32, u32>(2))
+            ok::ok_by_clone::<_, u32>(err::err_by_copy::<u32, u32>(2))
                 .slim_try_flatten()
                 .await,
             Err(2),
         );
 
         assert_eq!(
-            future::err::<Ready<Result<u32, u32>>, u32>(2).slim_try_flatten().await,
+            err::err_by_copy::<Ready<Result<u32, u32>>, u32>(2)
+                .slim_try_flatten()
+                .await,
             Err(2),
         );
     }
@@ -121,7 +126,9 @@ mod tests {
     #[tokio::test]
     async fn test_try_flatten_with_option() {
         assert_eq!(
-            future::ready(Some(future::ready(Some(2)))).slim_try_flatten().await,
+            ready::ready_by_clone(Some(ready::ready_by_copy(Some(2))))
+                .slim_try_flatten()
+                .await,
             Some(2),
         );
     }
@@ -129,7 +136,7 @@ mod tests {
     #[tokio::test]
     async fn test_try_flatten_with_pending() {
         let future = Yield::new(1)
-            .slim_map(|()| Ok::<_, u32>(future::ok::<u32, u32>(2)))
+            .slim_map(|()| Ok::<_, u32>(ok::ok_by_copy::<u32, u32>(2)))
             .slim_try_flatten();
 
         assert_eq!(future.await, Ok(2));
@@ -137,7 +144,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_try_flatten_clone() {
-        let future = future::ok::<_, u32>(future::ok::<u32, u32>(2)).slim_try_flatten();
+        let future = ok::ok_by_clone::<_, u32>(ok::ok_by_copy::<u32, u32>(2)).slim_try_flatten();
         let future_2 = future.clone();
 
         assert_eq!(future.await, Ok(2));
@@ -146,7 +153,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_try_flatten_fused_future() {
-        let mut future = future::ok::<_, u32>(future::ok::<u32, u32>(2)).slim_try_flatten();
+        let mut future = futures_util::future::ok::<_, u32>(futures_util::future::ok::<u32, u32>(2)).slim_try_flatten();
 
         assert!(!future.is_terminated());
         assert_eq!(future.by_ref().await, Ok(2));
@@ -155,10 +162,8 @@ mod tests {
 
     #[tokio::test]
     async fn test_try_flatten_is_slim() {
-        let make_base_future = || {
-            crate::future::ok_by_copy(NonZeroU32::new(2).unwrap())
-                .slim_map_ok(|_| crate::future::ok_by_copy::<_, ()>(()))
-        };
+        let make_base_future =
+            || ok::ok_by_copy(NonZeroU32::new(2).unwrap()).slim_map_ok(|_| ok::ok_by_copy::<_, ()>(()));
 
         let base_future = make_base_future();
         let future_1 = make_base_future().slim_try_flatten();

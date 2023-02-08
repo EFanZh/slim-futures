@@ -84,6 +84,7 @@ where
 #[cfg(test)]
 mod tests {
     use crate::future::future_ext::FutureExt;
+    use crate::future::{ok, ready};
     use futures_core::FusedFuture;
     use futures_util::future;
     use std::mem;
@@ -124,9 +125,9 @@ mod tests {
 
     #[tokio::test]
     async fn test_map_ok_async_is_slim() {
-        let make_base_future = || crate::future::ok_by_copy::<_, u32>(NonZeroU32::new(2).unwrap()).slim_map_ok(drop);
+        let make_base_future = || ok::ok_by_copy::<_, u32>(NonZeroU32::new(2).unwrap()).slim_map_ok(drop);
         let base_future = make_base_future();
-        let future = make_base_future().slim_map_ok_async(crate::future::ready_by_copy);
+        let future = make_base_future().slim_map_ok_async(ready::ready_by_copy);
 
         assert_eq!(mem::size_of_val(&base_future), mem::size_of_val(&future));
         assert_eq!(base_future.await, Ok(()));

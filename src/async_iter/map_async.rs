@@ -66,14 +66,14 @@ where
         let mut fut = match state {
             OptionPinnedEntry::None(none_state) => match task::ready!(iter.as_mut().poll_next(cx)) {
                 None => return Poll::Ready(None),
-                Some(item) => none_state.set_some(f.call_mut((item,)).into_future()),
+                Some(item) => none_state.replace_some(f.call_mut((item,)).into_future()),
             },
             OptionPinnedEntry::Some(some_state) => some_state,
         };
 
         let item = task::ready!(fut.get_pin_mut().poll(cx));
 
-        fut.set_none();
+        fut.replace_none();
 
         Poll::Ready(Some(item))
     }

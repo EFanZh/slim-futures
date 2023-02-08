@@ -51,7 +51,7 @@ where
                     continue;
                 }
 
-                f.set_none();
+                f.replace_none();
             }
 
             break Poll::Ready(item);

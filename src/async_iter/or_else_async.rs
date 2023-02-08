@@ -69,7 +69,7 @@ where
                 None => return Poll::Ready(None),
                 Some(item) => match item {
                     Ok(value) => return Poll::Ready(Some(Self::Item::from_output(value))),
-                    Err(error) => none_state.set_some(f.call_mut((error,)).into_future()),
+                    Err(error) => none_state.replace_some(f.call_mut((error,)).into_future()),
                 },
             },
             OptionPinnedEntry::Some(some_state) => some_state,
@@ -77,7 +77,7 @@ where
 
         let item = task::ready!(fut.get_pin_mut().poll(cx));
 
-        fut.set_none();
+        fut.replace_none();
 
         Poll::Ready(Some(item))
     }

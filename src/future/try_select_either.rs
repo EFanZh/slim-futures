@@ -90,7 +90,8 @@ where
 #[cfg(test)]
 mod tests {
     use crate::future::future_ext::FutureExt;
-    use crate::{future, test_utilities};
+    use crate::future::{self, err, ok};
+    use crate::test_utilities;
     use futures_core::FusedFuture;
     use futures_util::future::Either;
     use futures_util::FutureExt as _;
@@ -99,55 +100,55 @@ mod tests {
 
     #[tokio::test]
     async fn test_try_select_either() {
-        let ok_2 = || future::ok_by_copy::<u32, u32>(2);
-        let ok_3 = || future::ok_by_copy::<u32, u32>(3);
-        let err_2 = || future::err_by_copy::<u32, u32>(2);
-        let err_3 = || future::err_by_copy::<u32, u32>(3);
+        let ok_2 = || ok::ok_by_copy::<u32, u32>(2);
+        let ok_3 = || ok::ok_by_copy::<u32, u32>(3);
+        let err_2 = || err::err_by_copy::<u32, u32>(2);
+        let err_3 = || err::err_by_copy::<u32, u32>(3);
 
         assert!(matches!(
-            future::try_select_either(ok_2(), ok_3()).await,
+            super::try_select_either(ok_2(), ok_3()).await,
             Ok(Either::Left(2)),
         ));
 
         assert!(matches!(
-            future::try_select_either(ok_2(), err_3()).await,
+            super::try_select_either(ok_2(), err_3()).await,
             Ok(Either::Left(2)),
         ));
 
         assert!(matches!(
-            future::try_select_either(err_2(), ok_3()).await,
+            super::try_select_either(err_2(), ok_3()).await,
             Err(Either::Left(2)),
         ));
 
         assert!(matches!(
-            future::try_select_either(err_2(), err_3()).await,
+            super::try_select_either(err_2(), err_3()).await,
             Err(Either::Left(2)),
         ));
 
         assert!(matches!(
-            future::try_select_either(test_utilities::delayed(ok_2()), ok_3()).await,
+            super::try_select_either(test_utilities::delayed(ok_2()), ok_3()).await,
             Ok(Either::Right(3)),
         ));
 
         assert!(matches!(
-            future::try_select_either(test_utilities::delayed(ok_2()), err_3()).await,
+            super::try_select_either(test_utilities::delayed(ok_2()), err_3()).await,
             Err(Either::Right(3)),
         ));
 
         assert!(matches!(
-            future::try_select_either(test_utilities::delayed(err_2()), ok_3()).await,
+            super::try_select_either(test_utilities::delayed(err_2()), ok_3()).await,
             Ok(Either::Right(3)),
         ));
 
         assert!(matches!(
-            future::try_select_either(test_utilities::delayed(err_2()), err_3()).await,
+            super::try_select_either(test_utilities::delayed(err_2()), err_3()).await,
             Err(Either::Right(3)),
         ));
     }
 
     #[tokio::test]
     async fn test_try_select_either_clone() {
-        let future = future::try_select_either(future::ok_by_copy::<u32, u32>(2), future::ok_by_copy::<u32, u32>(3));
+        let future = super::try_select_either(ok::ok_by_copy::<u32, u32>(2), ok::ok_by_copy::<u32, u32>(3));
         let future_2 = future.clone();
 
         assert!(matches!(future.await, Ok(Either::Left(2))));
@@ -166,20 +167,19 @@ mod tests {
             result
         };
 
-        assert!(!future::try_select_either(pending(), pending()).is_terminated());
-        assert!(future::try_select_either(pending(), terminated()).is_terminated());
-        assert!(future::try_select_either(terminated(), pending()).is_terminated());
-        assert!(future::try_select_either(terminated(), terminated()).is_terminated());
+        assert!(!super::try_select_either(pending(), pending()).is_terminated());
+        assert!(super::try_select_either(pending(), terminated()).is_terminated());
+        assert!(super::try_select_either(terminated(), pending()).is_terminated());
+        assert!(super::try_select_either(terminated(), terminated()).is_terminated());
     }
 
     #[tokio::test]
     async fn test_try_select_either_is_slim() {
         let make_base_future_1 = || future::lazy(|_| Ok::<u32, u32>(2));
-        let make_base_future_2 =
-            || future::ok_by_copy::<_, u32>(NonZeroU32::new(3).unwrap()).slim_map_ok(NonZeroU32::get);
+        let make_base_future_2 = || ok::ok_by_copy::<_, u32>(NonZeroU32::new(3).unwrap()).slim_map_ok(NonZeroU32::get);
         let base_future_1 = make_base_future_1();
         let base_future_2 = make_base_future_2();
-        let future = future::try_select_either(make_base_future_1(), make_base_future_2());
+        let future = super::try_select_either(make_base_future_1(), make_base_future_2());
 
         assert_eq!(mem::size_of_val(&base_future_2), mem::size_of_val(&future));
         assert_eq!(base_future_1.await, Ok(2));
