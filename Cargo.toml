@@ -6,7 +6,7 @@ keywords = ["async", "future"]
 license = "MIT"
 name = "slim-futures"
 repository = "https://github.com/EFanZh/slim-futures"
-version = "0.1.0-alpha.0"
+version = "0.1.0-alpha.1"
 
 [workspace]
 members = ["crates/option-entry", "crates/three-states"]
